@@ -76,9 +76,9 @@ jobs:
             echo "📦 Installing backend production dependencies..."
             npm --prefix backend ci --omit=dev
 
-            echo "⚙️ Generating Prisma client and applying database migrations..."
+            echo "⚙️ Synchronizing database schema with RDS PostgreSQL..."
             npx --prefix backend prisma generate
-            npx --prefix backend prisma migrate deploy || echo "⚠️ Migration completed or pending DB availability"
+            npx --prefix backend prisma db push
 
             echo "🎨 Building frontend production bundle..."
             npm --prefix frontend ci
