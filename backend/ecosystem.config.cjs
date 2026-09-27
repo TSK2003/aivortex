@@ -2,12 +2,13 @@ module.exports = {
   apps: [
     {
       name: 'apexlearn-backend',
+      cwd: __dirname,
       script: 'src/server.js',
-      instances: 'max', // Utilizes all available vCPUs on AWS EC2
-      exec_mode: 'cluster',
+      instances: 1,
+      exec_mode: 'fork',
       autorestart: true,
       watch: false,
-      max_memory_restart: '500M',
+      max_memory_restart: '600M',
       env: {
         NODE_ENV: 'development',
         PORT: 3001

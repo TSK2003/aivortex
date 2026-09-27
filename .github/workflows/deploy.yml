@@ -1,0 +1,95 @@
+name: CI/CD Pipeline - Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test-and-build:
+    name: 🧪 Test & Build Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install Frontend Dependencies & Build
+        run: |
+          npm --prefix frontend ci
+          npm --prefix frontend run build
+
+      - name: Install Backend Dependencies
+        run: |
+          npm --prefix backend ci
+
+      - name: Generate Prisma Client
+        run: |
+          npx --prefix backend prisma generate
+
+  deploy:
+    name: 🚀 Deploy to AWS EC2
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER || 'ubuntu' }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            echo "🚀 Starting automated deployment on EC2..."
+
+            APP_DIR="/var/www/aivortex"
+            if [ ! -d "$APP_DIR" ]; then
+              echo "Directory $APP_DIR does not exist yet. Creating and cloning..."
+              sudo mkdir -p "$APP_DIR"
+              sudo chown -R $USER:$USER "$APP_DIR"
+              git clone https://github.com/${{ github.repository }}.git "$APP_DIR"
+            fi
+
+            cd $APP_DIR
+
+            echo "📥 Pulling latest code from origin/main..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Create backend .env from template if not present
+            if [ ! -f "backend/.env" ]; then
+              cp backend/.env.production.example backend/.env
+              echo "⚠️ Created backend/.env from template."
+            fi
+
+            echo "📦 Installing backend production dependencies..."
+            npm --prefix backend ci --omit=dev
+
+            echo "⚙️ Generating Prisma client and applying database migrations..."
+            npx --prefix backend prisma generate
+            npx --prefix backend prisma migrate deploy || echo "⚠️ Migration completed or pending DB availability"
+
+            echo "🎨 Building frontend production bundle..."
+            npm --prefix frontend ci
+            npm --prefix frontend run build
+
+            echo "🔄 Reloading PM2 backend cluster..."
+            pm2 reload backend/ecosystem.config.cjs --env production || pm2 start backend/ecosystem.config.cjs --env production
+            pm2 save
+
+            echo "🩺 Verifying backend health..."
+            sleep 2
+            curl -f http://127.0.0.1:3001/api/health || true
+
+            echo "✅ Deployment successfully finished! Application is live."

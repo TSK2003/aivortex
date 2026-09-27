@@ -11,8 +11,8 @@
     "dev:frontend": "npm --prefix frontend run dev",
     "test": "npm --prefix backend test",
     "test:backend": "npm --prefix backend test",
-    "prisma:generate": "npm --prefix backend run prisma generate",
-    "prisma:migrate": "npm --prefix backend run prisma migrate deploy",
-    "prisma:seed": "node backend/prisma/seed.js"
+    "prisma:generate": "npm --prefix backend run prisma:generate",
+    "prisma:migrate": "npm --prefix backend run prisma:migrate",
+    "prisma:seed": "npm --prefix backend run prisma:seed"
   }
 }

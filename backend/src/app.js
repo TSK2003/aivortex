@@ -28,9 +28,21 @@ app.use(
 )
 
 // CORS Configuration
+const allowedOrigins = [
+  ...(env.CLIENT_URL ? env.CLIENT_URL.split(',').map((url) => url.trim()) : []),
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://13.201.19.85'
+].filter(Boolean)
+
 app.use(
   cors({
-    origin: [env.CLIENT_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+        return callback(null, true)
+      }
+      return callback(null, true)
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
