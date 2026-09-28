@@ -34,7 +34,7 @@ jobs:
 
       - name: Generate Prisma Client
         run: |
-          npx --prefix backend prisma generate
+          npm --prefix backend run prisma:generate
 
   deploy:
     name: 🚀 Deploy to AWS EC2
@@ -77,8 +77,8 @@ jobs:
             npm --prefix backend ci --omit=dev
 
             echo "⚙️ Synchronizing database schema with RDS PostgreSQL..."
-            npx --prefix backend prisma generate
-            npx --prefix backend prisma db push
+            npm --prefix backend run prisma:generate
+            npm --prefix backend run prisma:push
 
             echo "🎨 Building frontend production bundle..."
             npm --prefix frontend ci

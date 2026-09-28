@@ -10,7 +10,11 @@
     "test": "node src/tests/api.test.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
+    "prisma:push": "prisma db push",
     "prisma:seed": "node prisma/seed.js"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1141.0",

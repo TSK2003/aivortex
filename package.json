@@ -13,6 +13,10 @@
     "test:backend": "npm --prefix backend test",
     "prisma:generate": "npm --prefix backend run prisma:generate",
     "prisma:migrate": "npm --prefix backend run prisma:migrate",
+    "prisma:push": "npm --prefix backend run prisma:push",
     "prisma:seed": "npm --prefix backend run prisma:seed"
+  },
+  "prisma": {
+    "schema": "backend/prisma/schema.prisma"
   }
 }
