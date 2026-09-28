@@ -20,7 +20,7 @@ export default function BrandLogo({
 }) {
   const isDark = theme === 'dark'
   const fillColor = isDark ? '#FFFFFF' : '#15171A'
-  const taglineColor = isDark ? '#94A3B8' : '#1E293B'
+  const taglineColor = isDark ? '#94A3B8' : '#475569'
 
   // If stacked layout is requested, use the master AivortexLogo
   if (layout === 'stacked') {
@@ -129,7 +129,7 @@ export default function BrandLogo({
               fill={taglineColor}
               fontFamily="Plus Jakarta Sans, Outfit, Inter, Montserrat, -apple-system, sans-serif"
               fontSize="25px"
-              fontWeight="700"
+              fontWeight="600"
               letterSpacing="0.05em"
               style={{ userSelect: 'none' }}
             >
