@@ -38,28 +38,28 @@ export default function BrandLogo({
   // Horizontal layout (Standard Navbar / Header size scale)
   const sizeConfig = {
     sm: {
-      iconH: 32,
-      nameH: showTagline ? 28 : 18,
+      iconH: 34,
+      nameH: showTagline ? 30 : 20,
       gap: 10
     },
     md: {
       iconH: 42,
-      nameH: showTagline ? 36 : 24,
+      nameH: showTagline ? 38 : 26,
       gap: 12
     },
     lg: {
       iconH: 56,
-      nameH: showTagline ? 48 : 32,
+      nameH: showTagline ? 50 : 34,
       gap: 16
     },
     xl: {
       iconH: 72,
-      nameH: showTagline ? 62 : 42,
+      nameH: showTagline ? 64 : 44,
       gap: 20
     },
     hero: {
       iconH: 96,
-      nameH: showTagline ? 82 : 56,
+      nameH: showTagline ? 84 : 58,
       gap: 24
     }
   }
@@ -67,8 +67,8 @@ export default function BrandLogo({
   const { iconH, nameH, gap } =
     sizeConfig[size] || sizeConfig.md
 
-  // Wordmark aspect ratio is 688 / 152 = 4.526 with tagline, or 688 / 99 = 6.95 without
-  const nameW = Math.round(nameH * (showTagline ? 688 / 152 : 688 / 99))
+  // Wordmark aspect ratio is 688 / 135 = 5.096 with tagline, or 688 / 99 = 6.95 without
+  const nameW = Math.round(nameH * (showTagline ? 688 / 135 : 688 / 99))
   // Icon aspect ratio is 288 / 264 = 1.09
   const iconW = Math.round(iconH * (288 / 264))
 
@@ -101,7 +101,7 @@ export default function BrandLogo({
       {/* Wordmark & Tagline: Real Custom Vector Paths (NO FONT) */}
       {showName && (
         <svg
-          viewBox={showTagline ? "18 327 688 148" : "18 327 688 99"}
+          viewBox={showTagline ? "18 327 688 135" : "18 327 688 99"}
           width={nameW}
           height={nameH}
           style={{ display: 'block', flexShrink: 0 }}
@@ -122,14 +122,15 @@ export default function BrandLogo({
           {showTagline && (
             <text
               id="aivortex-tagline"
-              x="147.5"
-              y="464"
-              textLength="430"
+              x="30"
+              y="454"
+              textLength="664"
               lengthAdjust="spacing"
               fill={taglineColor}
               fontFamily="Plus Jakarta Sans, Outfit, Inter, Montserrat, -apple-system, sans-serif"
-              fontSize="14.5px"
-              fontWeight="500"
+              fontSize="26px"
+              fontWeight="600"
+              letterSpacing="0.05em"
               style={{ userSelect: 'none' }}
             >
               LEARN. GROW. INNOVATE.
