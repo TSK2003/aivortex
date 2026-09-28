@@ -360,4 +360,179 @@ describe('ApexLearn Production E2E Test Suite', () => {
     assert.equal(replayRes.status, 200)
     assert.equal(replayRes.body.duplicate, true)
   })
+
+  it('15. Password Recovery Workflow: Request forgot-password token and reset password', async () => {
+    // 1. Request forgot password for student
+    const forgotRes = await makeRequest('POST', '/api/auth/forgot-password', {}, {
+      email: 'rahul.sharma@example.com'
+    })
+    assert.equal(forgotRes.status, 200)
+    assert.equal(forgotRes.body.success, true)
+
+    // 2. Fetch the newly created token from database
+    const user = await prisma.user.findUnique({ where: { email: 'rahul.sharma@example.com' } })
+    const resetRecord = await prisma.passwordResetToken.findFirst({
+      where: { userId: user.id, usedAt: null },
+      orderBy: { createdAt: 'desc' }
+    })
+    assert.ok(resetRecord)
+    assert.ok(resetRecord.token)
+
+    // 3. Reset password using valid token
+    const resetRes = await makeRequest('POST', '/api/auth/reset-password', {}, {
+      token: resetRecord.token,
+      password: 'studentNewPassword2026'
+    })
+    assert.equal(resetRes.status, 200)
+    assert.equal(resetRes.body.success, true)
+
+    // 4. Verify login succeeds with new password
+    const loginRes = await makeRequest('POST', '/api/auth/student/login', {}, {
+      email: 'rahul.sharma@example.com',
+      password: 'studentNewPassword2026'
+    })
+    assert.equal(loginRes.status, 200)
+    assert.equal(loginRes.body.success, true)
+
+    // 5. Invalidate token reuse: calling reset with same token must fail
+    const replayReset = await makeRequest('POST', '/api/auth/reset-password', {}, {
+      token: resetRecord.token,
+      password: 'anotherPassword123'
+    })
+    assert.equal(replayReset.status, 400)
+
+    // Restore original password for test suite idempotency
+    const bcrypt = await import('bcryptjs')
+    const restoredHash = await bcrypt.default.hash('student123', 10)
+    await prisma.user.update({
+      where: { email: 'rahul.sharma@example.com' },
+      data: { passwordHash: restoredHash }
+    })
+  })
+
+  it('16. Admin Offer Management & Public Coupon Verification', async () => {
+    const adminLogin = await makeRequest('POST', '/api/auth/admin/login', {}, {
+      email: 'director@apexlearn.edu',
+      password: 'adminSecret2026'
+    })
+    const adminToken = adminLogin.body.data.token
+
+    // Cleanup any existing test offer
+    await prisma.offer.deleteMany({ where: { code: 'PROMO50TEST' } })
+
+    // 1. Admin creates offer
+    const createRes = await makeRequest('POST', '/api/admin/offers', {
+      Authorization: `Bearer ${adminToken}`
+    }, {
+      title: 'Test 50% Off Promo',
+      code: 'PROMO50TEST',
+      discountPercent: 50,
+      startDate: new Date().toISOString(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      isActive: true,
+      maxUses: 50
+    })
+    assert.equal(createRes.status, 201)
+    assert.equal(createRes.body.data.offer.code, 'PROMO50TEST')
+    const offerId = createRes.body.data.offer.id
+
+    // 2. Public user fetches active offers
+    const publicOffersRes = await makeRequest('GET', '/api/public/offers')
+    assert.equal(publicOffersRes.status, 200)
+    assert.ok(Array.isArray(publicOffersRes.body.data.offers))
+    const found = publicOffersRes.body.data.offers.find(o => o.code === 'PROMO50TEST')
+    assert.ok(found)
+
+    // 3. Public user validates coupon on a course
+    const validateRes = await makeRequest('POST', '/api/public/offers/validate', {}, {
+      code: 'PROMO50TEST',
+      courseId: 'course-pyml'
+    })
+    assert.equal(validateRes.status, 200)
+    assert.equal(validateRes.body.data.valid, true)
+    assert.equal(validateRes.body.data.offer.discountPercent, 50)
+    assert.ok(validateRes.body.data.offer.finalPrice < validateRes.body.data.offer.originalPrice)
+
+    // 4. Admin deletes offer
+    const deleteRes = await makeRequest('DELETE', `/api/admin/offers/${offerId}`, {
+      Authorization: `Bearer ${adminToken}`
+    })
+    assert.equal(deleteRes.status, 200)
+  })
+
+  it('17. Server-Authoritative Progress Spoof Prevention: Direct completion without watch time is rejected', async () => {
+    const studentLogin = await makeRequest('POST', '/api/auth/student/login', {}, {
+      email: 'rahul.sharma@example.com',
+      password: 'student123'
+    })
+    const studentToken = studentLogin.body.data.token
+
+    // Reset progress record to zero watch time
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { studentId_courseId: { studentId: 'student-rahul', courseId: 'course-pyml' } }
+    })
+
+    if (enrollment) {
+      await prisma.lessonProgress.upsert({
+        where: { enrollmentId_lessonId: { enrollmentId: enrollment.id, lessonId: 'lesson-pyml-2' } },
+        create: {
+          enrollmentId: enrollment.id,
+          lessonId: 'lesson-pyml-2',
+          studentId: 'student-rahul',
+          watchSeconds: 10,
+          lastPositionSec: 10,
+          isCompleted: false
+        },
+        update: {
+          watchSeconds: 10,
+          lastPositionSec: 10,
+          isCompleted: false
+        }
+      })
+    }
+
+    // Malicious student calls toggleLessonProgress attempting to force isCompleted: true
+    const attackRes = await makeRequest('PATCH', '/api/student/progress', {
+      Authorization: `Bearer ${studentToken}`
+    }, {
+      courseId: 'course-pyml',
+      lessonId: 'lesson-pyml-2',
+      isCompleted: true
+    })
+
+    // Server MUST reject spoofed completion because recorded watch time is only 10s of a 1200s lesson
+    assert.equal(attackRes.status, 400)
+    assert.ok(attackRes.body.error.message.includes('Required lesson video content must be completed'))
+  })
+
+  it('18. Creator S3 Presigned Upload URL generation with MIME validation', async () => {
+    const creatorLogin = await makeRequest('POST', '/api/auth/creator/login', {}, {
+      email: 'creator@apexlearn.edu',
+      password: 'creator123'
+    })
+    const creatorToken = creatorLogin.body.data.token
+
+    // Valid video upload URL request
+    const validRes = await makeRequest('POST', '/api/creator/videos/presigned-url', {
+      Authorization: `Bearer ${creatorToken}`
+    }, {
+      fileName: 'lecture_05_deep_learning.mp4',
+      fileType: 'video/mp4',
+      courseId: 'course-pyml'
+    })
+    assert.equal(validRes.status, 200)
+    assert.ok(validRes.body.data.uploadUrl)
+    assert.ok(validRes.body.data.objectKey)
+    assert.ok(validRes.body.data.objectKey.includes('course-pyml'))
+
+    // Invalid MIME type (e.g. executable/script) must be rejected
+    const invalidRes = await makeRequest('POST', '/api/creator/videos/presigned-url', {
+      Authorization: `Bearer ${creatorToken}`
+    }, {
+      fileName: 'malicious.exe',
+      fileType: 'application/x-msdownload',
+      courseId: 'course-pyml'
+    })
+    assert.equal(invalidRes.status, 400)
+  })
 })

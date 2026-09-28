@@ -16,13 +16,14 @@ import {
   Search,
   ExternalLink,
   HelpCircle,
-  MessageSquare
+  MessageSquare,
+  AlertCircle
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import CustomSelect from '../../components/common/CustomSelect'
 import api from '../../services/api'
-import { initialCourses, initialProjects, initialLiveSessions, initialCertificates, initialTransactions } from '../../data/initialData'
+import { initialProjects, initialLiveSessions } from '../../data/initialData'
 
 export default function StudentDashboardPage() {
   const location = useLocation()
@@ -55,9 +56,9 @@ export default function StudentDashboardPage() {
   const [supportTickets, setSupportTickets] = useState([])
 
   // Profile form state
-  const [profileName, setProfileName] = useState(currentStudent?.name || 'Rahul Sharma')
-  const [profilePhone, setProfilePhone] = useState(currentStudent?.phone || '+91 98765 43210')
-  const [profileBio, setProfileBio] = useState(currentStudent?.bio || 'Aspiring Data Scientist & Machine Learning Engineer passionate about Python.')
+  const [profileName, setProfileName] = useState(currentStudent?.name || '')
+  const [profilePhone, setProfilePhone] = useState(currentStudent?.phone || '')
+  const [profileBio, setProfileBio] = useState(currentStudent?.bio || '')
 
   // Support ticket state
   const [ticketSubject, setTicketSubject] = useState('')
@@ -69,41 +70,57 @@ export default function StudentDashboardPage() {
     setActiveTab(getTabFromLocation())
   }, [location.pathname, location.search])
 
+  useEffect(() => {
+    if (currentStudent) {
+      if (currentStudent.name) setProfileName(currentStudent.name)
+      if (currentStudent.phone) setProfilePhone(currentStudent.phone)
+      if (currentStudent.bio) setProfileBio(currentStudent.bio)
+    }
+  }, [currentStudent])
+
   const loadStudentData = async () => {
     try {
       setLoading(true)
 
-      // 1. Fetch Enrolled Courses
-      const coursesRes = await api.student.getMyCourses().catch(() => null)
-      if (coursesRes?.data?.courses && coursesRes.data.courses.length > 0) {
-        setEnrolledCourses(coursesRes.data.courses)
+      const [coursesRes, certRes, payRes, ticketRes] = await Promise.allSettled([
+        api.student.getMyCourses(),
+        api.student.getCertificates(),
+        api.student.getPaymentHistory(),
+        api.student.getSupportTickets()
+      ])
+
+      // 1. Enrolled Courses
+      if (coursesRes.status === 'fulfilled' && coursesRes.value?.data?.courses) {
+        setEnrolledCourses(coursesRes.value.data.courses)
       } else {
-        setEnrolledCourses(initialCourses.slice(0, 2))
+        setEnrolledCourses([])
       }
 
-      // 2. Fetch Certificates
-      const certRes = await api.student.getCertificates().catch(() => null)
-      if (certRes?.data?.certificates && certRes.data.certificates.length > 0) {
-        setCertificates(certRes.data.certificates)
+      // 2. Certificates
+      if (certRes.status === 'fulfilled' && certRes.value?.data?.certificates) {
+        setCertificates(certRes.value.data.certificates)
       } else {
-        setCertificates(initialCertificates)
+        setCertificates([])
       }
 
-      // 3. Fetch Payments
-      const payRes = await api.student.getPaymentHistory().catch(() => null)
-      if (payRes?.data?.payments && payRes.data.payments.length > 0) {
-        setTransactions(payRes.data.payments)
+      // 3. Payments
+      if (payRes.status === 'fulfilled' && payRes.value?.data?.payments) {
+        setTransactions(payRes.value.data.payments)
       } else {
-        setTransactions(initialTransactions)
+        setTransactions([])
       }
 
-      // 4. Fetch Support Tickets
-      const ticketRes = await api.student.getSupportTickets().catch(() => null)
-      if (ticketRes?.data?.tickets) {
-        setSupportTickets(ticketRes.data.tickets)
+      // 4. Support Tickets
+      if (ticketRes.status === 'fulfilled' && ticketRes.value?.data?.tickets) {
+        setSupportTickets(ticketRes.value.data.tickets)
+      } else {
+        setSupportTickets([])
       }
     } catch (err) {
       console.warn('Student dashboard data load note:', err.message)
+      setEnrolledCourses([])
+      setCertificates([])
+      setTransactions([])
     } finally {
       setLoading(false)
     }
@@ -152,7 +169,7 @@ export default function StudentDashboardPage() {
       <div className="dashboard-topbar" style={{ marginBottom: 28, background: '#FFFFFF', padding: '20px 24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-            Welcome back, {currentStudent?.name || 'Rahul'}
+            Welcome back, {currentStudent?.name || 'Scholar'}
           </h1>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
             Continue your structured learning journey. You have {enrolledCourses.length} active courses enrolled.
@@ -179,7 +196,10 @@ export default function StudentDashboardPage() {
           background: '#FFFFFF',
           padding: '6px 12px',
           borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--color-border)'
+          border: '1px solid var(--color-border)',
+          display: 'flex',
+          gap: 6,
+          flexWrap: 'wrap'
         }}
       >
         <button className={`player-tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
@@ -198,7 +218,7 @@ export default function StudentDashboardPage() {
           Certificates ({certificates.length})
         </button>
         <button className={`player-tab-btn ${activeTab === 'payments' ? 'active' : ''}`} onClick={() => setActiveTab('payments')}>
-          Invoices & Billing
+          Invoices & Billing ({transactions.length})
         </button>
         <button className={`player-tab-btn ${activeTab === 'support' ? 'active' : ''}`} onClick={() => setActiveTab('support')}>
           Support & Queries
@@ -246,77 +266,110 @@ export default function StudentDashboardPage() {
 
           {/* Enrolled Courses Progress Grid */}
           <h3 style={{ fontSize: '1.25rem', marginBottom: 16, color: 'var(--color-primary)' }}>Active Enrolled Courses</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
-            {enrolledCourses.map((c) => (
-              <div
-                key={c.id}
-                style={{
-                  background: '#FFFFFF',
-                  borderRadius: 'var(--radius-lg)',
-                  border: '1px solid var(--color-border)',
-                  overflow: 'hidden',
-                  boxShadow: 'var(--shadow-sm)'
-                }}
-              >
-                <img src={c.thumbnail} alt={c.title} style={{ width: '100%', height: 160, objectFit: 'cover' }} />
-                <div style={{ padding: 20 }}>
-                  <span className="badge badge-popular" style={{ marginBottom: 8, display: 'inline-block' }}>
-                    {c.category}
-                  </span>
-                  <h4 style={{ fontSize: '1.15rem', marginBottom: 8 }}>{c.title}</h4>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: 6 }}>
-                    <span>Completion Progress</span>
-                    <strong style={{ color: 'var(--color-secondary)' }}>{c.progressPercent || 0}%</strong>
+          {enrolledCourses.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+              {enrolledCourses.map((c) => (
+                <div
+                  key={c.id}
+                  style={{
+                    background: '#FFFFFF',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--color-border)',
+                    overflow: 'hidden',
+                    boxShadow: 'var(--shadow-sm)'
+                  }}
+                >
+                  <img src={c.thumbnail} alt={c.title} style={{ width: '100%', height: 160, objectFit: 'cover' }} />
+                  <div style={{ padding: 20 }}>
+                    <span className="badge badge-popular" style={{ marginBottom: 8, display: 'inline-block' }}>
+                      {c.category}
+                    </span>
+                    <h4 style={{ fontSize: '1.15rem', marginBottom: 8 }}>{c.title}</h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: 6 }}>
+                      <span>Completion Progress</span>
+                      <strong style={{ color: 'var(--color-secondary)' }}>{c.progressPercent || 0}%</strong>
+                    </div>
+                    <div style={{ width: '100%', height: 6, background: '#E2E8F0', borderRadius: 4, marginBottom: 16 }}>
+                      <div style={{ width: `${c.progressPercent || 0}%`, height: '100%', background: 'var(--color-secondary)', borderRadius: 4 }}></div>
+                    </div>
+                    {c.expiresAt && (
+                      <div style={{ fontSize: '0.75rem', color: '#64748B', marginBottom: 12 }}>
+                        Access valid until: {new Date(c.expiresAt).toLocaleDateString()}
+                      </div>
+                    )}
+                    <Link
+                      to={`/student/courses/${c.id}/learn`}
+                      className="btn btn-primary btn-sm"
+                      style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}
+                    >
+                      <span>Open Player</span>
+                    </Link>
                   </div>
-                  <div style={{ width: '100%', height: 6, background: '#E2E8F0', borderRadius: 4, marginBottom: 16 }}>
-                    <div style={{ width: `${c.progressPercent || 0}%`, height: '100%', background: 'var(--color-secondary)', borderRadius: 4 }}></div>
-                  </div>
-                  <Link
-                    to={`/student/courses/${c.id}/learn`}
-                    className="btn btn-primary btn-sm"
-                    style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}
-                  >
-                    <span>Open Player</span>
-                  </Link>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '48px 20px', background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
+              <BookOpen style={{ width: 44, height: 44, color: '#94A3B8', margin: '0 auto 12px auto' }} />
+              <h4 style={{ fontSize: '1.15rem', marginBottom: 6 }}>You have not enrolled in any courses yet</h4>
+              <p style={{ color: 'var(--color-text-secondary)', maxWidth: 480, margin: '0 auto 16px auto', fontSize: '0.9rem' }}>
+                Discover industry-aligned masterclasses in Data Science, AI, and Distributed Systems to begin your learning path.
+              </p>
+              <Link to="/courses" className="btn btn-primary btn-sm">
+                Explore Courses Catalog
+              </Link>
+            </div>
+          )}
         </div>
       )}
 
       {/* Tab 2: My Courses */}
       {activeTab === 'courses' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
-          {enrolledCourses.map((course) => (
-            <div
-              key={course.id}
-              style={{
-                background: '#FFFFFF',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-border)',
-                padding: 20,
-                boxShadow: 'var(--shadow-sm)'
-              }}
-            >
-              <img
-                src={course.thumbnail}
-                alt={course.title}
-                style={{ width: '100%', height: 180, objectFit: 'cover', borderRadius: 'var(--radius-md)', marginBottom: 16 }}
-              />
-              <span className="badge badge-popular" style={{ marginBottom: 8, display: 'inline-block' }}>
-                {course.category}
-              </span>
-              <h3 style={{ fontSize: '1.2rem', marginBottom: 8 }}>{course.title}</h3>
-              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: 16 }}>
-                {course.shortDescription}
+        <>
+          {enrolledCourses.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+              {enrolledCourses.map((course) => (
+                <div
+                  key={course.id}
+                  style={{
+                    background: '#FFFFFF',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--color-border)',
+                    padding: 20,
+                    boxShadow: 'var(--shadow-sm)'
+                  }}
+                >
+                  <img
+                    src={course.thumbnail}
+                    alt={course.title}
+                    style={{ width: '100%', height: 180, objectFit: 'cover', borderRadius: 'var(--radius-md)', marginBottom: 16 }}
+                  />
+                  <span className="badge badge-popular" style={{ marginBottom: 8, display: 'inline-block' }}>
+                    {course.category}
+                  </span>
+                  <h3 style={{ fontSize: '1.2rem', marginBottom: 8 }}>{course.title}</h3>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: 16 }}>
+                    {course.shortDescription}
+                  </p>
+                  <Link to={`/student/courses/${course.id}/learn`} className="btn btn-primary" style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}>
+                    <span>Open Learning Player</span>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '60px 20px', background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
+              <BookOpen style={{ width: 48, height: 48, color: '#94A3B8', margin: '0 auto 12px auto' }} />
+              <h3 style={{ fontSize: '1.25rem', marginBottom: 8 }}>No Course Enrollments Found</h3>
+              <p style={{ color: 'var(--color-text-secondary)', marginBottom: 20 }}>
+                Browse our course catalog to find free or specialized technical courses.
               </p>
-              <Link to={`/student/courses/${course.id}/learn`} className="btn btn-primary" style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}>
-                <span>Open Learning Player</span>
+              <Link to="/courses" className="btn btn-primary btn-sm">
+                Browse Courses
               </Link>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {/* Tab 3: Assigned Projects */}
@@ -396,86 +449,110 @@ export default function StudentDashboardPage() {
 
       {/* Tab 5: Certificates */}
       {activeTab === 'certificates' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {certificates.map((cert) => (
-            <div
-              key={cert.id}
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-lg)',
-                padding: 24,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 16
-              }}
-            >
-              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                <div style={{ width: 50, height: 50, background: '#DCFCE7', color: '#16A34A', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Award size={24} />
-                </div>
-                <div>
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: 4 }}>{cert.courseTitle}</h4>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                    Certificate Serial: <strong style={{ fontFamily: 'monospace', color: '#2563EB' }}>{cert.certificateCode || cert.id}</strong> • Conferred: {cert.issueDate ? new Date(cert.issueDate).toLocaleDateString() : 'Active'}
+        <div>
+          {certificates.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {certificates.map((cert) => (
+                <div
+                  key={cert.id}
+                  style={{
+                    background: '#FFFFFF',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 16
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                    <div style={{ width: 50, height: 50, background: '#DCFCE7', color: '#16A34A', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Award size={24} />
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '1.1rem', marginBottom: 4 }}>{cert.courseTitle}</h4>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                        Certificate Code: <strong style={{ fontFamily: 'monospace', color: '#2563EB' }}>{cert.certificateCode || cert.id}</strong> • Conferred: {cert.issueDate ? new Date(cert.issueDate).toLocaleDateString() : 'Active'}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Link
+                      to={`/certificates?code=${cert.certificateCode || cert.id}`}
+                      className="btn btn-outline btn-sm"
+                      target="_blank"
+                    >
+                      Verify Publicly
+                    </Link>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => window.print()}
+                    >
+                      <span>Download Credential</span>
+                    </button>
                   </div>
                 </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <Link
-                  to={`/certificates?code=${cert.certificateCode || cert.id}`}
-                  className="btn btn-outline btn-sm"
-                  target="_blank"
-                >
-                  Verify Publicly
-                </Link>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => window.print()}
-                >
-                  <span>Download Credential</span>
-                </button>
-              </div>
+              ))}
             </div>
-          ))}
+          ) : (
+            <div style={{ textAlign: 'center', padding: '60px 20px', background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
+              <Award style={{ width: 48, height: 48, color: '#94A3B8', margin: '0 auto 12px auto' }} />
+              <h3 style={{ fontSize: '1.25rem', marginBottom: 8 }}>No Certificates Issued Yet</h3>
+              <p style={{ color: 'var(--color-text-secondary)', maxWidth: 480, margin: '0 auto' }}>
+                Complete all required lessons and prerequisite quizzes in your enrolled courses to automatically unlock your official certificate.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Tab 6: Payments */}
+      {/* Tab 6: Invoices & Payments */}
       {activeTab === 'payments' && (
         <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
-          <table className="data-table" style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                <th>Order / Reference</th>
-                <th>Course Name</th>
-                <th>Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((tx) => (
-                <tr key={tx.id}>
-                  <td><strong>{tx.orderNumber || tx.id}</strong></td>
-                  <td>{tx.course?.title || tx.courseName || 'Apex Specialization'}</td>
-                  <td>₹{tx.amount?.toLocaleString('en-IN')}</td>
-                  <td>
-                    <span
-                      className="badge"
-                      style={{
-                        background: (tx.status === 'PAID' || tx.status === 'COMPLETED') ? '#DCFCE7' : '#FEF3C7',
-                        color: (tx.status === 'PAID' || tx.status === 'COMPLETED') ? '#166534' : '#92400E'
-                      }}
-                    >
-                      {tx.status}
-                    </span>
-                  </td>
+          {transactions.length > 0 ? (
+            <table className="data-table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>Order / Reference</th>
+                  <th>Course Name</th>
+                  <th>Amount</th>
+                  <th>Payment Status</th>
+                  <th>Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {transactions.map((tx) => (
+                  <tr key={tx.id}>
+                    <td><strong>{tx.orderNumber || tx.id.slice(0, 10)}</strong></td>
+                    <td>{tx.course?.title || tx.courseTitle || 'Apex Course'}</td>
+                    <td>₹{tx.amount?.toLocaleString('en-IN')}</td>
+                    <td>
+                      <span
+                        className="badge"
+                        style={{
+                          background: (tx.status === 'SUCCESSFUL' || tx.status === 'PAID') ? '#DCFCE7' : '#FEF3C7',
+                          color: (tx.status === 'SUCCESSFUL' || tx.status === 'PAID') ? '#166534' : '#92400E'
+                        }}
+                      >
+                        {tx.status}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '0.8rem' }}>{new Date(tx.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '48px 20px' }}>
+              <Receipt style={{ width: 44, height: 44, color: '#94A3B8', margin: '0 auto 12px auto' }} />
+              <h4 style={{ fontSize: '1.15rem', marginBottom: 6 }}>No Invoices or Orders Found</h4>
+              <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>
+                When you enroll in courses, official receipts and billing invoices will appear here.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -495,7 +572,7 @@ export default function StudentDashboardPage() {
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. NumPy broadcasting dimension mismatch error"
+                  placeholder="e.g. Question on Lecture 04 Model Evaluation"
                   value={ticketSubject}
                   onChange={(e) => setTicketSubject(e.target.value)}
                   required
@@ -550,7 +627,7 @@ export default function StudentDashboardPage() {
                       <span className="badge" style={{ fontSize: '0.7rem' }}>{t.status}</span>
                     </div>
                     <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: 0 }}>
-                      {t.description}
+                      {t.description || t.message}
                     </p>
                   </div>
                 ))}
@@ -586,7 +663,7 @@ export default function StudentDashboardPage() {
               <input
                 type="email"
                 className="form-input"
-                value={currentStudent?.email || 'rahul.sharma@example.com'}
+                value={currentStudent?.email || ''}
                 disabled
                 style={{ background: 'var(--color-bg-alt)', color: '#64748B' }}
               />

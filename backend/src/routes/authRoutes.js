@@ -6,7 +6,9 @@ import {
   me,
   changePassword,
   getActiveSessions,
-  revokeSession
+  revokeSession,
+  forgotPassword,
+  resetPassword
 } from '../controllers/authController.js'
 import { authLimiter } from '../middleware/rateLimiter.js'
 import { validateRequest } from '../middleware/validate.js'
@@ -22,6 +24,8 @@ router.post('/creator/login', authLimiter, validateRequest(loginSchema), login)
 router.post('/admin/login', authLimiter, validateRequest(loginSchema), login)
 router.post('/register', authLimiter, validateRequest(registerSchema), register)
 router.post('/student/signup', authLimiter, validateRequest(registerSchema), register)
+router.post('/forgot-password', authLimiter, forgotPassword)
+router.post('/reset-password', authLimiter, resetPassword)
 
 // Authenticated Endpoints
 router.post('/logout', requireAuth, logout)

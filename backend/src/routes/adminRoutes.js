@@ -23,7 +23,11 @@ import {
   getReports,
   getAuditLogs,
   getActiveSessions,
-  revokeSession
+  revokeSession,
+  getOffers,
+  createOffer,
+  updateOffer,
+  deleteOffer
 } from '../controllers/adminController.js'
 import { requireAuth, requireRole } from '../middleware/authMiddleware.js'
 
@@ -50,6 +54,12 @@ router.post('/courses', createCourse)
 router.patch('/courses/:courseId', updateCourse)
 router.patch('/courses/:courseId/pricing', updatePricing)
 router.patch('/courses/:courseId/public-controls', updatePublicControls)
+
+// Offer & Promotion Management (Full CRUD)
+router.get('/offers', getOffers)
+router.post('/offers', createOffer)
+router.patch('/offers/:id', updateOffer)
+router.delete('/offers/:id', deleteOffer)
 
 // Video Review & Publication Lifecycle (Separated!)
 router.get('/video-verification', getVideoVerificationQueue)

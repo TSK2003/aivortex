@@ -157,7 +157,8 @@ export async function getMyCourses(req, res, next) {
 // 3. Granular Lesson Progression & Percentage Calculation
 export async function toggleLessonProgress(req, res, next) {
   try {
-    const { courseId, lessonId } = req.params
+    const courseId = req.params.courseId || req.body.courseId
+    const lessonId = req.params.lessonId || req.body.lessonId
     const { isCompleted, watchSeconds = 0, lastPositionSec = 0 } = req.body
     const studentId = req.user.id
 
@@ -176,7 +177,58 @@ export async function toggleLessonProgress(req, res, next) {
       throw new ForbiddenError('Your course enrollment access period has expired')
     }
 
-    // Upsert lesson progress
+    // 1. Fetch lesson to verify duration & attached quizzes
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: { playlist: true, quizzes: true }
+    })
+
+    if (!lesson || lesson.playlist.courseId !== courseId) {
+      throw new NotFoundError('Lesson not found or does not belong to this course')
+    }
+
+    // 2. Fetch existing verified progress
+    const existingProgress = await prisma.lessonProgress.findUnique({
+      where: {
+        enrollmentId_lessonId: {
+          enrollmentId: enrollment.id,
+          lessonId
+        }
+      }
+    })
+
+    let targetCompleted = Boolean(isCompleted)
+
+    if (targetCompleted) {
+      // Server-authoritative check: video content requirement
+      const currentPos = Math.max(existingProgress?.lastPositionSec || 0, Number(lastPositionSec || 0))
+      const totalWatch = existingProgress?.watchSeconds || 0
+      const isVideoWatched = currentPos >= (lesson.durationSeconds - 5) || totalWatch >= lesson.durationSeconds
+
+      if (!isVideoWatched && !existingProgress?.isCompleted) {
+        throw new BadRequestError('Required lesson video content must be completed before marking as complete.')
+      }
+
+      // Server-authoritative check: required quizzes
+      if (lesson.quizzes && lesson.quizzes.length > 0) {
+        const quizIds = lesson.quizzes.map((q) => q.id)
+        const passedAttempts = await prisma.quizAttempt.findMany({
+          where: {
+            studentId,
+            quizId: { in: quizIds },
+            passed: true
+          }
+        })
+        const passedQuizIds = new Set(passedAttempts.map((a) => a.quizId))
+        const allQuizzesPassed = quizIds.every((qid) => passedQuizIds.has(qid))
+
+        if (!allQuizzesPassed) {
+          throw new BadRequestError('All required comprehension quizzes must be passed before completing this lesson.')
+        }
+      }
+    }
+
+    // Upsert validated lesson progress
     await prisma.lessonProgress.upsert({
       where: {
         enrollmentId_lessonId: {
@@ -185,19 +237,18 @@ export async function toggleLessonProgress(req, res, next) {
         }
       },
       update: {
-        isCompleted: Boolean(isCompleted),
-        watchSeconds: Number(watchSeconds),
-        lastPositionSec: Number(lastPositionSec),
-        completedAt: isCompleted ? new Date() : null
+        isCompleted: targetCompleted,
+        lastPositionSec: Math.max(existingProgress?.lastPositionSec || 0, Number(lastPositionSec || 0)),
+        completedAt: targetCompleted ? (existingProgress?.completedAt || new Date()) : null
       },
       create: {
         enrollmentId: enrollment.id,
         lessonId,
         studentId,
-        isCompleted: Boolean(isCompleted),
-        watchSeconds: Number(watchSeconds),
-        lastPositionSec: Number(lastPositionSec),
-        completedAt: isCompleted ? new Date() : null
+        isCompleted: targetCompleted,
+        watchSeconds: 0,
+        lastPositionSec: Number(lastPositionSec || 0),
+        completedAt: targetCompleted ? new Date() : null
       }
     })
 

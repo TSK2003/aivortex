@@ -1,32 +1,63 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { GraduationCap, ArrowRight, ShieldCheck, Video, UserCheck, Lock, Mail, ArrowLeft } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { GraduationCap, Lock, Mail, ArrowLeft, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
+import { api } from '../../services/api'
 
 export default function UnifiedLoginPage() {
+  const [searchParams] = useSearchParams()
+  const redirectParam = searchParams.get('redirect')
+  const enrollParam = searchParams.get('enroll')
+  const resetTokenParam = searchParams.get('resetToken')
+
+  const [mode, setMode] = useState(resetTokenParam ? 'reset' : 'login') // 'login' | 'forgot' | 'reset'
+
+  // Login form state
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Forgot password state
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotSuccess, setForgotSuccess] = useState(false)
+  const [forgotLoading, setForgotLoading] = useState(false)
+
+  // Reset password state
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [resetSuccess, setResetSuccess] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
+
   const { login } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
 
+  useEffect(() => {
+    if (resetTokenParam) {
+      setMode('reset')
+    }
+  }, [resetTokenParam])
+
   const handleLoginSuccess = (user) => {
     const role = (user?.role || '').toLowerCase()
     if (role === 'creator') {
-      showToast(`Welcome to Creator Studio, ${user.name || 'Dr. Alex Rivera'}!`, 'success')
+      showToast(`Welcome to Creator Studio, ${user.name}!`, 'success')
       navigate('/creator/dashboard')
     } else if (role === 'admin') {
-      showToast(`Welcome to Admin Control Center, ${user.name || 'Dr. Vikram Sen'}!`, 'success')
+      showToast(`Welcome to Admin Control Center, ${user.name}!`, 'success')
       navigate('/admin/dashboard')
     } else {
-      showToast(`Welcome back, ${user.name || 'Rahul'}!`, 'success')
-      navigate('/student/dashboard')
+      showToast(`Welcome back, ${user.name}!`, 'success')
+      if (redirectParam) {
+        navigate(redirectParam + (enrollParam ? '?enroll=true' : ''))
+      } else {
+        navigate('/student/dashboard')
+      }
     }
   }
 
-  const handleSubmit = async (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault()
     if (!email || !password) {
       showToast('Please enter both email and password', 'error')
@@ -48,21 +79,49 @@ export default function UnifiedLoginPage() {
     }
   }
 
-  const handleDemoSignIn = async (demoEmail, demoPassword) => {
-    setEmail(demoEmail)
-    setPassword(demoPassword)
-    setIsSubmitting(true)
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault()
+    if (!forgotEmail) {
+      showToast('Please enter your account email address', 'error')
+      return
+    }
+
+    setForgotLoading(true)
     try {
-      const res = await login(demoEmail, demoPassword)
-      if (res?.success && res?.user) {
-        handleLoginSuccess(res.user)
-      } else {
-        showToast(res?.error || 'Login failed.', 'error')
-      }
+      await api.auth.forgotPassword(forgotEmail)
+      setForgotSuccess(true)
+      showToast('If an account with that email exists, reset instructions have been dispatched.', 'success')
     } catch (err) {
-      showToast(err.message || 'Login encountered an issue', 'error')
+      showToast(err.message || 'Unable to request password reset', 'error')
     } finally {
-      setIsSubmitting(false)
+      setForgotLoading(false)
+    }
+  }
+
+  const handleResetSubmit = async (e) => {
+    e.preventDefault()
+    if (!newPassword || !confirmPassword) {
+      showToast('Please enter and confirm your new password', 'error')
+      return
+    }
+    if (newPassword.length < 8) {
+      showToast('Password must be at least 8 characters long', 'error')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      showToast('Passwords do not match', 'error')
+      return
+    }
+
+    setResetLoading(true)
+    try {
+      await api.auth.resetPassword(resetTokenParam, newPassword)
+      setResetSuccess(true)
+      showToast('Password reset successfully. You may now sign in with your new password.', 'success')
+    } catch (err) {
+      showToast(err.message || 'Failed to reset password. Link may be expired.', 'error')
+    } finally {
+      setResetLoading(false)
     }
   }
 
@@ -108,7 +167,7 @@ export default function UnifiedLoginPage() {
         </Link>
       </div>
 
-      {/* Main Login Card */}
+      {/* Main Card */}
       <div
         style={{
           width: '100%',
@@ -121,250 +180,401 @@ export default function UnifiedLoginPage() {
           boxSizing: 'border-box'
         }}
       >
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 6 }}>
-            Sign In to ApexLearn
-          </h1>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
-            Enter your credentials. You will automatically be routed to your authorized portal (Student, Creator, or Admin).
-          </p>
-        </div>
-
-        {/* Credentials Form */}
-        <form onSubmit={handleSubmit}>
-          <div className="form-field-group" style={{ marginBottom: 16 }}>
-            <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-              Email Address
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="email"
-                className="form-input"
-                placeholder="name@example.com or name@apexlearn.edu"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={{
-                  paddingLeft: 38,
-                  background: '#FFFFFF',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text)',
-                  height: 44,
-                  fontSize: '0.9rem'
-                }}
-              />
-              <Mail
-                size={16}
-                style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}
-              />
+        {/* LOGIN MODE */}
+        {mode === 'login' && (
+          <>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 6 }}>
+                Sign In to ApexLearn
+              </h1>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
+                Enter your credentials to access your authorized portal (Student, Creator, or Admin).
+              </p>
+              {redirectParam && (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    background: '#EFF6FF',
+                    border: '1px solid #BFDBFE',
+                    color: '#1D4ED8',
+                    fontSize: '0.8rem',
+                    fontWeight: 600
+                  }}
+                >
+                  Please sign in to proceed with your course enrollment.
+                </div>
+              )}
             </div>
-          </div>
 
-          <div className="form-field-group" style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>
-                Password
-              </label>
-              <a
-                href="#forgot"
-                onClick={(e) => {
-                  e.preventDefault()
-                  showToast('Password reset link sent to your email address', 'info')
-                }}
-                style={{ fontSize: '0.775rem', color: 'var(--color-secondary)', fontWeight: 600, textDecoration: 'none' }}
+            <form onSubmit={handleLoginSubmit}>
+              <div className="form-field-group" style={{ marginBottom: 16 }}>
+                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                  Email Address
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="email"
+                    className="form-input"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    style={{
+                      paddingLeft: 38,
+                      background: '#FFFFFF',
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-text)',
+                      height: 44,
+                      fontSize: '0.9rem'
+                    }}
+                  />
+                  <Mail
+                    size={16}
+                    style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}
+                  />
+                </div>
+              </div>
+
+              <div className="form-field-group" style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotEmail(email)
+                      setForgotSuccess(false)
+                      setMode('forgot')
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      fontSize: '0.775rem',
+                      color: 'var(--color-secondary)',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="password"
+                    className="form-input"
+                    placeholder="••••••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    style={{
+                      paddingLeft: 38,
+                      background: '#FFFFFF',
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-text)',
+                      height: 44,
+                      fontSize: '0.9rem'
+                    }}
+                  />
+                  <Lock
+                    size={16}
+                    style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary btn-lg"
+                disabled={isSubmitting}
+                style={{ width: '100%', height: 46, fontSize: '0.95rem', fontWeight: 700 }}
               >
-                Forgot Password?
-              </a>
+                <span>{isSubmitting ? 'Authenticating...' : 'Sign In'}</span>
+              </button>
+            </form>
+
+            <div style={{ marginTop: 24, textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+              Don&apos;t have an account?{' '}
+              <Link
+                to={redirectParam ? `/student/signup?redirect=${encodeURIComponent(redirectParam)}${enrollParam ? '&enroll=true' : ''}` : '/student/signup'}
+                style={{ color: 'var(--color-secondary)', fontWeight: 700, textDecoration: 'none' }}
+              >
+                Register as Student
+              </Link>
             </div>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="password"
-                className="form-input"
-                placeholder="••••••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{
-                  paddingLeft: 38,
-                  background: '#FFFFFF',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text)',
-                  height: 44,
-                  fontSize: '0.9rem'
-                }}
-              />
-              <Lock
-                size={16}
-                style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}
-              />
-            </div>
-          </div>
+          </>
+        )}
 
-          <button
-            type="submit"
-            className="btn btn-primary btn-lg"
-            disabled={isSubmitting}
-            style={{ width: '100%', height: 46, fontSize: '0.95rem', fontWeight: 700 }}
-          >
-            <span>{isSubmitting ? 'Authenticating...' : 'Sign In'}</span>
-          </button>
-        </form>
-
-        {/* Divider */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            margin: '28px 0 20px 0',
-            gap: 12,
-            color: 'var(--color-text-tertiary)',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em'
-          }}
-        >
-          <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }}></div>
-          <span>Or 1-Click Demo Login</span>
-          <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }}></div>
-        </div>
-
-        {/* 1-Click Demo Badges Grid */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {/* Demo Student */}
-          <button
-            type="button"
-            onClick={() => handleDemoSignIn('rahul.sharma@example.com', 'student123')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 14px',
-              borderRadius: 12,
-              background: '#EFF6FF',
-              border: '1px solid #BFDBFE',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {/* FORGOT PASSWORD MODE */}
+        {mode === 'forgot' && (
+          <>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <div
                 style={{
-                  padding: '4px 8px',
-                  borderRadius: 6,
-                  background: '#2563EB',
-                  color: '#FFFFFF',
-                  fontWeight: 800,
-                  fontSize: '0.7rem'
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  background: '#EFF6FF',
+                  color: '#2563EB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px auto'
                 }}
               >
-                STUDENT
+                <KeyRound size={24} />
               </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1E40AF' }}>
-                  Rahul Sharma
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#60A5FA' }}>
-                  rahul.sharma@example.com • student123
-                </div>
-              </div>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 6 }}>
+                Reset Your Password
+              </h1>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
+                Enter the email address associated with your ApexLearn account to receive a secure recovery link.
+              </p>
             </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563EB' }}>Login</span>
-          </button>
 
-          {/* Demo Creator */}
-          <button
-            type="button"
-            onClick={() => handleDemoSignIn('creator@apexlearn.edu', 'creator123')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 14px',
-              borderRadius: 12,
-              background: '#F0FDF4',
-              border: '1px solid #BBF7D0',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {forgotSuccess ? (
+              <div style={{ textAlign: 'center' }}>
+                <div
+                  style={{
+                    padding: '16px',
+                    borderRadius: 12,
+                    background: '#F0FDF4',
+                    border: '1px solid #BBF7D0',
+                    color: '#166534',
+                    fontSize: '0.875rem',
+                    lineHeight: 1.5,
+                    marginBottom: 20
+                  }}
+                >
+                  <CheckCircle2 size={24} style={{ color: '#16A34A', margin: '0 auto 8px auto', display: 'block' }} />
+                  <strong>Instructions Dispatched</strong>
+                  <p style={{ marginTop: 6, margin: 0 }}>
+                    If an account with that email exists, an email with password reset instructions has been sent. Please check your inbox and spam folder.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMode('login')}
+                  className="btn btn-primary"
+                  style={{ width: '100%', height: 44, fontWeight: 700 }}
+                >
+                  Return to Sign In
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotSubmit}>
+                <div className="form-field-group" style={{ marginBottom: 20 }}>
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                    Account Email Address
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="email"
+                      className="form-input"
+                      placeholder="name@example.com"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      required
+                      style={{
+                        paddingLeft: 38,
+                        background: '#FFFFFF',
+                        borderColor: 'var(--color-border)',
+                        color: 'var(--color-text)',
+                        height: 44,
+                        fontSize: '0.9rem'
+                      }}
+                    />
+                    <Mail
+                      size={16}
+                      style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-lg"
+                  disabled={forgotLoading}
+                  style={{ width: '100%', height: 46, fontSize: '0.95rem', fontWeight: 700 }}
+                >
+                  <span>{forgotLoading ? 'Sending Recovery Link...' : 'Send Recovery Email'}</span>
+                </button>
+
+                <div style={{ marginTop: 20, textAlign: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => setMode('login')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--color-text-secondary)',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ← Back to Sign In
+                  </button>
+                </div>
+              </form>
+            )}
+          </>
+        )}
+
+        {/* RESET PASSWORD MODE (from email token) */}
+        {mode === 'reset' && (
+          <>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <div
                 style={{
-                  padding: '4px 8px',
-                  borderRadius: 6,
-                  background: '#16A34A',
-                  color: '#FFFFFF',
-                  fontWeight: 800,
-                  fontSize: '0.7rem'
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  background: '#EFF6FF',
+                  color: '#2563EB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px auto'
                 }}
               >
-                CREATOR
+                <Lock size={24} />
               </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#166534' }}>
-                  Dr. Alex Rivera
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#4ADE80' }}>
-                  creator@apexlearn.edu • creator123
-                </div>
-              </div>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 6 }}>
+                Create New Password
+              </h1>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
+                Your identity has been verified via your reset link. Enter your new account password below.
+              </p>
             </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#16A34A' }}>Login</span>
-          </button>
 
-          {/* Demo Admin */}
-          <button
-            type="button"
-            onClick={() => handleDemoSignIn('director@apexlearn.edu', 'adminSecret2026')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 14px',
-              borderRadius: 12,
-              background: '#FEF2F2',
-              border: '1px solid #FECACA',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div
-                style={{
-                  padding: '4px 8px',
-                  borderRadius: 6,
-                  background: '#DC2626',
-                  color: '#FFFFFF',
-                  fontWeight: 800,
-                  fontSize: '0.7rem'
-                }}
-              >
-                ADMIN
-              </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#991B1B' }}>
-                  Dr. Vikram Sen
+            {resetSuccess ? (
+              <div style={{ textAlign: 'center' }}>
+                <div
+                  style={{
+                    padding: '16px',
+                    borderRadius: 12,
+                    background: '#F0FDF4',
+                    border: '1px solid #BBF7D0',
+                    color: '#166534',
+                    fontSize: '0.875rem',
+                    lineHeight: 1.5,
+                    marginBottom: 20
+                  }}
+                >
+                  <CheckCircle2 size={24} style={{ color: '#16A34A', margin: '0 auto 8px auto', display: 'block' }} />
+                  <strong>Password Updated Successfully</strong>
+                  <p style={{ marginTop: 6, margin: 0 }}>
+                    Your password has been securely changed and all previous sessions invalidated. You can now sign in.
+                  </p>
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#F87171' }}>
-                  director@apexlearn.edu • adminSecret2026
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate('/portal')
+                    setMode('login')
+                  }}
+                  className="btn btn-primary"
+                  style={{ width: '100%', height: 44, fontWeight: 700 }}
+                >
+                  Sign In with New Password
+                </button>
               </div>
-            </div>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#DC2626' }}>Login</span>
-          </button>
-        </div>
+            ) : (
+              <form onSubmit={handleResetSubmit}>
+                <div className="form-field-group" style={{ marginBottom: 16 }}>
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                    New Password (min. 8 characters)
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="password"
+                      className="form-input"
+                      placeholder="••••••••••••"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      style={{
+                        paddingLeft: 38,
+                        background: '#FFFFFF',
+                        borderColor: 'var(--color-border)',
+                        color: 'var(--color-text)',
+                        height: 44,
+                        fontSize: '0.9rem'
+                      }}
+                    />
+                    <Lock
+                      size={16}
+                      style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}
+                    />
+                  </div>
+                </div>
 
-        {/* Footer Link */}
-        <div style={{ marginTop: 24, textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-          Don&apos;t have an account?{' '}
-          <Link to="/student/signup" style={{ color: 'var(--color-secondary)', fontWeight: 700, textDecoration: 'none' }}>
-            Register as Student
-          </Link>
-        </div>
+                <div className="form-field-group" style={{ marginBottom: 20 }}>
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                    Confirm New Password
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="password"
+                      className="form-input"
+                      placeholder="••••••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      style={{
+                        paddingLeft: 38,
+                        background: '#FFFFFF',
+                        borderColor: 'var(--color-border)',
+                        color: 'var(--color-text)',
+                        height: 44,
+                        fontSize: '0.9rem'
+                      }}
+                    />
+                    <Lock
+                      size={16}
+                      style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-lg"
+                  disabled={resetLoading}
+                  style={{ width: '100%', height: 46, fontSize: '0.95rem', fontWeight: 700 }}
+                >
+                  <span>{resetLoading ? 'Securing Password...' : 'Save New Password'}</span>
+                </button>
+
+                <div style={{ marginTop: 20, textAlign: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate('/portal')
+                      setMode('login')
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--color-text-secondary)',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ← Cancel and Return to Sign In
+                  </button>
+                </div>
+              </form>
+            )}
+          </>
+        )}
       </div>
 
       {/* Back to Home Link */}

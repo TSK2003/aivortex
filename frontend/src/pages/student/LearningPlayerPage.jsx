@@ -20,7 +20,6 @@ import {
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import api from '../../services/api'
-import { initialCourses } from '../../data/initialData'
 
 export default function LearningPlayerPage() {
   const { courseId } = useParams()
@@ -42,6 +41,8 @@ export default function LearningPlayerPage() {
   const [watermarkText, setWatermarkText] = useState('')
   const videoRef = useRef(null)
   const heartbeatTimerRef = useRef(null)
+  const maxWatchedTimeRef = useRef(0)
+  const wasPlayingBeforeFsRef = useRef(false)
 
   // Notes
   const [noteContent, setNoteContent] = useState('')
@@ -92,17 +93,10 @@ export default function LearningPlayerPage() {
           setAllLessons(lessons)
           setCompletedLessonIds(completedIds)
         } else {
-          // Fallback to static initial course if API returned no playlists
-          const fallback = initialCourses.find((c) => c.id === courseId) || initialCourses[0]
-          setCourse(fallback)
-          const lessons = []
-          fallback.modules?.forEach((m) => {
-            m.lessons?.forEach((l) => lessons.push({ ...l, moduleTitle: m.title }))
-          })
-          setAllLessons(lessons)
+          setAccessError('No active curriculum found for this course.')
         }
       } catch (err) {
-        setAccessError(err.message || 'Failed to load course lessons. Please ensure you are enrolled.')
+        setAccessError(err.message || 'Failed to load course lessons. Please ensure you have an active enrollment.')
       } finally {
         setLoading(false)
       }
@@ -112,8 +106,32 @@ export default function LearningPlayerPage() {
   }, [courseId])
 
   const currentLesson = allLessons[activeLessonIndex] || allLessons[0]
+  const isCompleted = currentLesson ? completedLessonIds.includes(currentLesson.id) : false
 
-  // 2. Start Video Session & Heartbeat for Active Lesson
+  // Reset maxWatchedTime when active lesson changes
+  useEffect(() => {
+    maxWatchedTimeRef.current = 0
+  }, [currentLesson?.id])
+
+  // 2. Fullscreen Continuity Listener (Rule 13)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      // Ensure playback state is smoothly maintained when entering/exiting fullscreen
+      if (videoRef.current && wasPlayingBeforeFsRef.current && videoRef.current.paused) {
+        videoRef.current.play().catch(() => {})
+      }
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+    }
+  }, [])
+
+  // 3. Start Video Session & Heartbeat for Active Lesson
   useEffect(() => {
     if (!currentLesson || !courseId) return
 
@@ -133,11 +151,14 @@ export default function LearningPlayerPage() {
         if (sessionRes.success && sessionRes.data) {
           setSessionId(sessionRes.data.sessionId)
           setCurrentVideoUrl(sessionRes.data.videoUrl || currentLesson.videoUrl)
-          setWatermarkText(sessionRes.data.watermark || `${student?.name || 'Verified Scholar'} • APEX-2026`)
+          setWatermarkText(sessionRes.data.watermark?.displayText || `${student?.name || 'Verified Scholar'} • APEX-2026`)
 
           // Restore last saved position if available
-          if (sessionRes.data.lastPositionSec && videoRef.current) {
-            videoRef.current.currentTime = sessionRes.data.lastPositionSec
+          if (sessionRes.data.lastPositionSec) {
+            maxWatchedTimeRef.current = sessionRes.data.lastPositionSec
+            if (videoRef.current) {
+              videoRef.current.currentTime = sessionRes.data.lastPositionSec
+            }
           }
         }
       } catch (err) {
@@ -180,21 +201,21 @@ export default function LearningPlayerPage() {
     }
   }, [currentLesson?.id, courseId])
 
-  // 3. Heartbeat Timer (every 30s) to keep session active and save watch seconds
+  // 4. Heartbeat Timer (every 20s) to keep session active and save watch seconds
   useEffect(() => {
     if (!sessionId || !currentLesson) return
 
     heartbeatTimerRef.current = setInterval(async () => {
       try {
         const currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0
-        await api.student.heartbeatVideoSession(sessionId, currentLesson.id, currentTime, 30)
+        await api.student.heartbeatVideoSession(sessionId, currentLesson.id, currentTime, 20)
       } catch (err) {
-        if (err.message && err.message.includes('concurrent')) {
+        if (err.message && (err.message.includes('concurrent') || err.message.includes('session'))) {
           showToast('Another video session was started on your account. Playback paused.', 'error')
           if (videoRef.current) videoRef.current.pause()
         }
       }
-    }, 30000)
+    }, 20000)
 
     return () => {
       if (heartbeatTimerRef.current) {
@@ -204,34 +225,78 @@ export default function LearningPlayerPage() {
     }
   }, [sessionId, currentLesson?.id])
 
+  // 5. Video Player Seek Control & Progress Tracking (Rule 12 & 13)
+  const handleTimeUpdate = () => {
+    if (!videoRef.current) return
+    const current = videoRef.current.currentTime
+    if (current > maxWatchedTimeRef.current) {
+      maxWatchedTimeRef.current = current
+    }
+  }
+
+  const handleSeeking = () => {
+    if (!videoRef.current) return
+    // If the lesson is not already completed, clamp forward seeking to maximum watched boundary
+    if (!isCompleted) {
+      const targetTime = videoRef.current.currentTime
+      if (targetTime > maxWatchedTimeRef.current + 2) {
+        videoRef.current.currentTime = maxWatchedTimeRef.current
+        showToast('Fast-forwarding past unwatched lecture content is restricted.', 'warning')
+      }
+    }
+  }
+
+  const handleVideoEnded = async () => {
+    if (!currentLesson || isCompleted) return
+    try {
+      // Send final heartbeat and mark complete
+      const finalPosition = videoRef.current ? Math.floor(videoRef.current.currentTime) : currentLesson.durationSeconds
+      if (sessionId) {
+        await api.student.heartbeatVideoSession(sessionId, currentLesson.id, finalPosition, 5).catch(() => {})
+      }
+      await toggleLessonComplete(true)
+    } catch (err) {
+      console.warn('Auto-completion error:', err.message)
+    }
+  }
+
+  const handlePlay = () => {
+    wasPlayingBeforeFsRef.current = true
+  }
+
+  const handlePause = () => {
+    wasPlayingBeforeFsRef.current = false
+  }
+
   const prevLesson = activeLessonIndex > 0 ? allLessons[activeLessonIndex - 1] : null
   const nextLesson = activeLessonIndex < allLessons.length - 1 ? allLessons[activeLessonIndex + 1] : null
-  const isCompleted = currentLesson ? completedLessonIds.includes(currentLesson.id) : false
 
   const totalLessonsCount = allLessons.length || 1
   const progressPercent = Math.min(100, Math.round((completedLessonIds.length / totalLessonsCount) * 100))
 
-  // 4. Toggle Lesson Completion (authoritative database update)
-  const toggleLessonComplete = async () => {
+  // 6. Toggle Lesson Completion (Authoritative Backend Validation)
+  const toggleLessonComplete = async (forceComplete = false) => {
     if (!currentLesson) return
-    const newStatus = !isCompleted
+    const newStatus = forceComplete ? true : !isCompleted
 
     try {
       await api.student.toggleLessonProgress(courseId, currentLesson.id, newStatus)
 
       if (newStatus) {
-        setCompletedLessonIds((prev) => [...prev, currentLesson.id])
-        showToast('Lesson progress recorded: Marked as Completed!', 'success')
+        if (!completedLessonIds.includes(currentLesson.id)) {
+          setCompletedLessonIds((prev) => [...prev, currentLesson.id])
+        }
+        showToast('Lesson progress verified and marked as Completed!', 'success')
       } else {
         setCompletedLessonIds((prev) => prev.filter((id) => id !== currentLesson.id))
         showToast('Lesson marked as incomplete', 'info')
       }
     } catch (err) {
-      showToast(err.message || 'Failed to update lesson progress', 'error')
+      showToast(err.message || 'Server rejected completion: Required watch time or quizzes not yet met.', 'error')
     }
   }
 
-  // 5. Save Private Note
+  // 7. Save Private Note
   const handleSaveNote = async () => {
     if (!currentLesson) return
     setIsSavingNote(true)
@@ -249,7 +314,7 @@ export default function LearningPlayerPage() {
     }
   }
 
-  // 6. Submit Quiz Answers
+  // 8. Submit Quiz Answers
   const handleSubmitQuiz = async (e) => {
     e.preventDefault()
     if (!activeQuiz) return
@@ -262,7 +327,7 @@ export default function LearningPlayerPage() {
         if (res.data.passed) {
           showToast(`Congratulations! You passed with score ${res.data.score}%`, 'success')
           if (!completedLessonIds.includes(currentLesson.id)) {
-            toggleLessonComplete()
+            toggleLessonComplete(true)
           }
         } else {
           showToast(`Score: ${res.data.score}%. Passing score is ${res.data.passingScore}%. Please review and retry.`, 'error')
@@ -275,7 +340,7 @@ export default function LearningPlayerPage() {
     }
   }
 
-  // 7. Issue Certificate
+  // 9. Issue Certificate
   const handleClaimCertificate = async () => {
     setIsIssuingCert(true)
     try {
@@ -310,14 +375,14 @@ export default function LearningPlayerPage() {
         <div className="player-sidebar-header">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <Link to="/student/dashboard" style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', textDecoration: 'none' }}>
-              <span>Back to Dashboard</span>
+              <span>← Back to Dashboard</span>
             </Link>
             <span style={{ fontSize: '0.75rem', color: 'var(--color-secondary)', fontWeight: 700 }}>
               {progressPercent}% COMPLETE
             </span>
           </div>
 
-          <h3 style={{ color: 'var(--color-primary)' }}>{course?.title || 'Masterclass'}</h3>
+          <h3 style={{ color: 'var(--color-primary)' }}>{course?.title || 'Course Curriculum'}</h3>
           <div className="progress-track" style={{ marginTop: 6, background: '#E2E8F0', height: 6, borderRadius: 4 }}>
             <div className="progress-fill" style={{ width: `${progressPercent}%`, height: '100%', background: 'var(--color-secondary)', borderRadius: 4 }}></div>
           </div>
@@ -335,7 +400,7 @@ export default function LearningPlayerPage() {
                 disabled={isIssuingCert}
                 style={{ width: '100%', marginTop: 8, fontSize: '0.75rem', height: 32 }}
               >
-                {isIssuingCert ? 'Generating...' : (issuedCertificate ? 'View Certificate' : 'Claim Certificate')}
+                {isIssuingCert ? 'Generating...' : (issuedCertificate ? 'Certificate Issued' : 'Claim Certificate')}
               </button>
             </div>
           )}
@@ -360,7 +425,7 @@ export default function LearningPlayerPage() {
                       style={{ cursor: 'pointer' }}
                     >
                       <div className="lesson-check-icon">
-                        {completed ? 'OK' : ''}
+                        {completed ? '✓' : ''}
                       </div>
                       <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {les.title}
@@ -374,25 +439,8 @@ export default function LearningPlayerPage() {
               </div>
             ))
           ) : (
-            <div>
-              {allLessons.map((les, idx) => {
-                const completed = completedLessonIds.includes(les.id)
-                const isActive = idx === activeLessonIndex
-                return (
-                  <div
-                    key={les.id || idx}
-                    className={`player-lesson-item ${isActive ? 'active' : ''} ${completed ? 'completed' : ''}`}
-                    onClick={() => setActiveLessonIndex(idx)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="lesson-check-icon">{completed ? 'OK' : ''}</div>
-                    <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {les.title}
-                    </div>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>{les.duration}</span>
-                  </div>
-                )
-              })}
+            <div style={{ padding: 16, color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
+              No modules published for this course yet.
             </div>
           )}
         </div>
@@ -437,6 +485,11 @@ export default function LearningPlayerPage() {
                 poster={course?.thumbnail}
                 src={currentVideoUrl || currentLesson?.videoUrl}
                 key={currentLesson?.id}
+                onTimeUpdate={handleTimeUpdate}
+                onSeeking={handleSeeking}
+                onEnded={handleVideoEnded}
+                onPlay={handlePlay}
+                onPause={handlePause}
                 style={{ width: '100%', height: '100%', display: 'block' }}
               >
                 Your browser does not support HTML5 video streaming.
@@ -449,7 +502,7 @@ export default function LearningPlayerPage() {
                     position: 'absolute',
                     top: '18%',
                     left: '22%',
-                    color: 'rgba(255, 255, 255, 0.18)',
+                    color: 'rgba(255, 255, 255, 0.22)',
                     fontFamily: 'monospace',
                     fontSize: '0.85rem',
                     pointerEvents: 'none',
@@ -485,9 +538,9 @@ export default function LearningPlayerPage() {
 
             <button
               className={`btn ${isCompleted ? 'btn-teal' : 'btn-primary'} btn-sm`}
-              onClick={toggleLessonComplete}
+              onClick={() => toggleLessonComplete()}
             >
-              <span>{isCompleted ? 'Marked Complete' : 'Mark as Complete'}</span>
+              <span>{isCompleted ? '✓ Completed' : 'Mark as Complete'}</span>
             </button>
 
             <button
@@ -501,19 +554,19 @@ export default function LearningPlayerPage() {
           </div>
         </div>
 
-        {/* Content Tabs */}
+        {/* Bottom Tab Navigation */}
         <div className="player-tabs-bar">
           <button
             className={`player-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
             onClick={() => setActiveTab('overview')}
           >
-            Lesson Overview
+            Overview
           </button>
           <button
             className={`player-tab-btn ${activeTab === 'notes' ? 'active' : ''}`}
             onClick={() => setActiveTab('notes')}
           >
-            My Saved Notes
+            Notes
           </button>
           {activeQuiz && (
             <button
@@ -527,74 +580,52 @@ export default function LearningPlayerPage() {
             className={`player-tab-btn ${activeTab === 'resources' ? 'active' : ''}`}
             onClick={() => setActiveTab('resources')}
           >
-            Resources & Notebooks
+            Resources
           </button>
         </div>
 
-        <div className="player-tab-content-wrap" style={{ padding: 24 }}>
+        {/* Tab Panes */}
+        <div className="player-tab-content">
           {/* Tab 1: Overview */}
           {activeTab === 'overview' && (
             <div className="player-tab-pane active" id="player-pane-overview">
-              <h3 style={{ color: 'var(--color-primary)', marginBottom: 12, fontSize: '1.15rem' }}>About This Lecture</h3>
-              <p style={{ color: 'var(--color-text-secondary)', lineHeight: 1.6, marginBottom: 16 }}>
-                {currentLesson?.description || 'In this lecture, we explore core computational mechanics, examine performance tradeoffs, and review code patterns.'}
+              <h3 style={{ color: 'var(--color-primary)', marginBottom: 8, fontSize: '1.15rem' }}>About this Lecture</h3>
+              <p style={{ color: 'var(--color-text-secondary)', lineHeight: 1.6, fontSize: '0.9rem' }}>
+                {currentLesson?.description || course?.shortDescription || 'Core technical lecture covering hands-on implementation and system architecture.'}
               </p>
-
-              <div style={{ background: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: 18, marginTop: 18, boxShadow: 'var(--shadow-sm)' }}>
-                <h4 style={{ color: 'var(--color-secondary)', fontSize: '0.95rem', marginBottom: 8 }}>Key Takeaways:</h4>
-                <ul style={{ paddingLeft: 20, color: 'var(--color-text-secondary)', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <li>Vectorized memory layouts minimize CPU cache misses in numerical loops</li>
-                  <li>Sequential prerequisite verification safeguards foundational understanding</li>
-                  <li>Dynamic anti-piracy session verification active for account protection</li>
-                </ul>
-              </div>
             </div>
           )}
 
-          {/* Tab 2: Personal Notes */}
+          {/* Tab 2: Notes */}
           {activeTab === 'notes' && (
             <div className="player-tab-pane active" id="player-pane-notes">
-              <h3 style={{ color: 'var(--color-primary)', marginBottom: 8, fontSize: '1.15rem' }}>My Private Lesson Notes</h3>
-              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginBottom: 14 }}>
-                Notes are private and synced automatically to PostgreSQL for your student account.
-              </p>
-
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <h3 style={{ color: 'var(--color-primary)', fontSize: '1.15rem', margin: 0 }}>Private Study Notes</h3>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{noteSavedStatus}</span>
+              </div>
               <textarea
-                style={{
-                  width: '100%',
-                  minHeight: 160,
-                  background: '#FFFFFF',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: 14,
-                  color: 'var(--color-text)',
-                  fontFamily: 'inherit',
-                  fontSize: '0.9rem',
-                  lineHeight: 1.5,
-                  resize: 'vertical'
-                }}
+                className="player-notes-textarea form-input"
+                style={{ width: '100%', minHeight: 160, padding: 14, fontFamily: 'monospace', fontSize: '0.875rem' }}
+                placeholder="Take lecture notes, jot down code snippets, or record timestamps..."
                 value={noteContent}
                 onChange={(e) => {
                   setNoteContent(e.target.value)
                   setNoteSavedStatus('Unsaved edits...')
                 }}
-                placeholder="Type your personal insights, code reminders, and questions here..."
               />
-
-              <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.8rem', color: '#10B981', fontWeight: 600 }}>{noteSavedStatus}</span>
+              <div style={{ marginTop: 12 }}>
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={handleSaveNote}
                   disabled={isSavingNote}
                 >
-                  {isSavingNote ? 'Saving...' : 'Save Notes'}
+                  {isSavingNote ? 'Syncing...' : 'Save Notes to Cloud'}
                 </button>
               </div>
             </div>
           )}
 
-          {/* Tab 3: Dynamic Quiz Assessment */}
+          {/* Tab 3: Assessment Quiz */}
           {activeTab === 'quiz' && activeQuiz && (
             <div className="player-tab-pane active" id="player-pane-quiz">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

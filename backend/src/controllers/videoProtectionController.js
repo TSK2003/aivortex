@@ -180,7 +180,15 @@ export async function heartbeatVideoSession(req, res, next) {
     }
 
     const activeSession = await prisma.activeVideoSession.findUnique({
-      where: { sessionId }
+      where: { sessionId },
+      include: {
+        lesson: {
+          include: {
+            playlist: true,
+            quizzes: true
+          }
+        }
+      }
     })
 
     if (!activeSession || activeSession.studentId !== studentId) {
@@ -190,11 +198,17 @@ export async function heartbeatVideoSession(req, res, next) {
     }
 
     // Check if session has timed out (stale after 2 minutes without heartbeat)
+    const now = Date.now()
     const staleThresholdMs = 2 * 60 * 1000
-    if (Date.now() - new Date(activeSession.lastHeartbeatAt).getTime() > staleThresholdMs) {
+    const timeSinceLastHeartbeat = now - new Date(activeSession.lastHeartbeatAt).getTime()
+
+    if (timeSinceLastHeartbeat > staleThresholdMs) {
       await prisma.activeVideoSession.delete({ where: { sessionId } }).catch(() => {})
       throw new ConflictError('Playback session expired due to inactivity. Please reload to resume.')
     }
+
+    // Calculate trusted elapsed watch time (bounded by heartbeat interval with jitter buffer)
+    const elapsedSeconds = Math.min(45, Math.max(1, Math.round(timeSinceLastHeartbeat / 1000)))
 
     // Refresh heartbeat
     await prisma.activeVideoSession.update({
@@ -202,7 +216,95 @@ export async function heartbeatVideoSession(req, res, next) {
       data: { lastHeartbeatAt: new Date() }
     })
 
-    return successResponse(res, { active: true }, 'Session heartbeat acknowledged')
+    // Update server-authoritative lesson progress for enrolled student
+    const courseId = activeSession.lesson?.playlist?.courseId
+    let lessonCompleted = false
+
+    if (courseId) {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: { studentId_courseId: { studentId, courseId } }
+      })
+
+      if (enrollment && enrollment.status === 'ACTIVE') {
+        const lesson = activeSession.lesson
+        const existingProgress = await prisma.lessonProgress.findUnique({
+          where: {
+            enrollmentId_lessonId: {
+              enrollmentId: enrollment.id,
+              lessonId: lesson.id
+            }
+          }
+        })
+
+        const currentWatchSeconds = (existingProgress?.watchSeconds || 0) + elapsedSeconds
+        const currentPos = Math.max(0, Math.floor(positionSeconds))
+
+        // Check if video content requirement is satisfied
+        const videoFinished = currentPos >= (lesson.durationSeconds - 5) || currentWatchSeconds >= lesson.durationSeconds
+
+        // Check if quizzes are required and passed
+        let allQuizzesPassed = true
+        if (lesson.quizzes && lesson.quizzes.length > 0) {
+          const quizIds = lesson.quizzes.map((q) => q.id)
+          const passedAttempts = await prisma.quizAttempt.findMany({
+            where: {
+              studentId,
+              quizId: { in: quizIds },
+              passed: true
+            }
+          })
+          const passedQuizIds = new Set(passedAttempts.map((a) => a.quizId))
+          allQuizzesPassed = quizIds.every((qid) => passedQuizIds.has(qid))
+        }
+
+        lessonCompleted = videoFinished && allQuizzesPassed
+
+        await prisma.lessonProgress.upsert({
+          where: {
+            enrollmentId_lessonId: {
+              enrollmentId: enrollment.id,
+              lessonId: lesson.id
+            }
+          },
+          update: {
+            lastPositionSec: currentPos,
+            watchSeconds: currentWatchSeconds,
+            isCompleted: existingProgress?.isCompleted ? true : lessonCompleted,
+            completedAt: (existingProgress?.isCompleted || lessonCompleted) ? (existingProgress?.completedAt || new Date()) : null
+          },
+          create: {
+            enrollmentId: enrollment.id,
+            lessonId: lesson.id,
+            studentId,
+            lastPositionSec: currentPos,
+            watchSeconds: currentWatchSeconds,
+            isCompleted: lessonCompleted,
+            completedAt: lessonCompleted ? new Date() : null
+          }
+        })
+
+        // If newly completed, recalculate total enrollment progressPercent
+        if (lessonCompleted && !existingProgress?.isCompleted) {
+          const totalPublished = await prisma.lesson.count({
+            where: { playlist: { courseId, status: 'PUBLISHED' }, status: 'PUBLISHED' }
+          })
+          const completedCount = await prisma.lessonProgress.count({
+            where: { enrollmentId: enrollment.id, isCompleted: true }
+          })
+          const progressPercent = Math.min(100, Math.round((completedCount / (totalPublished || 1)) * 100))
+
+          await prisma.enrollment.update({
+            where: { id: enrollment.id },
+            data: {
+              progressPercent,
+              completedAt: progressPercent === 100 ? new Date() : null
+            }
+          })
+        }
+      }
+    }
+
+    return successResponse(res, { active: true, lessonCompleted }, 'Session heartbeat acknowledged')
   } catch (err) {
     next(err)
   }

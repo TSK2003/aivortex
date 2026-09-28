@@ -1,9 +1,11 @@
+import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
 import { UnauthorizedError, ConflictError, BadRequestError, NotFoundError } from '../utils/appError.js'
 import { successResponse } from '../utils/responseWrapper.js'
 import { generateToken, setAuthCookie, clearAuthCookie } from '../utils/token.js'
 import prisma from '../config/prisma.js'
+import emailService from '../services/emailService.js'
 
 export async function login(req, res, next) {
   try {
@@ -339,6 +341,111 @@ export async function revokeSession(req, res, next) {
     })
 
     return successResponse(res, null, 'Session revoked successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function forgotPassword(req, res, next) {
+  try {
+    const { email } = req.body
+    if (!email) {
+      throw new BadRequestError('Email address is required')
+    }
+
+    const cleanEmail = email.trim().toLowerCase()
+    const user = await prisma.user.findUnique({ where: { email: cleanEmail } })
+
+    if (user && user.status !== 'SUSPENDED') {
+      const resetToken = crypto.randomBytes(32).toString('hex')
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+
+      await prisma.passwordResetToken.deleteMany({
+        where: { userId: user.id }
+      }).catch(() => {})
+
+      await prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          token: resetToken,
+          expiresAt
+        }
+      })
+
+      try {
+        await emailService.sendPasswordResetEmail({
+          toEmail: user.email,
+          name: user.name,
+          token: resetToken
+        })
+      } catch (mailErr) {
+        console.warn('⚠️ SMTP password reset dispatch error:', mailErr.message)
+      }
+    }
+
+    return successResponse(
+      res,
+      null,
+      'If an account exists with that email address, password reset instructions have been sent.'
+    )
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function resetPassword(req, res, next) {
+  try {
+    const { token } = req.body
+    const newPassword = req.body.newPassword || req.body.password
+
+    if (!token || !newPassword) {
+      throw new BadRequestError('Reset token and new password are required')
+    }
+
+    if (newPassword.length < 8) {
+      throw new BadRequestError('New password must be at least 8 characters long')
+    }
+
+    const resetTokenRecord = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: true }
+    })
+
+    if (!resetTokenRecord || resetTokenRecord.usedAt || new Date(resetTokenRecord.expiresAt) < new Date()) {
+      throw new BadRequestError('Password reset link is invalid or has expired. Please request a new one.')
+    }
+
+    const salt = await bcrypt.genSalt(10)
+    const passwordHash = await bcrypt.hash(newPassword, salt)
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: resetTokenRecord.userId },
+        data: { passwordHash }
+      })
+
+      await tx.passwordResetToken.update({
+        where: { id: resetTokenRecord.id },
+        data: { usedAt: new Date() }
+      })
+
+      await tx.session.deleteMany({
+        where: { userId: resetTokenRecord.userId }
+      })
+
+      await tx.auditLog.create({
+        data: {
+          userId: resetTokenRecord.userId,
+          action: 'PASSWORD_RESET_COMPLETED',
+          entityType: 'User',
+          entityId: resetTokenRecord.userId,
+          details: `Password reset successfully via email token for ${resetTokenRecord.user.email}`,
+          ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+        }
+      })
+    })
+
+    return successResponse(res, null, 'Password has been reset successfully. Please log in with your new password.')
   } catch (err) {
     next(err)
   }

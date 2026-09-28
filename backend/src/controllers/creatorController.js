@@ -345,12 +345,18 @@ export async function getUploadPresignedUrl(req, res, next) {
     const safeFileName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`
     const objectKey = `uploads/courses/${courseId || 'general'}/${safeFileName}`
 
-    const presignedUrl = await s3Service.getPresignedUploadUrl(objectKey, fileType, 3600)
+    const presignedResult = await s3Service.getPresignedUploadUrl(objectKey, fileType, 3600)
+    const uploadUrl = typeof presignedResult === 'object' && presignedResult.uploadUrl
+      ? presignedResult.uploadUrl
+      : presignedResult
+    const fileUrl = typeof uploadUrl === 'string'
+      ? uploadUrl.split('?')[0]
+      : `https://${process.env.AWS_S3_BUCKET || 'aivortex'}.s3.amazonaws.com/${objectKey}`
 
     return successResponse(res, {
-      uploadUrl: presignedUrl,
+      uploadUrl,
       objectKey,
-      fileUrl: presignedUrl.split('?')[0]
+      fileUrl
     }, 'Presigned S3 upload URL generated')
   } catch (err) {
     next(err)

@@ -65,6 +65,16 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ name, email, password })
       }),
+    forgotPassword: (email) =>
+      request('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email })
+      }),
+    resetPassword: (token, password) =>
+      request('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, password })
+      }),
     changePassword: (currentPassword, newPassword) =>
       request('/auth/change-password', {
         method: 'POST',
@@ -84,6 +94,12 @@ export const api = {
     verifyCertificate: (code) => request(`/public/certificates/${code}`),
     getProjects: () => request('/public/projects'),
     getLiveSessions: () => request('/public/live-sessions'),
+    getOffers: () => request('/public/offers'),
+    validateOffer: (code, courseId) =>
+      request('/public/offers/validate', {
+        method: 'POST',
+        body: JSON.stringify({ code, courseId })
+      }),
     submitContact: (data) =>
       request('/public/contact', {
         method: 'POST',
@@ -165,6 +181,11 @@ export const api = {
     submitVideoForReview: (lessonId) =>
       request(`/creator/videos/${lessonId}/submit`, { method: 'POST' }),
     getSubmissions: () => request('/creator/submissions'),
+    getUploadUrl: (data) =>
+      request('/creator/videos/presigned-url', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
     requestProfileChange: (profileData) =>
       request('/creator/profile-request', {
         method: 'POST',
@@ -214,6 +235,19 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(controlData)
       }),
+    getOffers: () => request('/admin/offers'),
+    createOffer: (data) =>
+      request('/admin/offers', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    updateOffer: (id, data) =>
+      request(`/admin/offers/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      }),
+    deleteOffer: (id) =>
+      request(`/admin/offers/${id}`, { method: 'DELETE' }),
     getVideoVerificationQueue: () => request('/admin/video-verification'),
     reviewVideo: (lessonId, action, feedbackNote) =>
       request(`/admin/video-verification/${lessonId}/review`, {

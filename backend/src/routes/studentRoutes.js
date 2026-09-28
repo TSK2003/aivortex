@@ -35,6 +35,9 @@ router.use(requireAuth, requireRole('STUDENT', 'ADMIN'))
 router.get('/dashboard', getDashboardStats)
 router.get('/courses', getMyCourses)
 router.post('/courses/:courseId/lessons/:lessonId/progress', toggleLessonProgress)
+router.patch('/courses/:courseId/lessons/:lessonId/progress', toggleLessonProgress)
+router.post('/progress', toggleLessonProgress)
+router.patch('/progress', toggleLessonProgress)
 
 // Private Lesson Notes
 router.get('/lessons/:lessonId/notes', getNote)

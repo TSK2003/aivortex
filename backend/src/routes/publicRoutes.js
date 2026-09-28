@@ -5,7 +5,9 @@ import {
   verifyCertificate,
   getDomainProjects,
   getLiveSessions,
-  submitContactEnquiry
+  submitContactEnquiry,
+  getActiveOffers,
+  validateOfferCode
 } from '../controllers/publicController.js'
 import { generalLimiter } from '../middleware/rateLimiter.js'
 
@@ -14,6 +16,10 @@ const router = Router()
 // Public Catalog & Details
 router.get('/courses', getCourses)
 router.get('/courses/:slug', getCourseBySlug)
+
+// Public Active Offers & Coupon Verification
+router.get('/offers', getActiveOffers)
+router.post('/offers/validate', generalLimiter, validateOfferCode)
 
 // Public Credential Verification
 router.get('/certificates/:code', generalLimiter, verifyCertificate)

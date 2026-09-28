@@ -1066,3 +1066,164 @@ export async function revokeSession(req, res, next) {
     next(err)
   }
 }
+
+// 12. Offer Management (Full CRUD)
+export async function getOffers(req, res, next) {
+  try {
+    const offers = await prisma.offer.findMany({
+      orderBy: { createdAt: 'desc' }
+    })
+    return successResponse(res, { offers })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function createOffer(req, res, next) {
+  try {
+    const {
+      title,
+      code,
+      discountPercent,
+      discountAmount,
+      startDate,
+      endDate,
+      isActive = true,
+      maxUses
+    } = req.body
+
+    if (!title || !code) {
+      throw new BadRequestError('Offer title and coupon code are required')
+    }
+
+    if (discountPercent === undefined && discountAmount === undefined) {
+      throw new BadRequestError('Either discount percentage or discount amount must be provided')
+    }
+
+    const cleanCode = code.trim().toUpperCase()
+
+    const existing = await prisma.offer.findUnique({
+      where: { code: cleanCode }
+    })
+    if (existing) {
+      throw new BadRequestError(`Offer with code '${cleanCode}' already exists`)
+    }
+
+    const offer = await prisma.offer.create({
+      data: {
+        title: title.trim(),
+        code: cleanCode,
+        discountPercent: discountPercent !== undefined && discountPercent !== null ? Number(discountPercent) : null,
+        discountAmount: discountAmount !== undefined && discountAmount !== null ? Number(discountAmount) : null,
+        startDate: startDate ? new Date(startDate) : new Date(),
+        endDate: endDate ? new Date(endDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        isActive: Boolean(isActive),
+        maxUses: maxUses ? Number(maxUses) : null
+      }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'OFFER_CREATED',
+        entityType: 'Offer',
+        entityId: offer.id,
+        details: `Admin created coupon offer ${offer.code} (${offer.title})`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    })
+
+    return successResponse(res, { offer }, 'Offer created successfully', 201)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updateOffer(req, res, next) {
+  try {
+    const { id } = req.params
+    const {
+      title,
+      code,
+      discountPercent,
+      discountAmount,
+      startDate,
+      endDate,
+      isActive,
+      maxUses
+    } = req.body
+
+    const existing = await prisma.offer.findUnique({ where: { id } })
+    if (!existing) {
+      throw new NotFoundError('Offer not found')
+    }
+
+    const data = {}
+    if (title !== undefined) data.title = title.trim()
+    if (code !== undefined) {
+      const cleanCode = code.trim().toUpperCase()
+      if (cleanCode !== existing.code) {
+        const duplicate = await prisma.offer.findUnique({ where: { code: cleanCode } })
+        if (duplicate) {
+          throw new BadRequestError(`Offer with code '${cleanCode}' already exists`)
+        }
+      }
+      data.code = cleanCode
+    }
+    if (discountPercent !== undefined) data.discountPercent = discountPercent !== null ? Number(discountPercent) : null
+    if (discountAmount !== undefined) data.discountAmount = discountAmount !== null ? Number(discountAmount) : null
+    if (startDate !== undefined) data.startDate = new Date(startDate)
+    if (endDate !== undefined) data.endDate = new Date(endDate)
+    if (isActive !== undefined) data.isActive = Boolean(isActive)
+    if (maxUses !== undefined) data.maxUses = maxUses !== null ? Number(maxUses) : null
+
+    const updated = await prisma.offer.update({
+      where: { id },
+      data
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'OFFER_UPDATED',
+        entityType: 'Offer',
+        entityId: id,
+        details: `Admin updated offer ${updated.code}`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    })
+
+    return successResponse(res, { offer: updated }, 'Offer updated successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function deleteOffer(req, res, next) {
+  try {
+    const { id } = req.params
+
+    const existing = await prisma.offer.findUnique({ where: { id } })
+    if (!existing) {
+      throw new NotFoundError('Offer not found')
+    }
+
+    await prisma.offer.delete({ where: { id } })
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'OFFER_DELETED',
+        entityType: 'Offer',
+        entityId: id,
+        details: `Admin deleted offer ${existing.code}`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    })
+
+    return successResponse(res, null, 'Offer deleted successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+

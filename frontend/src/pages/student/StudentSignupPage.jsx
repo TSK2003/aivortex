@@ -24,7 +24,14 @@ export default function StudentSignupPage() {
       const res = await signup(name, email, password)
       if (res?.success) {
         showToast(`Welcome to ApexLearn, ${name}! Your student account is active.`, 'success')
-        navigate('/student/dashboard')
+        const searchParams = new URLSearchParams(window.location.search)
+        const redirectParam = searchParams.get('redirect')
+        const enrollParam = searchParams.get('enroll')
+        if (redirectParam) {
+          navigate(redirectParam + (enrollParam ? '?enroll=true' : ''))
+        } else {
+          navigate('/student/dashboard')
+        }
       } else {
         showToast(res?.error || 'Registration failed. Please try again.', 'error')
       }

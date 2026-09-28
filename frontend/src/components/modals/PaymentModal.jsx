@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { ShieldCheck, Lock, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ShieldCheck, Lock, X, Tag, Check, AlertCircle } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
@@ -8,18 +9,54 @@ import api from '../../services/api'
 export default function PaymentModal({ course, isOpen, onClose, onSuccess }) {
   const { student, isAuthenticated } = useAuth()
   const { showToast } = useToast()
+  const navigate = useNavigate()
+
   const [paymentMethod, setPaymentMethod] = useState('UPI')
-  const [studentName, setStudentName] = useState(student?.name || 'Rahul Sharma')
-  const [studentEmail, setStudentEmail] = useState(student?.email || 'rahul.sharma@example.com')
+  const [studentName, setStudentName] = useState(student?.name || '')
+  const [studentEmail, setStudentEmail] = useState(student?.email || '')
   const [offerCode, setOfferCode] = useState('')
+  const [appliedOffer, setAppliedOffer] = useState(null)
+  const [offerError, setOfferError] = useState('')
+  const [isValidatingOffer, setIsValidatingOffer] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [orderRef] = useState(() => `ord_${Math.floor(100000 + Math.random() * 900000)}`)
 
+  useEffect(() => {
+    if (student) {
+      if (student.name) setStudentName(student.name)
+      if (student.email) setStudentEmail(student.email)
+    }
+  }, [student])
+
   if (!isOpen || !course) return null
+
+  const displayPrice = appliedOffer ? appliedOffer.finalPrice : course.price
+
+  const handleApplyCoupon = async (e) => {
+    e.preventDefault()
+    if (!offerCode.trim()) return
+
+    setIsValidatingOffer(true)
+    setOfferError('')
+    try {
+      const res = await api.public.validateOffer(offerCode.trim(), course.id)
+      if (res.data?.offer) {
+        setAppliedOffer(res.data.offer)
+        showToast(`Coupon applied! You saved ₹${(course.price - res.data.offer.finalPrice).toFixed(0)}`, 'success')
+      }
+    } catch (err) {
+      setAppliedOffer(null)
+      setOfferError(err.message || 'Invalid or expired coupon code')
+    } finally {
+      setIsValidatingOffer(false)
+    }
+  }
 
   const handlePay = async () => {
     if (!isAuthenticated) {
-      showToast('Please sign in to your student account to enroll in courses', 'error')
+      onClose()
+      navigate(`/portal?redirect=/courses/${course.slug || course.id}&enroll=true`)
+      showToast('Please sign in to complete your enrollment', 'info')
       return
     }
 
@@ -27,7 +64,10 @@ export default function PaymentModal({ course, isOpen, onClose, onSuccess }) {
 
     try {
       // 1. Authoritative backend order creation and price calculation
-      const orderRes = await api.payments.createOrder(course.id, offerCode || undefined)
+      const orderRes = await api.payments.createOrder(
+        course.id,
+        appliedOffer ? appliedOffer.code : (offerCode || undefined)
+      )
 
       if (orderRes.data?.isFree) {
         // Free enrollment completed immediately on server inside transaction
@@ -142,7 +182,14 @@ export default function PaymentModal({ course, isOpen, onClose, onSuccess }) {
             <span>Order For: <strong>{course.title}</strong></span>
             <div style={{ fontSize: '0.75rem', color: '#93C5FD' }}>Order Ref: {orderRef}</div>
           </div>
-          <strong>{course.isFree ? 'FREE' : `₹${course.price?.toLocaleString('en-IN')}`}</strong>
+          <div style={{ textAlign: 'right' }}>
+            {appliedOffer && (
+              <div style={{ fontSize: '0.75rem', color: '#CBD5E1', textDecoration: 'line-through' }}>
+                ₹{course.price?.toLocaleString('en-IN')}
+              </div>
+            )}
+            <strong>{course.isFree ? 'FREE' : `₹${displayPrice?.toLocaleString('en-IN')}`}</strong>
+          </div>
         </div>
 
         {/* Body / Payment Steps */}
@@ -167,6 +214,85 @@ export default function PaymentModal({ course, isOpen, onClose, onSuccess }) {
             </div>
           ) : (
             <>
+              {/* Promo / Coupon Code Section */}
+              {!course.isFree && (
+                <div style={{ marginBottom: 16 }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      color: 'var(--color-text-secondary)',
+                      marginBottom: 6
+                    }}
+                  >
+                    Coupon / Offer Code
+                  </label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <input
+                        type="text"
+                        placeholder="e.g. AI2026 or SAVE20"
+                        className="form-input"
+                        value={offerCode}
+                        onChange={(e) => {
+                          setOfferCode(e.target.value.toUpperCase())
+                          setOfferError('')
+                        }}
+                        style={{ paddingLeft: 36, textTransform: 'uppercase' }}
+                      />
+                      <Tag
+                        size={16}
+                        style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleApplyCoupon}
+                      disabled={isValidatingOffer || !offerCode.trim()}
+                      style={{ padding: '0 16px', fontSize: '0.85rem' }}
+                    >
+                      {isValidatingOffer ? 'Checking...' : 'Apply'}
+                    </button>
+                  </div>
+
+                  {appliedOffer && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        marginTop: 6,
+                        color: '#16A34A',
+                        fontSize: '0.8rem',
+                        fontWeight: 600
+                      }}
+                    >
+                      <Check size={14} />
+                      <span>Code &quot;{appliedOffer.code}&quot; applied: {appliedOffer.discountPercent ? `${appliedOffer.discountPercent}% OFF` : `₹${appliedOffer.discountAmount} OFF`}</span>
+                    </div>
+                  )}
+
+                  {offerError && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        marginTop: 6,
+                        color: '#DC2626',
+                        fontSize: '0.8rem',
+                        fontWeight: 500
+                      }}
+                    >
+                      <AlertCircle size={14} />
+                      <span>{offerError}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {!course.isFree && (
                 <>
                   <div
@@ -201,10 +327,9 @@ export default function PaymentModal({ course, isOpen, onClose, onSuccess }) {
                           UPI / QR Code
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-                          Google Pay, PhonePe, Paytm, BHIM
+                          Instant GPay, PhonePe, Paytm
                         </div>
                       </div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--color-accent)', fontWeight: 700 }}>INSTANT</span>
                     </label>
 
                     {/* Method 2: Cards */}
@@ -222,15 +347,15 @@ export default function PaymentModal({ course, isOpen, onClose, onSuccess }) {
                       />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>
-                          Credit / Debit Card
+                          Debit / Credit Card
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-                          Visa, Mastercard, RuPay, Maestro
+                          Visa, Mastercard, RuPay
                         </div>
                       </div>
                     </label>
 
-                    {/* Method 3: Net Banking */}
+                    {/* Method 3: NetBanking */}
                     <label
                       className={`payment-option ${paymentMethod === 'NetBanking' ? 'selected' : ''}`}
                       onClick={() => setPaymentMethod('NetBanking')}
@@ -248,26 +373,10 @@ export default function PaymentModal({ course, isOpen, onClose, onSuccess }) {
                           Net Banking
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-                          HDFC, ICICI, SBI, Axis & 40+ Banks
+                          All major Indian Banks
                         </div>
                       </div>
                     </label>
-                  </div>
-
-                  {/* Promo Code Input */}
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 4 }}>
-                      Offer / Voucher Code (Optional)
-                    </label>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <input
-                        type="text"
-                        placeholder="e.g. AIAPEX20"
-                        className="form-input"
-                        value={offerCode}
-                        onChange={(e) => setOfferCode(e.target.value.toUpperCase())}
-                      />
-                    </div>
                   </div>
                 </>
               )}
@@ -290,6 +399,7 @@ export default function PaymentModal({ course, isOpen, onClose, onSuccess }) {
                   id="razorpay-input-name"
                   className="form-input"
                   value={studentName}
+                  placeholder="Enter your full name"
                   onChange={(e) => setStudentName(e.target.value)}
                 />
               </div>
@@ -311,6 +421,7 @@ export default function PaymentModal({ course, isOpen, onClose, onSuccess }) {
                   id="razorpay-input-email"
                   className="form-input"
                   value={studentEmail}
+                  placeholder="Enter your email"
                   onChange={(e) => setStudentEmail(e.target.value)}
                 />
               </div>
@@ -325,7 +436,7 @@ export default function PaymentModal({ course, isOpen, onClose, onSuccess }) {
                 <span>
                   {course.isFree
                     ? 'Confirm Free Enrollment'
-                    : `Pay ₹${course.price?.toLocaleString('en-IN')} via Razorpay`}
+                    : `Pay ₹${displayPrice?.toLocaleString('en-IN')} via Razorpay`}
                 </span>
               </button>
             </>

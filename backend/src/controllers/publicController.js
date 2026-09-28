@@ -304,3 +304,96 @@ export async function submitContactEnquiry(req, res, next) {
     next(err)
   }
 }
+
+// 7. Active Public Offers & Discount Validation
+export async function getActiveOffers(req, res, next) {
+  try {
+    const now = new Date()
+    const offers = await prisma.offer.findMany({
+      where: {
+        isActive: true,
+        startDate: { lte: now },
+        endDate: { gte: now }
+      },
+      select: {
+        id: true,
+        title: true,
+        code: true,
+        discountPercent: true,
+        discountAmount: true,
+        endDate: true
+      },
+      orderBy: { discountPercent: 'desc' }
+    })
+
+    return successResponse(res, { offers })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function validateOfferCode(req, res, next) {
+  try {
+    const { code, courseId } = req.body
+
+    if (!code) {
+      throw new BadRequestError('Coupon code is required')
+    }
+
+    const cleanCode = code.trim().toUpperCase()
+    const now = new Date()
+
+    const offer = await prisma.offer.findUnique({
+      where: { code: cleanCode }
+    })
+
+    if (!offer || !offer.isActive || offer.startDate > now || offer.endDate < now) {
+      throw new BadRequestError('Invalid or expired coupon code')
+    }
+
+    if (offer.maxUses && offer.usedCount >= offer.maxUses) {
+      throw new BadRequestError('This coupon code has reached its maximum redemptions')
+    }
+
+    let originalPrice = 0
+    let finalPrice = 0
+
+    if (courseId) {
+      const course = await prisma.course.findUnique({
+        where: { id: courseId },
+        select: { id: true, price: true, isFree: true }
+      })
+
+      if (!course) {
+        throw new NotFoundError('Course not found')
+      }
+
+      originalPrice = course.price
+      finalPrice = course.price
+
+      if (!course.isFree) {
+        if (offer.discountPercent) {
+          finalPrice = Math.max(0, originalPrice * (1 - offer.discountPercent / 100))
+        } else if (offer.discountAmount) {
+          finalPrice = Math.max(0, originalPrice - offer.discountAmount)
+        }
+      }
+    }
+
+    return successResponse(res, {
+      valid: true,
+      offer: {
+        id: offer.id,
+        title: offer.title,
+        code: offer.code,
+        discountPercent: offer.discountPercent,
+        discountAmount: offer.discountAmount,
+        originalPrice,
+        finalPrice: Math.round(finalPrice * 100) / 100
+      }
+    }, 'Coupon code applied successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+
