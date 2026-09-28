@@ -90,7 +90,7 @@ export default function AivortexLogo({
             fill={taglineColor}
             fontFamily="Plus Jakarta Sans, Outfit, Inter, Montserrat, -apple-system, sans-serif"
             fontSize="25px"
-            fontWeight="600"
+            fontWeight="700"
             letterSpacing="0.05em"
             style={{ userSelect: 'none' }}
           >
