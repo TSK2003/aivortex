@@ -84,12 +84,12 @@ export default function AivortexLogo({
           <text
             id="aivortex-tagline"
             x="30"
-            y="472"
+            y="480"
             textLength="664"
             lengthAdjust="spacing"
             fill={taglineColor}
             fontFamily="Plus Jakarta Sans, Outfit, Inter, Montserrat, -apple-system, sans-serif"
-            fontSize="26px"
+            fontSize="25px"
             fontWeight="600"
             letterSpacing="0.05em"
             style={{ userSelect: 'none' }}
