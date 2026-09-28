@@ -83,14 +83,15 @@ export default function AivortexLogo({
         {showTagline && (
           <text
             id="aivortex-tagline"
-            x="366"
-            y="479.4"
-            textAnchor="middle"
+            x="147.5"
+            y="476"
+            textLength="430"
+            lengthAdjust="spacing"
             fill={taglineColor}
             fontFamily="Plus Jakarta Sans, Outfit, Inter, Montserrat, -apple-system, sans-serif"
-            fontSize="15.5px"
+            fontSize="14.5px"
             fontWeight="500"
-            letterSpacing="0.32em"
+            style={{ userSelect: 'none' }}
           >
             LEARN. GROW. INNOVATE.
           </text>
