@@ -81,7 +81,12 @@ export const api = {
         body: JSON.stringify({ currentPassword, newPassword })
       }),
     logout: () => request('/auth/logout', { method: 'POST' }),
-    me: () => request('/auth/me')
+    me: () => request('/auth/me'),
+    updateProfile: (profileData) =>
+      request('/auth/profile', {
+        method: 'PATCH',
+        body: JSON.stringify(profileData)
+      })
   },
 
   // Public Catalog & Pages
@@ -199,7 +204,30 @@ export const api = {
   // Admin Governance
   admin: {
     getOverview: () => request('/admin/overview'),
-    getCreators: () => request('/admin/creators'),
+    getCreators: (params = {}) => {
+      const query = new URLSearchParams(params).toString()
+      return request(`/admin/creators${query ? `?${query}` : ''}`)
+    },
+    getCreator: (id) => request(`/admin/creators/${id}`),
+    createCreator: (creatorData) =>
+      request('/admin/creators', {
+        method: 'POST',
+        body: JSON.stringify(creatorData)
+      }),
+    updateCreator: (id, creatorData) =>
+      request(`/admin/creators/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(creatorData)
+      }),
+    resetCreatorPassword: (id, data = {}) =>
+      request(`/admin/creators/${id}/reset-password`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    resendCreatorCredentials: (id) =>
+      request(`/admin/creators/${id}/resend-credentials`, {
+        method: 'POST'
+      }),
     inviteCreator: (creatorData) =>
       request('/admin/creators/invite', {
         method: 'POST',
@@ -284,7 +312,13 @@ export const api = {
     },
     getActiveSessions: () => request('/admin/sessions'),
     revokeSession: (sessionId) =>
-      request(`/admin/sessions/${sessionId}`, { method: 'DELETE' })
+      request(`/admin/sessions/${sessionId}`, { method: 'DELETE' }),
+    getProfile: () => request('/admin/profile'),
+    updateProfile: (profileData) =>
+      request('/admin/profile', {
+        method: 'PATCH',
+        body: JSON.stringify(profileData)
+      })
   }
 }
 

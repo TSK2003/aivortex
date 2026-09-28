@@ -142,6 +142,67 @@
   font-weight: 700;
 }
 
+.sidebar-section-header {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #94A3B8;
+  text-transform: uppercase;
+  padding: 16px 14px 4px 14px;
+  user-select: none;
+}
+
+.sidebar-badge {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  background: #EFF6FF;
+  color: #2563EB;
+}
+
+.sidebar-badge.badge-amber {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.sidebar-badge.badge-rose {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+.dashboard-sidebar.collapsed {
+  width: 76px;
+  min-width: 76px;
+  max-width: 76px;
+}
+
+.dashboard-sidebar.collapsed .sidebar-header .brand-logo div,
+.dashboard-sidebar.collapsed .sidebar-user-info,
+.dashboard-sidebar.collapsed .sidebar-nav-item span,
+.dashboard-sidebar.collapsed .sidebar-section-header,
+.dashboard-sidebar.collapsed .sidebar-badge,
+.dashboard-sidebar.collapsed .sidebar-logout-text {
+  display: none !important;
+}
+
+.dashboard-sidebar.collapsed .sidebar-nav-item {
+  justify-content: center;
+  padding: 12px;
+}
+
+.dashboard-sidebar.collapsed .sidebar-user-card {
+  padding: 8px;
+  justify-content: center;
+  margin: 12px 8px;
+}
+
+.dashboard-sidebar.collapsed .sidebar-header {
+  padding: 20px 12px;
+  justify-content: center;
+}
+
 .sidebar-menu {
   list-style: none;
   padding: 8px 16px;
@@ -234,6 +295,38 @@
 
 .dashboard-content {
   padding: 32px;
+}
+
+/* Admin Sticky Bottom Action Bar */
+.admin-sticky-action-bar {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  left: 260px;
+  height: 68px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid #E2E8F0;
+  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  z-index: 50;
+  transition: left var(--transition-normal);
+  box-sizing: border-box;
+}
+
+.dashboard-sidebar.collapsed ~ .dashboard-main .admin-sticky-action-bar {
+  left: 76px;
+}
+
+@media (max-width: 768px) {
+  .admin-sticky-action-bar {
+    left: 0;
+    padding: 0 16px;
+  }
 }
 
 /* Stat Cards Grid */

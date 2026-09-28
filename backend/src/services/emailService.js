@@ -68,8 +68,10 @@ export const emailService = {
   /**
    * Creator Welcome & Account Invitation Email Template
    */
-  sendCreatorInvitation: async ({ name, email, tempPassword, setupUrl }) => {
+  sendCreatorInvitation: async ({ name, creatorName, email, toEmail, tempPassword, setupUrl }) => {
     const baseUrl = getAppBaseUrl()
+    const targetEmail = email || toEmail
+    const targetName = name || creatorName || 'Curriculum Creator'
     const subject = 'Welcome to ApexLearn Creator Studio — Your Account is Ready'
     const html = `
       <div style="font-family: 'Plus Jakarta Sans', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #0F172A;">
@@ -78,11 +80,11 @@ export const emailService = {
           <p style="color: #64748B; font-size: 14px; margin-top: 4px;">CREATOR STUDIO INVITATION</p>
         </div>
         <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 24px;">
-          <p>Hello <strong>${name}</strong>,</p>
+          <p>Hello <strong>${targetName}</strong>,</p>
           <p>You have been officially provisioned as an authorized Curriculum Creator on the ApexLearn technical learning platform.</p>
           <div style="background: #EFF6FF; border-left: 4px solid #2563EB; padding: 12px 16px; margin: 20px 0;">
             <p style="margin: 0; font-size: 14px;"><strong>Your Temporary Credentials:</strong></p>
-            <p style="margin: 4px 0 0 0; font-size: 14px;">Email: <code>${email}</code></p>
+            <p style="margin: 4px 0 0 0; font-size: 14px;">Email: <code>${targetEmail}</code></p>
             <p style="margin: 4px 0 0 0; font-size: 14px;">Temporary Password: <code>${tempPassword || 'creatorTempPassword2026!'}</code></p>
           </div>
           <p>Please log in to your Creator Portal to build playlists, upload lecture modules, and submit content for review:</p>
@@ -95,7 +97,7 @@ export const emailService = {
         </div>
       </div>
     `
-    return await emailService.sendMail({ to: email, subject, html })
+    return await emailService.sendMail({ to: targetEmail, subject, html })
   },
 
   /**

@@ -4,6 +4,7 @@ import {
   register,
   logout,
   me,
+  updateMyProfile,
   changePassword,
   getActiveSessions,
   revokeSession,
@@ -30,6 +31,7 @@ router.post('/reset-password', authLimiter, resetPassword)
 // Authenticated Endpoints
 router.post('/logout', requireAuth, logout)
 router.get('/me', requireAuth, me)
+router.patch('/profile', requireAuth, updateMyProfile)
 router.post('/change-password', requireAuth, authLimiter, changePassword)
 router.get('/sessions', requireAuth, getActiveSessions)
 router.delete('/sessions/:sessionId', requireAuth, revokeSession)

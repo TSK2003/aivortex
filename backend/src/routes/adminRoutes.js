@@ -2,6 +2,11 @@ import { Router } from 'express'
 import {
   getAnalyticsOverview,
   getCreators,
+  getCreatorById,
+  createCreator,
+  updateCreator,
+  resetCreatorPassword,
+  resendCreatorCredentials,
   inviteCreator,
   updateCreatorStatus,
   getStudents,
@@ -27,7 +32,9 @@ import {
   getOffers,
   createOffer,
   updateOffer,
-  deleteOffer
+  deleteOffer,
+  getAdminProfile,
+  updateAdminProfile
 } from '../controllers/adminController.js'
 import { requireAuth, requireRole } from '../middleware/authMiddleware.js'
 
@@ -39,10 +46,19 @@ router.use(requireAuth, requireRole('ADMIN'))
 // Analytics & Overview
 router.get('/overview', getAnalyticsOverview)
 
-// Creators Management
+// Admin Personal Profile
+router.get('/profile', getAdminProfile)
+router.patch('/profile', updateAdminProfile)
+
+// Creators Management & Provisioning
 router.get('/creators', getCreators)
-router.post('/creators/invite', inviteCreator)
+router.post('/creators', createCreator)
+router.get('/creators/:id', getCreatorById)
+router.put('/creators/:id', updateCreator)
 router.patch('/creators/:id/status', updateCreatorStatus)
+router.post('/creators/:id/reset-password', resetCreatorPassword)
+router.post('/creators/:id/resend-credentials', resendCreatorCredentials)
+router.post('/creators/invite', inviteCreator)
 
 // Students Management
 router.get('/students', getStudents)
