@@ -83,6 +83,7 @@ export default function AppRoutes() {
         <Route path="live-sessions" element={<StudentDashboardPage />} />
         <Route path="certificates" element={<StudentDashboardPage />} />
         <Route path="payments" element={<StudentDashboardPage />} />
+        <Route path="notifications" element={<StudentDashboardPage />} />
         <Route path="profile" element={<StudentDashboardPage />} />
         <Route path="support" element={<StudentDashboardPage />} />
       </Route>

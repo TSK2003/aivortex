@@ -773,6 +773,18 @@ export default function AdminDashboardPage() {
     .filter((p) => p.status === 'SUCCESSFUL' || p.status === 'PAID')
     .reduce((sum, p) => sum + (p.amount || 0), 0)
 
+  return (
+    <div>
+      {/* Top Header */}
+      <div className="dashboard-welcome-banner">
+        <div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+            aivortex Administration
+          </h1>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+            Full administrative authority over curriculum, course creation, creators, students, pricing, offers, and video quality control.
+          </p>
+        </div>
   const pendingReviewsTotal =
     (overviewData?.pendingVerificationCount ?? verificationQueue.length) +
     (overviewData?.pendingRequestsCount ?? requestsList.filter((r) => r.status === 'PENDING').length)

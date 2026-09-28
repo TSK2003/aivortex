@@ -27,7 +27,7 @@ export default function ExploreTracksSection() {
     {
       step: '04',
       title: 'Credential Verification',
-      desc: 'Tamper-proof academic verification engine for validating credentials awarded by ApexLearn Institute.',
+      desc: 'Tamper-proof academic verification engine for validating credentials awarded by aivortex.',
       link: '/certificates',
       cta: 'Verify Credentials'
     }

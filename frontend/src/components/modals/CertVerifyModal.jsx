@@ -39,7 +39,7 @@ export default function CertVerifyModal({ certId, cert, isOpen, onClose }) {
                 Verified Authentic Credential
               </h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: 24 }}>
-                This certificate record exists in the immutable ApexLearn verification registry.
+                This certificate record exists in the immutable aivortex verification registry.
               </p>
 
               <div

@@ -25,36 +25,73 @@
   height: 76px;
 }
 
-/* Brand Logo */
+/* Brand Logo & Typography */
 .brand-logo {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: var(--font-family-heading);
+  font-family: var(--font-family-brand);
   font-weight: 800;
-  font-size: 1.35rem;
   color: var(--color-primary);
   text-decoration: none;
+}
+
+.brand-logo-component {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  line-height: 1;
+}
+
+.logo-text {
+  font-family: "Good Timing W00 SemiBold", "Good Timing SemiBold", "Good Timing", sans-serif;
+  font-weight: 600;
+  font-size: 64px;
+  letter-spacing: 0px;
+  transform: scaleX(1.08);
+  transform-origin: left center;
+  display: inline-block;
+  line-height: 1;
+}
+
+.brand-name-text {
+  font-family: var(--font-family-brand);
+  font-weight: var(--font-weight-brand, 600);
+  letter-spacing: var(--letter-spacing-brand, 0px);
+  transform: scaleX(1.08);
+  transform-origin: left center;
+  display: inline-block;
+  text-transform: lowercase;
+  line-height: 1;
+}
+
+.brand-tagline-text {
+  font-family: var(--font-family-brand);
+  font-weight: var(--font-weight-brand, 500);
+  letter-spacing: 1.2px;
+  transform: scaleX(1.04);
+  transform-origin: left center;
+  display: inline-block;
+  text-transform: uppercase;
+  line-height: 1;
 }
 
 .brand-icon {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #FFFFFF;
-  box-shadow: 0 4px 10px rgba(23, 59, 122, 0.25);
 }
 
 .brand-name-sub {
-  font-weight: 500;
+  font-family: var(--font-family-brand);
+  font-weight: 600;
   color: var(--color-secondary);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   display: block;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.14em;
 }
 
 /* Nav Links */

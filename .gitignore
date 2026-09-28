@@ -35,6 +35,8 @@ temp/
 *.tmp
 *.temp
 *.bak
+__pycache__/
+*.pyc
 
 # Logs & Process Monitor Files
 logs/

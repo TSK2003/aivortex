@@ -240,7 +240,7 @@ export async function verifyCertificate(req, res, next) {
           issueDate: certificate.issueDate,
           status: certificate.status,
           verificationUrl: certificate.verificationUrl,
-          accreditation: 'ApexLearn Academic Accreditation Board'
+          accreditation: 'aivortex Academic Accreditation Board'
         }
       },
       'Certificate verified authentic'

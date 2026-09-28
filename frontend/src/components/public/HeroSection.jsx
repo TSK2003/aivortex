@@ -12,7 +12,7 @@ export default function HeroSection() {
       <div className="hero-image-bleed" aria-hidden="true">
         <img
           src="/assets/hero_student_cropped.png"
-          alt="Technical Education at ApexLearn"
+          alt="Technical Education at aivortex"
           className="hero-bleed-img"
           id="hero-artwork-img"
           loading="eager"

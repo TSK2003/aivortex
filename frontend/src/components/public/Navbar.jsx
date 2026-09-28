@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { 
-  GraduationCap, 
-  Menu, 
-  X, 
-  ChevronDown, 
-  User, 
-  Video, 
-  ShieldCheck, 
-  LogOut, 
+import BrandLogo from '../common/BrandLogo'
+import {
+  GraduationCap,
+  Menu,
+  X,
+  ChevronDown,
+  User,
+  Video,
+  ShieldCheck,
+  LogOut,
   LayoutDashboard,
   Award,
   Sparkles,
@@ -91,16 +92,10 @@ export default function Navbar() {
   return (
     <header id="site-header" className={`site-header ${scrolled ? 'scrolled' : ''}`}>
       <div className="container header-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', whiteSpace: 'nowrap' }}>
-        
+
         {/* Brand Logo */}
-        <Link to="/" className="brand-logo" id="header-brand-link" style={{ flexShrink: 0 }} onClick={handleNavClick}>
-          <div className="brand-icon">
-            <GraduationCap size={22} />
-          </div>
-          <div>
-            ApexLearn
-            <span className="brand-name-sub">INSTITUTE OF TECH & AI</span>
-          </div>
+        <Link to="/" id="header-brand-link" style={{ flexShrink: 0, textDecoration: 'none' }} onClick={handleNavClick}>
+          <BrandLogo size="md" />
         </Link>
 
         {/* Desktop Navigation Links */}
@@ -124,7 +119,7 @@ export default function Navbar() {
 
         {/* Right Side Actions */}
         <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          
+
           {/* Authenticated vs Guest Actions */}
           {isAuthenticated ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -306,12 +301,9 @@ export default function Navbar() {
       {/* Mobile Slide-out Drawer */}
       <div id="mobile-drawer" className={`mobile-drawer ${drawerOpen ? 'open' : ''}`}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <div className="brand-logo">
-            <div className="brand-icon" style={{ width: 32, height: 32 }}>
-              <GraduationCap size={18} />
-            </div>
-            <span>ApexLearn</span>
-          </div>
+          <Link to="/" style={{ textDecoration: 'none' }} onClick={() => setDrawerOpen(false)}>
+            <BrandLogo size="sm" />
+          </Link>
           <button
             id="mobile-drawer-close"
             className="btn-ghost"
