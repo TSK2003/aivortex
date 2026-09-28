@@ -39,7 +39,7 @@ export default function AICommandCenter() {
             <div className="command-window-title">
               <Terminal style={{ width: 14, height: 14, color: 'var(--color-secondary)' }} />
               <span>
-                ApexLearn AI Command Engine v3.4 •{' '}
+                aivortex AI Command Engine v3.4 •{' '}
                 {isStudentAuth ? `Active Session: ${student?.name || 'Student'}` : 'Live Platform Preview'}
               </span>
             </div>

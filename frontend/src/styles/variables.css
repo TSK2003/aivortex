@@ -1,3 +1,12 @@
+/* Neuropol Brand Font (Classic Ray Larabie original) */
+@font-face {
+  font-family: 'Neuropol';
+  src: url('/fonts/neuropol.otf') format('opentype');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* Primary & Brand Colors - Premium AI Platform Palette */
   --color-primary: #0F172A;         /* Deep Navy / Slate Dark */
@@ -40,7 +49,9 @@
 
   /* Typography Styles */
   --font-family-base: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-family-heading: 'Plus Jakarta Sans', 'Manrope', 'Inter', sans-serif;
+  --font-family-brand: "Good Timing W00 SemiBold", "Good Timing SemiBold", "Good Timing", sans-serif;
+  --font-weight-brand: 600;
+  --letter-spacing-brand: 0px;
   
   /* Font Sizes */
   --font-size-xs: 0.75rem;    /* 12px */

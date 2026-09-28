@@ -31,7 +31,7 @@ async function request(endpoint, options = {}) {
     return json
   } catch (err) {
     if (err.name === 'TypeError' && err.message.includes('fetch')) {
-      throw new Error('Unable to connect to ApexLearn API backend. Please ensure the server is running on port 5000.')
+      throw new Error('Unable to connect to aivortex API backend. Please ensure the server is running on port 5000.')
     }
     throw err
   }
@@ -162,7 +162,9 @@ export const api = {
       }),
     getNotifications: () => request('/student/notifications'),
     markNotificationRead: (id) =>
-      request(`/student/notifications/${id}/read`, { method: 'PATCH' })
+      request(`/student/notifications/${id}/read`, { method: 'PATCH' }),
+    markAllNotificationsRead: () =>
+      request('/student/notifications/mark-all-read', { method: 'PATCH' })
   },
 
   // Creator Workshop

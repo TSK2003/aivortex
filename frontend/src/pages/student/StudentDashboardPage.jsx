@@ -17,7 +17,9 @@ import {
   ExternalLink,
   HelpCircle,
   MessageSquare,
-  AlertCircle
+  AlertCircle,
+  Bell,
+  CheckCheck
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
@@ -40,6 +42,7 @@ export default function StudentDashboardPage() {
     if (path.includes('/student/live-sessions')) return 'live'
     if (path.includes('/student/certificates')) return 'certificates'
     if (path.includes('/student/payments')) return 'payments'
+    if (path.includes('/student/notifications')) return 'notifications'
     if (path.includes('/student/profile')) return 'profile'
     if (path.includes('/student/support')) return 'support'
     const searchParams = new URLSearchParams(location.search)
@@ -54,6 +57,8 @@ export default function StudentDashboardPage() {
   const [certificates, setCertificates] = useState([])
   const [transactions, setTransactions] = useState([])
   const [supportTickets, setSupportTickets] = useState([])
+  const [notifications, setNotifications] = useState([])
+  const [notifFilter, setNotifFilter] = useState('all')
 
   // Profile form state
   const [profileName, setProfileName] = useState(currentStudent?.name || '')
@@ -82,11 +87,12 @@ export default function StudentDashboardPage() {
     try {
       setLoading(true)
 
-      const [coursesRes, certRes, payRes, ticketRes] = await Promise.allSettled([
+      const [coursesRes, certRes, payRes, ticketRes, notifRes] = await Promise.allSettled([
         api.student.getMyCourses(),
         api.student.getCertificates(),
         api.student.getPaymentHistory(),
-        api.student.getSupportTickets()
+        api.student.getSupportTickets(),
+        api.student.getNotifications()
       ])
 
       // 1. Enrolled Courses
@@ -116,11 +122,19 @@ export default function StudentDashboardPage() {
       } else {
         setSupportTickets([])
       }
+
+      // 5. Notifications
+      if (notifRes.status === 'fulfilled' && notifRes.value?.data?.notifications) {
+        setNotifications(notifRes.value.data.notifications)
+      } else {
+        setNotifications([])
+      }
     } catch (err) {
       console.warn('Student dashboard data load note:', err.message)
       setEnrolledCourses([])
       setCertificates([])
       setTransactions([])
+      setNotifications([])
     } finally {
       setLoading(false)
     }
@@ -129,6 +143,26 @@ export default function StudentDashboardPage() {
   useEffect(() => {
     loadStudentData()
   }, [])
+
+  const handleMarkNotifRead = async (id) => {
+    try {
+      await api.student.markNotificationRead(id)
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)))
+      showToast('Notification marked as read', 'success')
+    } catch (err) {
+      showToast('Failed to update notification', 'error')
+    }
+  }
+
+  const handleMarkAllNotifsRead = async () => {
+    try {
+      await api.student.markAllNotificationsRead()
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
+      showToast('All notifications marked as read', 'success')
+    } catch (err) {
+      showToast('Failed to update notifications', 'error')
+    }
+  }
 
   const handleSaveProfile = (e) => {
     e.preventDefault()
@@ -166,13 +200,29 @@ export default function StudentDashboardPage() {
   return (
     <div>
       {/* Top Header / Greeting */}
-      <div className="dashboard-topbar" style={{ marginBottom: 28, background: '#FFFFFF', padding: '20px 24px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
+      <div className="dashboard-welcome-banner">
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-            Welcome back, {currentStudent?.name || 'Scholar'}
+            {activeTab === 'courses' && 'My Enrolled Courses'}
+            {activeTab === 'projects' && 'Capstone Engineering Projects'}
+            {activeTab === 'live' && 'Live Sessions & Masterclasses'}
+            {activeTab === 'certificates' && 'Verified Certificates & Credentials'}
+            {activeTab === 'payments' && 'Invoices & Billing History'}
+            {activeTab === 'notifications' && 'Notifications & Alerts'}
+            {activeTab === 'support' && 'Support & Queries'}
+            {activeTab === 'profile' && 'Account Profile Settings'}
+            {activeTab === 'overview' && `Welcome back, ${currentStudent?.name || 'Scholar'} 👋`}
           </h1>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
-            Continue your structured learning journey. You have {enrolledCourses.length} active courses enrolled.
+            {activeTab === 'courses' && `Access your enrolled masterclasses. You are currently pursuing ${enrolledCourses.length} technical programs.`}
+            {activeTab === 'projects' && 'Production-grade enterprise projects with real-world architecture specifications.'}
+            {activeTab === 'live' && 'Join upcoming instructor-led workshops and interactive technical cohorts.'}
+            {activeTab === 'certificates' && `You have earned ${certificates.length} verifiable blockchain-secured credentials.`}
+            {activeTab === 'payments' && 'Track all your payment records, transactions, and tax invoices.'}
+            {activeTab === 'notifications' && 'Stay updated on syllabus releases, deadlines, and platform announcements.'}
+            {activeTab === 'support' && 'Submit technical queries and get assistance from certified course instructors.'}
+            {activeTab === 'profile' && 'Manage your student credentials, phone number, and professional biography.'}
+            {activeTab === 'overview' && `Continue your structured learning journey. You have ${enrolledCourses.length} active courses enrolled.`}
           </p>
         </div>
 
@@ -186,46 +236,6 @@ export default function StudentDashboardPage() {
             </Link>
           )}
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div
-        className="player-tabs-bar"
-        style={{
-          marginBottom: 24,
-          background: '#FFFFFF',
-          padding: '6px 12px',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--color-border)',
-          display: 'flex',
-          gap: 6,
-          flexWrap: 'wrap'
-        }}
-      >
-        <button className={`player-tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
-          Overview
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'courses' ? 'active' : ''}`} onClick={() => setActiveTab('courses')}>
-          My Courses ({enrolledCourses.length})
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'projects' ? 'active' : ''}`} onClick={() => setActiveTab('projects')}>
-          Capstone Projects
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'live' ? 'active' : ''}`} onClick={() => setActiveTab('live')}>
-          Live Sessions
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'certificates' ? 'active' : ''}`} onClick={() => setActiveTab('certificates')}>
-          Certificates ({certificates.length})
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'payments' ? 'active' : ''}`} onClick={() => setActiveTab('payments')}>
-          Invoices & Billing ({transactions.length})
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'support' ? 'active' : ''}`} onClick={() => setActiveTab('support')}>
-          Support & Queries
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
-          Account Profile
-        </button>
       </div>
 
       {/* Tab 1: Overview */}
@@ -639,6 +649,177 @@ export default function StudentDashboardPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Tab: Notifications */}
+      {activeTab === 'notifications' && (
+        <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', padding: '28px 32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 14 }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <h3 style={{ fontSize: '1.3rem', margin: 0, color: 'var(--color-primary)' }}>Student Notifications</h3>
+                {notifications.filter((n) => !n.isRead).length > 0 && (
+                  <span className="badge badge-popular" style={{ fontSize: '0.75rem', padding: '3px 10px' }}>
+                    {notifications.filter((n) => !n.isRead).length} Unread
+                  </span>
+                )}
+              </div>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+                Course alerts, certification announcements, and live session reminders.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 6, background: '#F1F5F9', padding: 3, borderRadius: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setNotifFilter('all')}
+                  className="btn btn-sm"
+                  style={{
+                    padding: '4px 12px',
+                    fontSize: '0.8rem',
+                    borderRadius: 6,
+                    background: notifFilter === 'all' ? '#0F172A' : 'transparent',
+                    color: notifFilter === 'all' ? '#FFFFFF' : '#64748B',
+                    border: 'none',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  All ({notifications.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNotifFilter('unread')}
+                  className="btn btn-sm"
+                  style={{
+                    padding: '4px 12px',
+                    fontSize: '0.8rem',
+                    borderRadius: 6,
+                    background: notifFilter === 'unread' ? '#2563EB' : 'transparent',
+                    color: notifFilter === 'unread' ? '#FFFFFF' : '#64748B',
+                    border: 'none',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Unread ({notifications.filter((n) => !n.isRead).length})
+                </button>
+              </div>
+
+              {notifications.some((n) => !n.isRead) && (
+                <button
+                  type="button"
+                  onClick={handleMarkAllNotifsRead}
+                  className="btn btn-secondary btn-sm"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 700 }}
+                >
+                  <CheckCheck size={15} />
+                  Mark all as read
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* List */}
+          {(() => {
+            const list = notifFilter === 'unread' ? notifications.filter((n) => !n.isRead) : notifications
+            if (list.length === 0) {
+              return (
+                <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-text-secondary)' }}>
+                  <CheckCircle style={{ width: 44, height: 44, color: '#16A34A', margin: '0 auto 12px auto' }} />
+                  <h4 style={{ margin: '0 0 6px 0', color: '#0F172A' }}>You're all caught up!</h4>
+                  <p style={{ margin: 0, fontSize: '0.85rem' }}>No new notifications matching your filter.</p>
+                </div>
+              )
+            }
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {list.map((n) => (
+                  <div
+                    key={n.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: 16,
+                      padding: '16px 20px',
+                      borderRadius: 12,
+                      border: n.isRead ? '1px solid #E2E8F0' : '1px solid #BFDBFE',
+                      background: n.isRead ? '#FFFFFF' : '#EFF6FF',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                      <div
+                        style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: 10,
+                          background: n.isRead ? '#F1F5F9' : '#DBEAFE',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: n.isRead ? '#64748B' : '#2563EB',
+                          flexShrink: 0
+                        }}
+                      >
+                        <Bell size={18} />
+                      </div>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: n.isRead ? 600 : 800, color: '#0F172A' }}>
+                            {n.title}
+                          </h4>
+                          {!n.isRead && (
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563EB', display: 'inline-block' }} />
+                          )}
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
+                          {n.message}
+                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
+                          <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>
+                            {new Date(n.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                          </span>
+                          {n.linkUrl && (
+                            <Link
+                              to={n.linkUrl}
+                              onClick={() => !n.isRead && handleMarkNotifRead(n.id)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                color: '#2563EB',
+                                textDecoration: 'none'
+                              }}
+                            >
+                              <span>Open details</span>
+                              <ExternalLink size={12} />
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {!n.isRead && (
+                      <button
+                        type="button"
+                        onClick={() => handleMarkNotifRead(n.id)}
+                        className="btn btn-ghost btn-sm"
+                        style={{ fontSize: '0.78rem', color: '#2563EB', flexShrink: 0, padding: '4px 8px', cursor: 'pointer' }}
+                      >
+                        Mark as read
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
         </div>
       )}
 

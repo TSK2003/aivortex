@@ -62,7 +62,7 @@ export default function AboutPage() {
         {/* Institutional Header */}
         <div style={{ textAlign: 'center', maxWidth: 780, margin: '0 auto 32px auto' }}>
           <h1 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '-0.02em', marginBottom: 10 }}>
-            About ApexLearn
+            About aivortex
           </h1>
           <p style={{ fontSize: '1rem', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
             Institutional Mission, Governance & Academic Standards
@@ -87,7 +87,7 @@ export default function AboutPage() {
               Bridging the Theory-Production Divide
             </h3>
             <p style={{ fontSize: '0.92rem', color: 'var(--color-text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              ApexLearn was established as an independent institute to bridge the chasm between superficial syntax tutorials and the demanding realities of production engineering. We educate engineers to construct reliable, scalable, and resilient systems capable of handling enterprise workloads.
+              aivortex was established as an independent institute to bridge the chasm between superficial syntax tutorials and the demanding realities of production engineering. We educate engineers to construct reliable, scalable, and resilient systems capable of handling enterprise workloads.
             </p>
           </div>
 
@@ -196,7 +196,7 @@ export default function AboutPage() {
               Academic Governance & Quality Assurance
             </h3>
             <p style={{ fontSize: '0.95rem', color: 'var(--color-text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              To ensure industry credibility, every credential issued by ApexLearn is backed by rigorous programmatic verification.
+              To ensure industry credibility, every credential issued by aivortex is backed by rigorous programmatic verification.
             </p>
           </div>
 

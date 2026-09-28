@@ -440,20 +440,10 @@ export default function AdminDashboardPage() {
   return (
     <div>
       {/* Top Header */}
-      <div
-        className="dashboard-topbar"
-        style={{
-          marginBottom: 28,
-          background: '#FFFFFF',
-          padding: '20px 24px',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--color-border)',
-          boxShadow: 'var(--shadow-sm)'
-        }}
-      >
+      <div className="dashboard-welcome-banner">
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-            ApexLearn Academic Administration
+            aivortex Administration
           </h1>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
             Full administrative authority over curriculum, course creation, creators, students, pricing, offers, and video quality control.

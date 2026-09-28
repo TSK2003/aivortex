@@ -9,7 +9,7 @@ export default function Testimonials({ testimonials = initialTestimonials }) {
             REAL STORIES FROM <span className="highlight-blue" style={{ color: '#2563EB' }}>OUR LEARNERS</span>
           </h2>
           <p className="section-subtitle" style={{ fontSize: '1.05rem', color: '#64748B', lineHeight: 1.6 }}>
-            Hear directly from data scientists, machine learning engineers, and developers who advanced their engineering careers with ApexLearn.
+            Hear directly from data scientists, machine learning engineers, and developers who advanced their engineering careers with aivortex.
           </p>
         </div>
 

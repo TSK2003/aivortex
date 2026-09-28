@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import NotificationDropdown from '../components/common/NotificationDropdown'
+import BrandLogo from '../components/common/BrandLogo'
 import {
   LayoutDashboard,
   Users,
@@ -18,6 +20,10 @@ import {
   ArrowRight,
   Menu,
   X,
+  FolderGit2,
+  Video,
+  Award,
+  Sparkles
 } from 'lucide-react'
 
 /**
@@ -50,10 +56,13 @@ const CREATOR_NAV = [
 const STUDENT_NAV = [
   { path: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/student/courses', label: 'My Courses', icon: BookOpen },
+  { path: '/student/projects', label: 'Capstone Projects', icon: FolderGit2 },
+  { path: '/student/live-sessions', label: 'Live Sessions', icon: Video },
   { path: '/student/certificates', label: 'Certificates', icon: GraduationCap },
-  { path: '/student/payments', label: 'Payments', icon: CreditCard },
-  { path: '/student/support', label: 'Help & Support', icon: MessageSquare },
-  { path: '/student/profile', label: 'My Profile', icon: Users },
+  { path: '/student/payments', label: 'Invoices & Billing', icon: CreditCard },
+  { path: '/student/notifications', label: 'Notifications', icon: Bell },
+  { path: '/student/support', label: 'Support & Queries', icon: MessageSquare },
+  { path: '/student/profile', label: 'Account Profile', icon: Users },
 ]
 
 export default function DashboardLayout({ role = 'student' }) {
@@ -85,11 +94,8 @@ export default function DashboardLayout({ role = 'student' }) {
       {/* Sidebar */}
       <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <a href="/" className="brand-logo" style={{ textDecoration: 'none' }}>
-            <div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>ApexLearn</div>
-              <span className="brand-name-sub" style={{ fontSize: '0.65rem', color: 'var(--color-secondary)', fontWeight: 700, letterSpacing: '0.08em' }}>INSTITUTE OF TECH & AI</span>
-            </div>
+          <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <BrandLogo size="sm" />
           </a>
           <button
             className="btn-ghost sidebar-close-mobile"
@@ -155,6 +161,65 @@ export default function DashboardLayout({ role = 'student' }) {
             )
           })}
         </nav>
+
+        {/* Student Academic Standing & Quick Support Card */}
+        {role === 'student' && (
+          <div
+            style={{
+              margin: '12px 14px 10px 14px',
+              padding: '14px',
+              background: 'linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%)',
+              borderRadius: '12px',
+              border: '1px solid #DBEAFE',
+              boxShadow: '0 2px 4px rgba(37, 99, 235, 0.04)',
+              flexShrink: 0
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  background: '#DBEAFE',
+                  color: '#2563EB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}
+              >
+                <Award size={16} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#1E293B', lineHeight: 1.2 }}>
+                  Verified Scholar
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600 }}>
+                  Institute of Tech & AI
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingTop: 8,
+                borderTop: '1px solid #E2E8F0',
+                fontSize: '0.72rem',
+                color: '#64748B'
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981' }} />
+                Academic Track
+              </span>
+              <span style={{ fontWeight: 700, color: '#2563EB' }}>Active</span>
+            </div>
+          </div>
+        )}
 
         {/* Logout */}
         <div style={{ marginTop: 'auto', padding: '14px', borderTop: '1px solid var(--color-border, #E2E8F0)' }}>
@@ -224,7 +289,9 @@ export default function DashboardLayout({ role = 'student' }) {
               {roleLabel}
             </h1>
           </div>
-          <div className="topbar-actions">
+          <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <NotificationDropdown />
+            <div style={{ width: 1, height: 22, background: '#E2E8F0' }} />
             <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
           </div>
         </header>

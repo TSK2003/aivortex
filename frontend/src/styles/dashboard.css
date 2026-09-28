@@ -201,8 +201,22 @@
   justify-content: space-between;
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 1000;
   flex-shrink: 0;
+}
+
+.dashboard-welcome-banner {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  z-index: 1;
 }
 
 .topbar-title {
@@ -865,8 +879,100 @@
     flex-direction: column-reverse;
     height: auto;
   }
-  .player-sidebar {
-    width: 100%;
-    max-height: 300px;
+}
+
+/* Notification Popover Panel & Custom Scrollbar */
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
+
+.notification-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(420px, calc(100vw - 32px));
+  max-height: 560px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fadeInSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.notification-scroll-list {
+  overflow-y: auto;
+  flex: 1;
+  max-height: 380px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+}
+
+.notification-scroll-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notification-scroll-list::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.notification-scroll-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notification-scroll-list::-webkit-scrollbar-thumb {
+  background-color: #CBD5E1;
+  border-radius: 9999px;
+}
+
+.notification-scroll-list::-webkit-scrollbar-thumb:hover {
+  background-color: #94A3B8;
+}
+
+.notification-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+.notification-card.unread {
+  background: #F0F7FF;
+  border-color: #DBEAFE;
+  border-left-color: #2563EB;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.05);
+}
+
+.notification-card:hover {
+  background: #F8FAFC;
+  border-color: #E2E8F0;
+}
+
+.notification-card.unread:hover {
+  background: #E8F2FE;
+  border-color: #BFDBFE;
+}
+

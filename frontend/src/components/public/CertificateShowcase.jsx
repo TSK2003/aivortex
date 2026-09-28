@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import BrandLogo from '../common/BrandLogo'
 
 export default function CertificateShowcase({ onVerifyCert }) {
   const [certId, setCertId] = useState('CERT-PYDS-2026-9042')
@@ -17,7 +18,9 @@ export default function CertificateShowcase({ onVerifyCert }) {
           {/* Left: Certificate Mockup */}
           <div className="certificate-mockup" style={{ border: '1px solid #E2E8F0', borderRadius: 16, overflow: 'hidden' }}>
             <div className="certificate-inner-border">
-              <div className="cert-logo">ApexLearn Institute</div>
+              <div className="cert-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                <BrandLogo size="sm" />
+              </div>
               <div className="cert-header">Certificate of Specialization & Excellence</div>
               <p style={{ fontSize: '0.8rem', color: '#64748B', marginBottom: 8 }}>This is to proudly certify that</p>
 
@@ -28,8 +31,8 @@ export default function CertificateShowcase({ onVerifyCert }) {
               </p>
               <div className="cert-course">Python for Data Science Specialization</div>
 
-              <div className="cert-seal" style={{ width: 44, height: 44, borderRadius: '50%', background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '14px auto', fontWeight: 800, fontSize: '0.8rem', color: '#2563EB' }}>
-                APEX
+              <div className="cert-seal" style={{ width: 44, height: 44, borderRadius: '50%', background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '14px auto', fontWeight: 800, fontSize: '0.7rem', color: '#2563EB', textAlign: 'center' }}>
+                <img src="/company-logo-transparent.png" alt="aivortex" style={{ width: 24, height: 24, objectFit: 'contain' }} />
               </div>
 
               <div className="cert-meta-row">

@@ -22,7 +22,8 @@ import {
   createTicket,
   getMyTickets,
   getNotifications,
-  markNotificationAsRead
+  markNotificationAsRead,
+  markAllNotificationsAsRead
 } from '../controllers/supportNotificationController.js'
 import { requireAuth, requireRole } from '../middleware/authMiddleware.js'
 
@@ -59,6 +60,7 @@ router.patch('/profile', updateProfile)
 
 // Notifications & Support Tickets
 router.get('/notifications', getNotifications)
+router.patch('/notifications/mark-all-read', markAllNotificationsAsRead)
 router.patch('/notifications/:id/read', markNotificationAsRead)
 router.get('/support-tickets', getMyTickets)
 router.post('/support-tickets', (req, res, next) => {

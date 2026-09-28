@@ -36,7 +36,7 @@ export default function CertificateVerificationPage() {
             day: 'numeric'
           }),
           status: cert.status,
-          verifiedBy: 'ApexLearn Academic Accreditation Board'
+          verifiedBy: 'aivortex Academic Accreditation Board'
         })
       } else {
         setResult({
@@ -88,7 +88,7 @@ export default function CertificateVerificationPage() {
             Verify Credential Authenticity
           </h1>
           <p style={{ fontSize: '1rem', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
-            Validate the authenticity of certifications awarded by ApexLearn Institute of Tech & AI. Enter the unique Certificate ID printed on the document.
+            Validate the authenticity of certifications awarded by aivortex. Enter the unique Certificate ID printed on the document.
           </p>
         </div>
 
@@ -212,7 +212,7 @@ export default function CertificateVerificationPage() {
                       Authentic Credential Verified
                     </h3>
                     <p style={{ fontSize: '0.8rem', color: '#15803D', margin: 0 }}>
-                      Officially conferred by ApexLearn Institute Academic Registry
+                      Officially conferred by aivortex Academic Registry
                     </p>
                   </div>
                 </div>
@@ -266,7 +266,7 @@ export default function CertificateVerificationPage() {
                       Verification Failed
                     </h3>
                     <p style={{ fontSize: '0.85rem', color: '#B91C1C', margin: 0 }}>
-                      {result?.error || 'No matching active credential exists in the official ApexLearn registry.'}
+                      {result?.error || 'No matching active credential exists in the official aivortex registry.'}
                     </p>
                   </div>
                 </div>

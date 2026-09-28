@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { GraduationCap, Lock, Mail, ArrowLeft, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react'
+import BrandLogo from '../../components/common/BrandLogo'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import { api } from '../../services/api'
@@ -140,30 +141,8 @@ export default function UnifiedLoginPage() {
     >
       {/* Brand Header */}
       <div style={{ marginBottom: 28, textAlign: 'center' }}>
-        <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'linear-gradient(135deg, #0F172A 0%, #2563EB 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#FFFFFF',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
-            }}
-          >
-            <GraduationCap size={24} />
-          </div>
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-              ApexLearn
-            </div>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-secondary)', letterSpacing: '0.04em' }}>
-              INSTITUTE OF TECH & AI
-            </div>
-          </div>
+        <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+          <BrandLogo size="lg" />
         </Link>
       </div>
 
@@ -185,7 +164,7 @@ export default function UnifiedLoginPage() {
           <>
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 6 }}>
-                Sign In to ApexLearn
+                Sign In to aivortex
               </h1>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
                 Enter your credentials to access your authorized portal (Student, Creator, or Admin).
@@ -331,7 +310,7 @@ export default function UnifiedLoginPage() {
                 Reset Your Password
               </h1>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
-                Enter the email address associated with your ApexLearn account to receive a secure recovery link.
+                Enter the email address associated with your aivortex account to receive a secure recovery link.
               </p>
             </div>
 
@@ -592,7 +571,7 @@ export default function UnifiedLoginPage() {
           }}
         >
           <ArrowLeft size={16} />
-          <span>Back to ApexLearn Public Website</span>
+          <span>Back to aivortex Public Website</span>
         </Link>
       </div>
     </div>
