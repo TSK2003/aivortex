@@ -60,11 +60,47 @@ export async function getAnalyticsOverview(req, res, next) {
 // 2. Creator Management
 export async function getCreators(req, res, next) {
   try {
+    const { search, status, sortBy } = req.query
+
+    const where = { role: 'CREATOR' }
+
+    if (status && status !== 'ALL') {
+      where.status = status.toUpperCase()
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim()
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+        { id: { contains: q, mode: 'insensitive' } },
+        {
+          creatorProfile: {
+            OR: [
+              { specialization: { contains: q, mode: 'insensitive' } },
+              { headline: { contains: q, mode: 'insensitive' } }
+            ]
+          }
+        }
+      ]
+    }
+
+    let orderBy = { createdAt: 'desc' }
+    if (sortBy === 'name') {
+      orderBy = { name: 'asc' }
+    } else if (sortBy === 'created_asc') {
+      orderBy = { createdAt: 'asc' }
+    }
+
     const creators = await prisma.user.findMany({
-      where: { role: 'CREATOR' },
-      orderBy: { createdAt: 'desc' },
+      where,
+      orderBy,
       include: {
         creatorProfile: true,
+        sessions: {
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        },
         assignedCourses: {
           include: {
             course: {
@@ -79,6 +115,388 @@ export async function getCreators(req, res, next) {
     })
 
     return successResponse(res, { creators })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getCreatorById(req, res, next) {
+  try {
+    const { id } = req.params
+    const creator = await prisma.user.findFirst({
+      where: { id, role: 'CREATOR' },
+      include: {
+        creatorProfile: true,
+        sessions: {
+          orderBy: { createdAt: 'desc' },
+          take: 5
+        },
+        assignedCourses: {
+          include: {
+            course: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                status: true,
+                category: true,
+                price: true,
+                studentsCount: true,
+                averageRating: true
+              }
+            }
+          }
+        },
+        uploadedLessons: {
+          select: { id: true, title: true, status: true, durationSeconds: true },
+          take: 10
+        }
+      }
+    })
+
+    if (!creator) {
+      throw new NotFoundError('Creator account not found')
+    }
+
+    return successResponse(res, { creator })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function createCreator(req, res, next) {
+  try {
+    const {
+      name,
+      email,
+      userId,
+      password,
+      phone,
+      avatar,
+      specialization,
+      bio,
+      organization,
+      status = 'ACTIVE',
+      sendEmail = true
+    } = req.body
+
+    if (!name || !name.trim()) {
+      throw new BadRequestError('Creator full name is required')
+    }
+    if (!email || !email.trim()) {
+      throw new BadRequestError('Email address is required')
+    }
+
+    const cleanEmail = email.trim().toLowerCase()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(cleanEmail)) {
+      throw new BadRequestError('Please provide a valid email address')
+    }
+
+    // Check if email already exists
+    const existingEmail = await prisma.user.findUnique({ where: { email: cleanEmail } })
+    if (existingEmail) {
+      throw new BadRequestError('This email address is already associated with an account.')
+    }
+
+    // Check if custom userId exists
+    let chosenId = userId && userId.trim() ? userId.trim() : null
+    if (chosenId) {
+      const existingId = await prisma.user.findUnique({ where: { id: chosenId } })
+      if (existingId) {
+        throw new BadRequestError('Creator User ID already exists. Please choose a different ID.')
+      }
+    }
+
+    // Password generation or hashing
+    const tempPassword = password && password.trim()
+      ? password.trim()
+      : `ApexCreator${Math.floor(1000 + Math.random() * 9000)}!`
+
+    const salt = await bcrypt.genSalt(10)
+    const passwordHash = await bcrypt.hash(tempPassword, salt)
+
+    const finalStatus = ['ACTIVE', 'INACTIVE'].includes(status) ? status : 'ACTIVE'
+
+    const createData = {
+      ...(chosenId ? { id: chosenId } : {}),
+      name: name.trim(),
+      email: cleanEmail,
+      passwordHash,
+      role: 'CREATOR',
+      status: finalStatus,
+      phone: phone ? phone.trim() : null,
+      avatar: avatar ? avatar.trim() : null,
+      bio: bio ? bio.trim() : null,
+      creatorProfile: {
+        create: {
+          specialization: specialization ? specialization.trim() : 'Curriculum Specialist',
+          headline: organization
+            ? `${specialization ? specialization.trim() : 'Technical Instructor'} • ${organization.trim()}`
+            : (specialization ? specialization.trim() : 'Technical Course Creator'),
+          biography: bio ? bio.trim() : 'Course creator and faculty specialist at ApexLearn.',
+          isVerified: true
+        }
+      }
+    }
+
+    const creator = await prisma.user.create({
+      data: createData,
+      include: {
+        creatorProfile: true
+      }
+    })
+
+    // Email dispatch if sendEmail is selected
+    let emailStatus = { sent: false, error: null }
+    if (sendEmail) {
+      try {
+        await emailService.sendCreatorInvitation({
+          name: name.trim(),
+          email: cleanEmail,
+          tempPassword
+        })
+        emailStatus.sent = true
+      } catch (mailErr) {
+        console.warn('⚠️ SMTP invitation delivery warning:', mailErr.message)
+        emailStatus.error = mailErr.message
+      }
+    }
+
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'CREATOR_PROVISIONED',
+        entityType: 'User',
+        entityId: creator.id,
+        details: `Admin ${req.user.email} provisioned creator account for ${cleanEmail} (ID: ${creator.id}, Status: ${finalStatus})`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    })
+
+    return successResponse(
+      res,
+      {
+        creator,
+        tempPasswordGenerated: tempPassword,
+        emailStatus
+      },
+      `Creator account provisioned successfully for ${cleanEmail}`,
+      201
+    )
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updateCreator(req, res, next) {
+  try {
+    const { id } = req.params
+    const {
+      name,
+      email,
+      phone,
+      avatar,
+      bio,
+      specialization,
+      headline,
+      organization,
+      status
+    } = req.body
+
+    const existing = await prisma.user.findFirst({
+      where: { id, role: 'CREATOR' },
+      include: { creatorProfile: true }
+    })
+
+    if (!existing) {
+      throw new NotFoundError('Creator not found')
+    }
+
+    const updateData = {}
+    if (name !== undefined) updateData.name = name.trim()
+    if (phone !== undefined) updateData.phone = phone ? phone.trim() : null
+    if (avatar !== undefined) updateData.avatar = avatar ? avatar.trim() : null
+    if (bio !== undefined) updateData.bio = bio ? bio.trim() : null
+    if (status !== undefined && ['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(status)) {
+      updateData.status = status
+    }
+
+    if (email && email.trim().toLowerCase() !== existing.email) {
+      const cleanEmail = email.trim().toLowerCase()
+      const emailInUse = await prisma.user.findUnique({ where: { email: cleanEmail } })
+      if (emailInUse && emailInUse.id !== id) {
+        throw new BadRequestError('This email address is already associated with another account.')
+      }
+      updateData.email = cleanEmail
+    }
+
+    // Profile updates
+    const resolvedHeadline = organization
+      ? `${specialization || existing.creatorProfile?.specialization || 'Technical Instructor'} • ${organization.trim()}`
+      : (headline !== undefined ? headline : existing.creatorProfile?.headline)
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: {
+        ...updateData,
+        creatorProfile: {
+          upsert: {
+            create: {
+              specialization: specialization || 'Curriculum Specialist',
+              headline: resolvedHeadline || 'Technical Instructor',
+              biography: bio || 'Course creator at ApexLearn.',
+              isVerified: true
+            },
+            update: {
+              ...(specialization !== undefined ? { specialization: specialization.trim() } : {}),
+              ...(resolvedHeadline !== undefined ? { headline: resolvedHeadline } : {}),
+              ...(bio !== undefined ? { biography: bio.trim() } : {})
+            }
+          }
+        }
+      },
+      include: { creatorProfile: true }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'CREATOR_UPDATED',
+        entityType: 'User',
+        entityId: id,
+        details: `Admin ${req.user.email} updated profile for creator ${updated.email}`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    })
+
+    return successResponse(res, { creator: updated }, 'Creator profile updated successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function resetCreatorPassword(req, res, next) {
+  try {
+    const { id } = req.params
+    const { newPassword, sendEmail = true } = req.body
+
+    const creator = await prisma.user.findFirst({
+      where: { id, role: 'CREATOR' }
+    })
+
+    if (!creator) {
+      throw new NotFoundError('Creator not found')
+    }
+
+    const tempPassword = newPassword && newPassword.trim()
+      ? newPassword.trim()
+      : `Apex${Math.floor(100000 + Math.random() * 900000)}!`
+
+    const salt = await bcrypt.genSalt(10)
+    const passwordHash = await bcrypt.hash(tempPassword, salt)
+
+    await prisma.user.update({
+      where: { id },
+      data: { passwordHash }
+    })
+
+    // Invalidate active creator sessions so they must log in with new password
+    await prisma.session.deleteMany({ where: { userId: id } })
+
+    let emailStatus = { sent: false, error: null }
+    if (sendEmail) {
+      try {
+        await emailService.sendCreatorInvitation({
+          name: creator.name,
+          email: creator.email,
+          tempPassword
+        })
+        emailStatus.sent = true
+      } catch (mailErr) {
+        console.warn('⚠️ SMTP password reset delivery warning:', mailErr.message)
+        emailStatus.error = mailErr.message
+      }
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'CREATOR_PASSWORD_RESET',
+        entityType: 'User',
+        entityId: id,
+        details: `Admin ${req.user.email} reset password credentials for creator ${creator.email}`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    })
+
+    return successResponse(
+      res,
+      {
+        tempPasswordGenerated: tempPassword,
+        emailStatus
+      },
+      `Credentials reset successfully for ${creator.email}`
+    )
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function resendCreatorCredentials(req, res, next) {
+  try {
+    const { id } = req.params
+    const creator = await prisma.user.findFirst({
+      where: { id, role: 'CREATOR' }
+    })
+
+    if (!creator) {
+      throw new NotFoundError('Creator not found')
+    }
+
+    // Generate a fresh temporary password to ensure it is valid
+    const tempPassword = `ApexCreator${Math.floor(1000 + Math.random() * 9000)}!`
+    const salt = await bcrypt.genSalt(10)
+    const passwordHash = await bcrypt.hash(tempPassword, salt)
+
+    await prisma.user.update({
+      where: { id },
+      data: { passwordHash }
+    })
+
+    let emailStatus = { sent: false, error: null }
+    try {
+      await emailService.sendCreatorInvitation({
+        name: creator.name,
+        email: creator.email,
+        tempPassword
+      })
+      emailStatus.sent = true
+    } catch (mailErr) {
+      console.warn('⚠️ SMTP credential resend delivery warning:', mailErr.message)
+      emailStatus.error = mailErr.message
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'CREATOR_CREDENTIALS_RESENT',
+        entityType: 'User',
+        entityId: id,
+        details: `Admin ${req.user.email} resent onboarding credentials to ${creator.email}`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    })
+
+    return successResponse(
+      res,
+      {
+        tempPasswordGenerated: tempPassword,
+        emailStatus
+      },
+      `Onboarding credentials dispatched to ${creator.email}`
+    )
   } catch (err) {
     next(err)
   }
@@ -367,7 +785,7 @@ export async function createCourse(req, res, next) {
         isFree: Boolean(isFree),
         isFeatured: Boolean(isFeatured),
         badge,
-        status: 'DRAFT',
+        status: req.body.status === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT',
         certificateEnabled: Boolean(certificateEnabled),
         accessDurationDays: accessDurationDays ? Number(accessDurationDays) : null,
         creators: {
@@ -1226,4 +1644,77 @@ export async function deleteOffer(req, res, next) {
     next(err)
   }
 }
+
+// 12. Admin Personal Profile (View & Edit)
+export async function getAdminProfile(req, res, next) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatar: true,
+        phone: true,
+        bio: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    })
+
+    if (!user) {
+      throw new NotFoundError('Admin profile record not found')
+    }
+
+    return successResponse(res, { user })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updateAdminProfile(req, res, next) {
+  try {
+    const { name, phone, bio, avatar } = req.body
+
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        name: name !== undefined ? name.trim() : undefined,
+        phone: phone !== undefined ? (phone ? phone.trim() : null) : undefined,
+        bio: bio !== undefined ? (bio ? bio.trim() : null) : undefined,
+        avatar: avatar !== undefined ? (avatar ? avatar.trim() : null) : undefined
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatar: true,
+        phone: true,
+        bio: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'ADMIN_PROFILE_UPDATED',
+        entityType: 'User',
+        entityId: req.user.id,
+        details: `Admin ${updated.name} updated personal profile details`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    })
+
+    return successResponse(res, { user: updated }, 'Profile updated successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+
 
