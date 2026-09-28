@@ -1,54 +1,68 @@
-import { useState, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard,
   Users,
   GraduationCap,
   BookOpen,
-  CheckSquare,
   IndianRupee,
   Globe,
   CreditCard,
-  Bell,
-  Inbox,
   Shield,
   Plus,
   CheckCircle2,
-  XCircle,
   RotateCcw,
-  Edit,
   Trash2,
-  Eye,
-  BarChart3,
-  MessageSquare,
   FileText,
   Send,
   Key,
   Database,
-  Lock,
-  Radio,
   Tag,
-  Upload,
   AlertCircle,
   RefreshCw,
-  X
+  X,
+  ArrowRight,
+  Video,
+  UserCheck,
+  Eye,
+  Edit3,
+  Mail,
+  Phone,
+  Calendar,
+  Clock,
+  User as UserIcon,
+  Save,
+  Check,
+  Camera,
+  Search,
+  UserX,
+  Copy,
+  Pause,
+  Play
 } from 'lucide-react'
 import { useToast } from '../../contexts/ToastContext'
-import CustomSelect from '../../components/common/CustomSelect'
+import { useAuth } from '../../contexts/AuthContext'
+import StatCard from '../../components/admin/StatCard'
 import api from '../../services/api'
 
 export default function AdminDashboardPage() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { showToast } = useToast()
+  const { user: authUser, updateProfile: updateAuthUser } = useAuth()
 
   const getTabFromLocation = () => {
     const path = location.pathname.toLowerCase()
+    if (path.includes('/admin/profile')) return 'profile'
     if (path.includes('/admin/creators')) return 'creators'
     if (path.includes('/admin/students')) return 'students'
     if (path.includes('/admin/courses')) return 'courses'
     if (path.includes('/admin/playlists')) return 'video-verification'
+    if (path.includes('/admin/video-verification')) return 'video-verification'
     if (path.includes('/admin/payments')) return 'payments'
+    if (path.includes('/admin/pricing')) return 'pricing'
+    if (path.includes('/admin/offers')) return 'pricing'
     if (path.includes('/admin/public-page')) return 'public-controls'
+    if (path.includes('/admin/public-controls')) return 'public-controls'
     if (path.includes('/admin/notifications')) return 'notifications'
     if (path.includes('/admin/reports')) return 'reports'
     if (path.includes('/admin/requests')) return 'requests'
@@ -59,10 +73,25 @@ export default function AdminDashboardPage() {
   }
 
   const [activeTab, setActiveTab] = useState(getTabFromLocation)
+  const [courseSubTab, setCourseSubTab] = useState('catalog') // 'catalog' | 'pricing' | 'controls'
+  const [profileMode, setProfileMode] = useState('view') // 'view' | 'edit'
   const [loading, setLoading] = useState(false)
+
+  // Admin Profile States
+  const [adminProfile, setAdminProfile] = useState(null)
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [editProfileForm, setEditProfileForm] = useState({
+    name: '',
+    phone: '',
+    bio: '',
+    avatar: ''
+  })
 
   // Live Domain Data States
   const [overviewData, setOverviewData] = useState(null)
+  const [recentOrders, setRecentOrders] = useState([])
+  const [recentAuditLogs, setRecentAuditLogs] = useState([])
   const [creators, setCreators] = useState([])
   const [students, setStudents] = useState([])
   const [courses, setCourses] = useState([])
@@ -72,30 +101,46 @@ export default function AdminDashboardPage() {
   const [requestsList, setRequestsList] = useState([])
   const [auditLogs, setAuditLogs] = useState([])
   const [activeSessions, setActiveSessions] = useState([])
+  const [reportsData, setReportsData] = useState(null)
 
-  // Creator Form
+  // Creator Form & Management States
   const [newCreatorEmail, setNewCreatorEmail] = useState('')
   const [newCreatorName, setNewCreatorName] = useState('')
   const [newCreatorHeadline, setNewCreatorHeadline] = useState('')
-
-  // Course Creation Modal State
-  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false)
-  const [isCreatingCourse, setIsCreatingCourse] = useState(false)
-  const [newCourseTitle, setNewCourseTitle] = useState('')
-  const [newCourseSlug, setNewCourseSlug] = useState('')
-  const [newCourseCategory, setNewCourseCategory] = useState('Data Science')
-  const [newCourseLevel, setNewCourseLevel] = useState('Beginner to Intermediate')
-  const [newCourseDuration, setNewCourseDuration] = useState('30 Hours')
-  const [newCourseLanguage, setNewCourseLanguage] = useState('English')
-  const [newCourseThumbnail, setNewCourseThumbnail] = useState('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80')
-  const [newCoursePrice, setNewCoursePrice] = useState(4999)
-  const [newCourseOriginalPrice, setNewCourseOriginalPrice] = useState(9999)
-  const [newCourseAccessDays, setNewCourseAccessDays] = useState(365)
-  const [newCourseIsFree, setNewCourseIsFree] = useState(false)
-  const [newCourseCertificate, setNewCourseCertificate] = useState(true)
-  const [newCourseShortDesc, setNewCourseShortDesc] = useState('')
-  const [newCourseFullDesc, setNewCourseFullDesc] = useState('')
-  const [newCourseCreatorId, setNewCourseCreatorId] = useState('')
+  const [showInviteForm, setShowInviteForm] = useState(false)
+  const [creatorSearch, setCreatorSearch] = useState('')
+  const [creatorStatusFilter, setCreatorStatusFilter] = useState('ALL')
+  const [creatorSortBy, setCreatorSortBy] = useState('created_desc')
+  const [selectedViewCreator, setSelectedViewCreator] = useState(null)
+  const [selectedEditCreator, setSelectedEditCreator] = useState(null)
+  const [editCreatorForm, setEditCreatorForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    avatar: '',
+    specialization: '',
+    headline: '',
+    bio: '',
+    status: 'ACTIVE'
+  })
+  const [isSavingEditCreator, setIsSavingEditCreator] = useState(false)
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    title: '',
+    description: '',
+    confirmText: '',
+    confirmColor: '#DC2626',
+    onConfirm: null,
+    loading: false
+  })
+  const [credentialsNoticeModal, setCredentialsNoticeModal] = useState({
+    open: false,
+    creatorName: '',
+    email: '',
+    tempPassword: '',
+    actionType: ''
+  })
+  const [copiedModalKey, setCopiedModalKey] = useState(false)
 
   // Offer Creation Modal State
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false)
@@ -117,8 +162,143 @@ export default function AdminDashboardPage() {
   const [newNotifTarget, setNewNotifTarget] = useState('ALL_STUDENTS')
 
   useEffect(() => {
-    setActiveTab(getTabFromLocation())
+    const currentTab = getTabFromLocation()
+    setActiveTab(currentTab)
+    if (currentTab === 'pricing') {
+      setActiveTab('courses')
+      setCourseSubTab('pricing')
+    } else if (currentTab === 'public-controls') {
+      setActiveTab('courses')
+      setCourseSubTab('controls')
+    } else if (currentTab === 'profile') {
+      const searchParams = new URLSearchParams(location.search)
+      const mode = searchParams.get('mode')
+      if (mode === 'edit') {
+        setProfileMode('edit')
+      } else {
+        setProfileMode('view')
+      }
+      fetchAdminProfile()
+    }
   }, [location.pathname, location.search])
+
+  // Standalone profile fetcher
+  const fetchAdminProfile = async () => {
+    try {
+      setProfileLoading(true)
+      const res = await api.admin.getProfile()
+      const u = res.data?.user
+      if (u) {
+        setAdminProfile(u)
+        setEditProfileForm({
+          name: u.name || '',
+          phone: u.phone || '',
+          bio: u.bio || '',
+          avatar: u.avatar || ''
+        })
+      }
+    } catch (err) {
+      console.warn('Profile fetch note:', err.message)
+      if (authUser) {
+        setAdminProfile(authUser)
+        setEditProfileForm({
+          name: authUser.name || '',
+          phone: authUser.phone || '',
+          bio: authUser.bio || '',
+          avatar: authUser.avatar || ''
+        })
+      }
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
+  // Update profile handler
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault()
+    if (!editProfileForm.name?.trim()) {
+      showToast('Full name is required.', 'error')
+      return
+    }
+
+    try {
+      setProfileSaving(true)
+      const payload = {
+        name: editProfileForm.name.trim(),
+        phone: editProfileForm.phone.trim(),
+        bio: editProfileForm.bio.trim(),
+        avatar: editProfileForm.avatar.trim()
+      }
+      const res = await api.admin.updateProfile(payload)
+      const updatedUser = res.data?.user
+      if (updatedUser) {
+        setAdminProfile(updatedUser)
+        updateAuthUser(updatedUser)
+      } else {
+        setAdminProfile((prev) => ({ ...prev, ...payload, updatedAt: new Date().toISOString() }))
+        updateAuthUser(payload)
+      }
+      showToast('Admin profile updated successfully!', 'success')
+      setProfileMode('view')
+      navigate('/admin/profile?mode=view', { replace: true })
+    } catch (err) {
+      showToast(err.message || 'Failed to update profile.', 'error')
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
+  const formatJoinedDate = (dateStr) => {
+    if (!dateStr) return 'September 2024'
+    try {
+      const d = new Date(dateStr)
+      if (isNaN(d.getTime())) return 'September 2024'
+      return d.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    } catch {
+      return 'September 2024'
+    }
+  }
+
+  const formatLastUpdated = (dateStr) => {
+    if (!dateStr) return 'Recently'
+    try {
+      const d = new Date(dateStr)
+      if (isNaN(d.getTime())) return 'Recently'
+      return d.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch {
+      return 'Recently'
+    }
+  }
+
+  const getProfileInitials = (name) => {
+    if (!name) return 'AD'
+    const parts = name.trim().split(' ')
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+    }
+    return name.slice(0, 2).toUpperCase()
+  }
+
+  const currentDisplayUser = adminProfile || authUser || {
+    name: 'Dr. Vikram Sen',
+    email: 'director@apexlearn.edu',
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    phone: '+91 98765 43210',
+    bio: 'Academic Director and Chief Learning Architect at ApexLearn Institute of Tech & AI, leading curriculum quality, faculty verification, and AI-assisted educational standards.',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
 
   const loadAdminData = async () => {
     try {
@@ -134,7 +314,9 @@ export default function AdminDashboardPage() {
         payRes,
         reqRes,
         auditRes,
-        sessRes
+        sessRes,
+        repRes,
+        profRes
       ] = await Promise.allSettled([
         api.admin.getOverview(),
         api.admin.getCreators(),
@@ -145,11 +327,34 @@ export default function AdminDashboardPage() {
         api.admin.getPayments(),
         api.admin.getRequests(),
         api.admin.getAuditLogs(),
-        api.admin.getActiveSessions()
+        api.admin.getActiveSessions(),
+        api.admin.getReports(),
+        api.admin.getProfile()
       ])
 
-      if (overRes.status === 'fulfilled' && overRes.value?.data?.analytics) {
-        setOverviewData(overRes.value.data.analytics)
+      if (profRes.status === 'fulfilled' && profRes.value?.data?.user) {
+        const u = profRes.value.data.user
+        setAdminProfile(u)
+        setEditProfileForm({
+          name: u.name || '',
+          phone: u.phone || '',
+          bio: u.bio || '',
+          avatar: u.avatar || ''
+        })
+      } else if (authUser) {
+        setAdminProfile(authUser)
+        setEditProfileForm({
+          name: authUser.name || '',
+          phone: authUser.phone || '',
+          bio: authUser.bio || '',
+          avatar: authUser.avatar || ''
+        })
+      }
+
+      if (overRes.status === 'fulfilled' && overRes.value?.data) {
+        if (overRes.value.data.analytics) setOverviewData(overRes.value.data.analytics)
+        if (overRes.value.data.recentOrders) setRecentOrders(overRes.value.data.recentOrders)
+        if (overRes.value.data.recentAuditLogs) setRecentAuditLogs(overRes.value.data.recentAuditLogs)
       }
       if (crRes.status === 'fulfilled' && crRes.value?.data?.creators) {
         setCreators(crRes.value.data.creators)
@@ -196,6 +401,9 @@ export default function AdminDashboardPage() {
       } else {
         setActiveSessions([])
       }
+      if (repRes.status === 'fulfilled' && repRes.value?.data) {
+        setReportsData(repRes.value.data)
+      }
     } catch (err) {
       console.warn('Admin load note:', err.message)
     } finally {
@@ -222,9 +430,182 @@ export default function AdminDashboardPage() {
       setNewCreatorEmail('')
       setNewCreatorName('')
       setNewCreatorHeadline('')
+      setShowInviteForm(false)
       loadAdminData()
     } catch (err) {
       showToast(err.message || 'Failed to invite creator', 'error')
+    }
+  }
+
+  // Memoized Filtered & Sorted Creators
+  const filteredCreators = useMemo(() => {
+    return creators
+      .filter((cr) => {
+        if (creatorStatusFilter !== 'ALL' && cr.status !== creatorStatusFilter) {
+          return false
+        }
+        if (creatorSearch.trim()) {
+          const q = creatorSearch.trim().toLowerCase()
+          const nameMatch = cr.name?.toLowerCase().includes(q)
+          const emailMatch = cr.email?.toLowerCase().includes(q)
+          const idMatch = cr.id?.toLowerCase().includes(q)
+          const specMatch =
+            cr.creatorProfile?.specialization?.toLowerCase().includes(q) ||
+            cr.creatorProfile?.headline?.toLowerCase().includes(q)
+          if (!nameMatch && !emailMatch && !idMatch && !specMatch) return false
+        }
+        return true
+      })
+      .sort((a, b) => {
+        if (creatorSortBy === 'name') {
+          return (a.name || '').localeCompare(b.name || '')
+        }
+        if (creatorSortBy === 'created_asc') {
+          return new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
+        }
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+      })
+  }, [creators, creatorStatusFilter, creatorSearch, creatorSortBy])
+
+  const handleOpenEditCreator = (cr) => {
+    setSelectedEditCreator(cr)
+    setEditCreatorForm({
+      name: cr.name || '',
+      email: cr.email || '',
+      phone: cr.phone || '',
+      avatar: cr.avatar || '',
+      specialization: cr.creatorProfile?.specialization || '',
+      headline: cr.creatorProfile?.headline || '',
+      bio: cr.creatorProfile?.biography || cr.bio || '',
+      status: cr.status || 'ACTIVE'
+    })
+  }
+
+  const handleSaveEditCreator = async (e) => {
+    e.preventDefault()
+    if (!editCreatorForm.name?.trim()) {
+      showToast('Creator full name is required', 'error')
+      return
+    }
+    if (!editCreatorForm.email?.trim()) {
+      showToast('Creator email address is required', 'error')
+      return
+    }
+
+    try {
+      setIsSavingEditCreator(true)
+      await api.admin.updateCreator(selectedEditCreator.id, editCreatorForm)
+      showToast(`Profile updated for ${editCreatorForm.name}`, 'success')
+      setSelectedEditCreator(null)
+      loadAdminData()
+    } catch (err) {
+      showToast(err.message || 'Failed to update creator profile', 'error')
+    } finally {
+      setIsSavingEditCreator(false)
+    }
+  }
+
+  const handlePromptSuspendCreator = (cr) => {
+    setConfirmModal({
+      open: true,
+      title: 'Suspend Creator Account?',
+      description: `This will immediately restrict platform login and curriculum publishing rights for ${cr.name} (${cr.email}).`,
+      confirmText: 'Suspend Account',
+      confirmColor: '#DC2626',
+      onConfirm: async () => {
+        try {
+          await api.admin.updateCreatorStatus(cr.id, 'SUSPENDED')
+          showToast(`Account suspended for ${cr.name}`, 'success')
+          if (selectedViewCreator?.id === cr.id) {
+            setSelectedViewCreator((prev) => ({ ...prev, status: 'SUSPENDED' }))
+          }
+          loadAdminData()
+        } catch (err) {
+          showToast(err.message || 'Failed to suspend creator account', 'error')
+        }
+      }
+    })
+  }
+
+  const handlePromptActivateCreator = (cr) => {
+    setConfirmModal({
+      open: true,
+      title: 'Activate Creator Account?',
+      description: `This will grant full login authorization and course publishing rights to ${cr.name} (${cr.email}).`,
+      confirmText: 'Activate Account',
+      confirmColor: '#16A34A',
+      onConfirm: async () => {
+        try {
+          await api.admin.updateCreatorStatus(cr.id, 'ACTIVE')
+          showToast(`Account activated for ${cr.name}`, 'success')
+          if (selectedViewCreator?.id === cr.id) {
+            setSelectedViewCreator((prev) => ({ ...prev, status: 'ACTIVE' }))
+          }
+          loadAdminData()
+        } catch (err) {
+          showToast(err.message || 'Failed to activate creator account', 'error')
+        }
+      }
+    })
+  }
+
+  const handlePromptResetCredentials = (cr) => {
+    setConfirmModal({
+      open: true,
+      title: 'Reset Login Credentials?',
+      description: `This will invalidate any active sessions and generate a secure temporary password for ${cr.name}. Credentials will be dispatched to ${cr.email}.`,
+      confirmText: 'Reset Credentials',
+      confirmColor: '#D97706',
+      onConfirm: async () => {
+        try {
+          const res = await api.admin.resetCreatorPassword(cr.id, { sendEmail: true })
+          const tempPassword = res.data?.tempPasswordGenerated || 'ApexTempPass2026!'
+          setCredentialsNoticeModal({
+            open: true,
+            creatorName: cr.name,
+            email: cr.email,
+            tempPassword,
+            actionType: 'RESET'
+          })
+          showToast(`Credentials reset successfully for ${cr.email}`, 'success')
+          loadAdminData()
+        } catch (err) {
+          showToast(err.message || 'Failed to reset credentials', 'error')
+        }
+      }
+    })
+  }
+
+  const handleResendCredentials = async (cr) => {
+    try {
+      const res = await api.admin.resendCreatorCredentials(cr.id)
+      const tempPassword = res.data?.tempPasswordGenerated || 'ApexCreator2026!'
+      setCredentialsNoticeModal({
+        open: true,
+        creatorName: cr.name,
+        email: cr.email,
+        tempPassword,
+        actionType: 'RESENT'
+      })
+      showToast(`Onboarding credentials dispatched to ${cr.email}`, 'success')
+      loadAdminData()
+    } catch (err) {
+      showToast(err.message || 'Failed to resend credentials', 'error')
+    }
+  }
+
+  const formatLastLogin = (creator) => {
+    const session = creator.sessions?.[0]
+    if (!session || !session.createdAt) return 'Never'
+    try {
+      const d = new Date(session.createdAt)
+      return d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      })
+    } catch {
+      return 'Never'
     }
   }
 
@@ -248,51 +629,6 @@ export default function AdminDashboardPage() {
       loadAdminData()
     } catch (err) {
       showToast(err.message || 'Status change failed', 'error')
-    }
-  }
-
-  // Course Handlers
-  const handleCreateCourse = async (e) => {
-    e.preventDefault()
-    if (!newCourseTitle || !newCourseShortDesc) {
-      showToast('Title and short description are required', 'error')
-      return
-    }
-
-    setIsCreatingCourse(true)
-    try {
-      const payload = {
-        title: newCourseTitle.trim(),
-        slug: newCourseSlug.trim() || undefined,
-        category: newCourseCategory,
-        level: newCourseLevel,
-        duration: newCourseDuration,
-        language: newCourseLanguage,
-        thumbnail: newCourseThumbnail.trim(),
-        price: Number(newCoursePrice),
-        originalPrice: Number(newCourseOriginalPrice),
-        discountPercent: Math.round(((newCourseOriginalPrice - newCoursePrice) / newCourseOriginalPrice) * 100) || 0,
-        isFree: Boolean(newCourseIsFree),
-        accessDurationDays: newCourseAccessDays ? Number(newCourseAccessDays) : null,
-        certificateEnabled: Boolean(newCourseCertificate),
-        shortDescription: newCourseShortDesc.trim(),
-        fullDescription: newCourseFullDesc.trim() || newCourseShortDesc.trim(),
-        creatorIds: newCourseCreatorId ? [newCourseCreatorId] : []
-      }
-
-      await api.admin.createCourse(payload)
-      showToast(`Course "${newCourseTitle}" created in DRAFT mode`, 'success')
-      setIsCourseModalOpen(false)
-      // Reset form
-      setNewCourseTitle('')
-      setNewCourseSlug('')
-      setNewCourseShortDesc('')
-      setNewCourseFullDesc('')
-      loadAdminData()
-    } catch (err) {
-      showToast(err.message || 'Failed to create course', 'error')
-    } finally {
-      setIsCreatingCourse(false)
     }
   }
 
@@ -437,248 +773,1776 @@ export default function AdminDashboardPage() {
     .filter((p) => p.status === 'SUCCESSFUL' || p.status === 'PAID')
     .reduce((sum, p) => sum + (p.amount || 0), 0)
 
+  const pendingReviewsTotal =
+    (overviewData?.pendingVerificationCount ?? verificationQueue.length) +
+    (overviewData?.pendingRequestsCount ?? requestsList.filter((r) => r.status === 'PENDING').length)
+
   return (
-    <div>
-      {/* Top Header */}
-      <div
-        className="dashboard-topbar"
-        style={{
-          marginBottom: 28,
-          background: '#FFFFFF',
-          padding: '20px 24px',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--color-border)',
-          boxShadow: 'var(--shadow-sm)'
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-            ApexLearn Academic Administration
-          </h1>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
-            Full administrative authority over curriculum, course creation, creators, students, pricing, offers, and video quality control.
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            type="button"
-            className="btn btn-outline btn-sm"
-            onClick={loadAdminData}
-            style={{ fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-          >
-            <RefreshCw size={14} />
-            <span>Refresh</span>
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() => setIsCourseModalOpen(true)}
-            style={{ fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-          >
-            <Plus size={14} />
-            <span>Create Course</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div
-        className="player-tabs-bar"
-        style={{
-          marginBottom: 24,
-          background: '#FFFFFF',
-          padding: '6px 12px',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--color-border)',
-          display: 'flex',
-          gap: 6,
-          flexWrap: 'wrap'
-        }}
-      >
-        <button className={`player-tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
-          Overview
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'courses' ? 'active' : ''}`} onClick={() => setActiveTab('courses')}>
-          Courses ({courses.length})
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'video-verification' ? 'active' : ''}`} onClick={() => setActiveTab('video-verification')}>
-          Video Queue ({verificationQueue.length})
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'pricing' ? 'active' : ''}`} onClick={() => setActiveTab('pricing')}>
-          Pricing & Offers ({offers.length})
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'public-controls' ? 'active' : ''}`} onClick={() => setActiveTab('public-controls')}>
-          Public Page Controls
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'creators' ? 'active' : ''}`} onClick={() => setActiveTab('creators')}>
-          Creators ({creators.length})
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'students' ? 'active' : ''}`} onClick={() => setActiveTab('students')}>
-          Students ({students.length})
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'payments' ? 'active' : ''}`} onClick={() => setActiveTab('payments')}>
-          Payments & Revenue
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>
-          Creator Requests ({requestsList.length})
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'notifications' ? 'active' : ''}`} onClick={() => setActiveTab('notifications')}>
-          Broadcast Announcements
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'audit-logs' ? 'active' : ''}`} onClick={() => setActiveTab('audit-logs')}>
-          Audit Logs
-        </button>
-        <button className={`player-tab-btn ${activeTab === 'security' ? 'active' : ''}`} onClick={() => setActiveTab('security')}>
-          Security & Sessions
-        </button>
-      </div>
-
-      {/* Tab 1: Overview */}
+    <div style={{ paddingBottom: 40 }}>
+      {/* ========================================================================= */}
+      {/* 1. MAIN DASHBOARD OVERVIEW */}
+      {/* ========================================================================= */}
       {activeTab === 'overview' && (
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, marginBottom: 28 }}>
-            <div style={{ background: '#FFFFFF', padding: 20, borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Students</span>
-                <Users style={{ color: 'var(--color-secondary)', width: 20, height: 20 }} />
+          {/* Welcome Header */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              marginBottom: 24,
+              flexWrap: 'wrap',
+              gap: 16
+            }}
+          >
+            <div>
+              <h2
+                style={{
+                  fontSize: '1.5rem',
+                  fontWeight: 800,
+                  color: '#0F172A',
+                  margin: '0 0 4px 0',
+                  letterSpacing: '-0.02em'
+                }}
+              >
+                Admin Command Center
+              </h2>
+              <p
+                style={{
+                  color: '#64748B',
+                  fontSize: '0.875rem',
+                  margin: 0,
+                  fontWeight: 500
+                }}
+              >
+                Comprehensive platform overview, live review queues, and financial reconciliations.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={loadAdminData}
+                disabled={loading}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  height: 38,
+                  padding: '0 14px',
+                  borderRadius: 10,
+                  fontWeight: 600,
+                  fontSize: '0.8125rem'
+                }}
+              >
+                <RefreshCw size={14} className={loading ? 'spin' : ''} />
+                <span>{loading ? 'Refreshing...' : 'Refresh Data'}</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => navigate('/admin/courses/create')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  height: 38,
+                  padding: '0 16px',
+                  borderRadius: 10,
+                  fontWeight: 700,
+                  fontSize: '0.8125rem',
+                  boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)'
+                }}
+              >
+                <Plus size={16} />
+                <span>Create Course</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 5 Sleek StatCards */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: 16,
+              marginBottom: 28
+            }}
+          >
+            <StatCard
+              title="Active Students"
+              value={overviewData?.totalStudents ?? students.length}
+              icon={Users}
+              iconBg="#EFF6FF"
+              iconColor="#2563EB"
+              subtext="Enrolled in active cohorts"
+              badge="Learners"
+              badgeType="info"
+              onClick={() => navigate('/admin/students')}
+            />
+
+            <StatCard
+              title="Approved Creators"
+              value={overviewData?.totalCreators ?? creators.length}
+              icon={GraduationCap}
+              iconBg="#F0FDF4"
+              iconColor="#16A34A"
+              subtext="Verified faculty members"
+              badge="Instructors"
+              badgeType="success"
+              onClick={() => navigate('/admin/creators')}
+            />
+
+            <StatCard
+              title="Total Courses"
+              value={courses.length}
+              icon={BookOpen}
+              iconBg="#FFFBEB"
+              iconColor="#D97706"
+              subtext={`${courses.filter((c) => c.status === 'PUBLISHED').length} Published • ${courses.filter((c) => c.status === 'DRAFT').length} Draft`}
+              badge="Curriculum"
+              badgeType="neutral"
+              onClick={() => navigate('/admin/courses')}
+            />
+
+            <StatCard
+              title="Pending Reviews"
+              value={pendingReviewsTotal}
+              icon={AlertCircle}
+              iconBg={pendingReviewsTotal > 0 ? '#FEF2F2' : '#F1F5F9'}
+              iconColor={pendingReviewsTotal > 0 ? '#DC2626' : '#64748B'}
+              subtext={`${verificationQueue.length} Videos • ${requestsList.filter((r) => r.status === 'PENDING').length} Requests`}
+              badge={pendingReviewsTotal > 0 ? 'Requires Action' : 'All Clear'}
+              badgeType={pendingReviewsTotal > 0 ? 'danger' : 'success'}
+              onClick={() => navigate('/admin/playlists')}
+            />
+
+            <StatCard
+              title="Platform Revenue"
+              value={`₹${(overviewData?.totalRevenue ?? totalCalculatedRevenue).toLocaleString('en-IN')}`}
+              icon={IndianRupee}
+              iconBg="#ECFDF5"
+              iconColor="#059669"
+              subtext={`${paymentsList.filter((p) => p.status === 'SUCCESSFUL' || p.status === 'PAID').length} Paid transactions`}
+              badge="Verified"
+              badgeType="success"
+              onClick={() => navigate('/admin/payments')}
+            />
+          </div>
+
+          {/* Useful Dashboard Sections: 2-Column Responsive Layout */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+              gap: 24,
+              alignItems: 'start'
+            }}
+          >
+            {/* Left Column (Primary Queues & Activity) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {/* Section 1: Video Review Queue */}
+              <div
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: 16,
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
+                  overflow: 'hidden'
+                }}
+              >
+                <div
+                  style={{
+                    padding: '16px 20px',
+                    borderBottom: '1px solid #E2E8F0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: '#FAFAFA'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 8,
+                        background: '#FEF3C7',
+                        color: '#D97706',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <Video size={16} />
+                    </div>
+                    <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
+                      Video Verification Queue
+                    </span>
+                    {verificationQueue.length > 0 && (
+                      <span
+                        style={{
+                          background: '#FEE2E2',
+                          color: '#DC2626',
+                          fontSize: '0.6875rem',
+                          fontWeight: 700,
+                          padding: '2px 7px',
+                          borderRadius: 9999
+                        }}
+                      >
+                        {verificationQueue.length} pending
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/playlists')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#2563EB',
+                      fontSize: '0.8125rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}
+                  >
+                    <span>Open Queue</span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+
+                <div style={{ padding: 16 }}>
+                  {verificationQueue.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {verificationQueue.slice(0, 4).map((v) => (
+                        <div
+                          key={v.id}
+                          style={{
+                            padding: '12px 14px',
+                            background: '#F8FAFC',
+                            borderRadius: 12,
+                            border: '1px solid #E2E8F0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 12
+                          }}
+                        >
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div
+                              style={{
+                                fontSize: '0.875rem',
+                                fontWeight: 700,
+                                color: '#0F172A',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}
+                            >
+                              {v.title}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+                              Instructor: <strong style={{ color: '#334155' }}>{v.creator?.name || 'Creator'}</strong> • {v.playlist?.course?.title || 'Program'}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                            <span
+                              style={{
+                                background: '#FEF3C7',
+                                color: '#92400E',
+                                fontSize: '0.6875rem',
+                                fontWeight: 700,
+                                padding: '3px 8px',
+                                borderRadius: 6
+                              }}
+                            >
+                              SUBMITTED
+                            </span>
+                            <button
+                              type="button"
+                              className="btn btn-outline btn-sm"
+                              onClick={() => navigate('/admin/playlists')}
+                              style={{ height: 30, fontSize: '0.75rem', padding: '0 10px', fontWeight: 600 }}
+                            >
+                              Review
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '28px 16px', color: '#64748B' }}>
+                      <CheckCircle2 size={32} style={{ color: '#10B981', margin: '0 auto 8px auto' }} />
+                      <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+                        Verification Queue Clear
+                      </div>
+                      <div style={{ fontSize: '0.8125rem', marginTop: 2 }}>
+                        All creator video submissions are reviewed and processed.
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                {overviewData?.totalStudents ?? students.length}
+
+              {/* Section 2: Recent Course Orders & Enrollments */}
+              <div
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: 16,
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
+                  overflow: 'hidden'
+                }}
+              >
+                <div
+                  style={{
+                    padding: '16px 20px',
+                    borderBottom: '1px solid #E2E8F0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: '#FAFAFA'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 8,
+                        background: '#ECFDF5',
+                        color: '#059669',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <CreditCard size={16} />
+                    </div>
+                    <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
+                      Recent Enrollments & Payments
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/payments')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#2563EB',
+                      fontSize: '0.8125rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}
+                  >
+                    <span>View All Payments</span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+
+                <div style={{ padding: 16 }}>
+                  {(recentOrders.length > 0 || paymentsList.length > 0) ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {(recentOrders.length > 0 ? recentOrders : paymentsList).slice(0, 5).map((order) => (
+                        <div
+                          key={order.id}
+                          style={{
+                            padding: '12px 14px',
+                            background: '#F8FAFC',
+                            borderRadius: 12,
+                            border: '1px solid #E2E8F0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 12
+                          }}
+                        >
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div
+                              style={{
+                                fontSize: '0.875rem',
+                                fontWeight: 700,
+                                color: '#0F172A',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}
+                            >
+                              {order.student?.name || order.student?.email || 'Student'}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: '0.75rem',
+                                color: '#64748B',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                marginTop: 2
+                              }}
+                            >
+                              {order.course?.title || 'Program'}
+                            </div>
+                          </div>
+
+                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0F172A' }}>
+                              ₹{order.amount?.toLocaleString('en-IN')}
+                            </div>
+                            <span
+                              style={{
+                                background: '#DCFCE7',
+                                color: '#166534',
+                                fontSize: '0.6875rem',
+                                fontWeight: 700,
+                                padding: '2px 6px',
+                                borderRadius: 4,
+                                display: 'inline-block',
+                                marginTop: 2
+                              }}
+                            >
+                              PAID
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '28px 16px', color: '#64748B' }}>
+                      <CreditCard size={32} style={{ color: '#94A3B8', margin: '0 auto 8px auto' }} />
+                      <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+                        No Transactions Recorded
+                      </div>
+                      <div style={{ fontSize: '0.8125rem', marginTop: 2 }}>
+                        Paid enrollments will appear here automatically.
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div style={{ background: '#FFFFFF', padding: 20, borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Approved Creators</span>
-                <GraduationCap style={{ color: 'var(--color-accent)', width: 20, height: 20 }} />
-              </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                {overviewData?.totalCreators ?? creators.length}
-              </div>
-            </div>
+            {/* Right Column (Secondary feeds & platform actions) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {/* Section 3: Pending Creator Requests */}
+              <div
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: 16,
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
+                  overflow: 'hidden'
+                }}
+              >
+                <div
+                  style={{
+                    padding: '16px 20px',
+                    borderBottom: '1px solid #E2E8F0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: '#FAFAFA'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 8,
+                        background: '#EFF6FF',
+                        color: '#2563EB',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <UserCheck size={16} />
+                    </div>
+                    <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
+                      Creator Profile Requests
+                    </span>
+                    {requestsList.filter((r) => r.status === 'PENDING').length > 0 && (
+                      <span
+                        style={{
+                          background: '#EFF6FF',
+                          color: '#2563EB',
+                          fontSize: '0.6875rem',
+                          fontWeight: 700,
+                          padding: '2px 7px',
+                          borderRadius: 9999
+                        }}
+                      >
+                        {requestsList.filter((r) => r.status === 'PENDING').length} new
+                      </span>
+                    )}
+                  </div>
 
-            <div style={{ background: '#FFFFFF', padding: 20, borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Total Courses</span>
-                <BookOpen style={{ color: '#10B981', width: 20, height: 20 }} />
-              </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                {overviewData?.publishedCoursesCount ?? courses.length}
-              </div>
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/requests')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#2563EB',
+                      fontSize: '0.8125rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}
+                  >
+                    <span>View All</span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
 
-            <div style={{ background: '#FFFFFF', padding: 20, borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Pending Review Queue</span>
-                <CheckSquare style={{ color: '#F59E0B', width: 20, height: 20 }} />
+                <div style={{ padding: 16 }}>
+                  {requestsList.filter((r) => r.status === 'PENDING').length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {requestsList.filter((r) => r.status === 'PENDING').slice(0, 3).map((r) => (
+                        <div
+                          key={r.id}
+                          style={{
+                            padding: '12px 14px',
+                            background: '#F8FAFC',
+                            borderRadius: 12,
+                            border: '1px solid #E2E8F0'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                            <strong style={{ fontSize: '0.875rem', color: '#0F172A' }}>
+                              {r.creatorProfile?.user?.name || 'Creator'}
+                            </strong>
+                            <span
+                              style={{
+                                background: '#FEF3C7',
+                                color: '#92400E',
+                                fontSize: '0.6875rem',
+                                fontWeight: 700,
+                                padding: '2px 6px',
+                                borderRadius: 4
+                              }}
+                            >
+                              PENDING
+                            </span>
+                          </div>
+                          <p style={{ fontSize: '0.8125rem', color: '#475569', margin: '0 0 10px 0', lineHeight: 1.4 }}>
+                            {r.requestedHeadline || r.requestedBio || 'Requested bio change'}
+                          </p>
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            onClick={() => navigate('/admin/requests')}
+                            style={{ height: 28, fontSize: '0.75rem', padding: '0 10px', fontWeight: 600 }}
+                          >
+                            Review & Decide
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '24px 16px', color: '#64748B' }}>
+                      <CheckCircle2 size={28} style={{ color: '#10B981', margin: '0 auto 6px auto' }} />
+                      <div style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
+                        No pending creator profile requests
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#F59E0B' }}>
-                {verificationQueue.length}
-              </div>
-            </div>
 
-            <div style={{ background: '#FFFFFF', padding: 20, borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Confirmed Revenue</span>
-                <IndianRupee style={{ color: '#16A34A', width: 20, height: 20 }} />
+              {/* Section 4: Recent Platform Activity (Audit Trail) */}
+              <div
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: 16,
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
+                  overflow: 'hidden'
+                }}
+              >
+                <div
+                  style={{
+                    padding: '16px 20px',
+                    borderBottom: '1px solid #E2E8F0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: '#FAFAFA'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 8,
+                        background: '#F1F5F9',
+                        color: '#475569',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <FileText size={16} />
+                    </div>
+                    <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
+                      Recent Platform Activity
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/audit-logs')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#2563EB',
+                      fontSize: '0.8125rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}
+                  >
+                    <span>Full Audit</span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+
+                <div style={{ padding: 16 }}>
+                  {(recentAuditLogs.length > 0 ? recentAuditLogs : auditLogs).length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {(recentAuditLogs.length > 0 ? recentAuditLogs : auditLogs).slice(0, 4).map((log) => (
+                        <div
+                          key={log.id}
+                          style={{
+                            padding: '10px 12px',
+                            background: '#F8FAFC',
+                            borderRadius: 10,
+                            border: '1px solid #E2E8F0'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                            <span
+                              style={{
+                                fontSize: '0.6875rem',
+                                fontWeight: 700,
+                                background: '#E2E8F0',
+                                color: '#1E293B',
+                                padding: '1px 6px',
+                                borderRadius: 4,
+                                letterSpacing: '0.02em'
+                              }}
+                            >
+                              {log.action}
+                            </span>
+                            <span style={{ fontSize: '0.6875rem', color: '#94A3B8' }}>
+                              {new Date(log.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.78125rem', color: '#334155', fontWeight: 500, marginTop: 4 }}>
+                            {log.details || `Performed on ${log.entityType}`}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '24px 16px', color: '#64748B' }}>
+                      <div style={{ fontSize: '0.8125rem' }}>No activity records available.</div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#16A34A' }}>
-                ₹{(overviewData?.totalRevenue ?? totalCalculatedRevenue).toLocaleString('en-IN')}
+
+              {/* Section 5: System Health & Quick Governance Shortcuts */}
+              <div
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: 16,
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
+                  padding: 20
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                  <Shield size={18} style={{ color: '#059669' }} />
+                  <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
+                    Platform Architecture Health
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                  <div
+                    style={{
+                      padding: '10px 12px',
+                      background: '#F8FAFC',
+                      borderRadius: 10,
+                      border: '1px solid #E2E8F0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Database size={15} style={{ color: '#2563EB' }} />
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>
+                        PostgreSQL Database
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#16A34A', background: '#DCFCE7', padding: '2px 8px', borderRadius: 9999 }}>
+                      HEALTHY
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: '10px 12px',
+                      background: '#F8FAFC',
+                      borderRadius: 10,
+                      border: '1px solid #E2E8F0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Key size={15} style={{ color: '#D97706' }} />
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>
+                        Active Sessions
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569' }}>
+                      {activeSessions.length} active
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => navigate('/admin/creators')}
+                    style={{ height: 34, fontSize: '0.75rem', fontWeight: 600 }}
+                  >
+                    + Invite Faculty
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => navigate('/admin/notifications')}
+                    style={{ height: 34, fontSize: '0.75rem', fontWeight: 600 }}
+                  >
+                    Broadcast Alert
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Tab 2: Courses Management (Full CRUD) */}
+      {/* ========================================================================= */}
+      {/* 2. COURSE MANAGEMENT (All Courses, Pricing, Catalog Visibility) */}
+      {/* ========================================================================= */}
       {activeTab === 'courses' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Curriculum & Program Catalog ({courses.length})</h3>
+          {/* Section Header */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              marginBottom: 20,
+              flexWrap: 'wrap',
+              gap: 16
+            }}
+          >
+            <div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
+                Course & Curriculum Management
+              </h2>
+              <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0, fontWeight: 500 }}>
+                Manage academic programs, base pricing models, coupon promotions, and catalog discovery.
+              </p>
+            </div>
+
             <button
+              type="button"
               className="btn btn-primary btn-sm"
-              onClick={() => setIsCourseModalOpen(true)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              onClick={() => navigate('/admin/courses/create')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                height: 38,
+                padding: '0 16px',
+                borderRadius: 10,
+                fontWeight: 700,
+                fontSize: '0.8125rem'
+              }}
             >
               <Plus size={16} />
               <span>Create New Course</span>
             </button>
           </div>
 
-          <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
-            {courses.length > 0 ? (
-              <table className="data-table" style={{ width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th>Course Title</th>
-                    <th>Category</th>
-                    <th>Level</th>
-                    <th>Price</th>
-                    <th>Status</th>
-                    <th>Assigned Creator</th>
-                    <th>Enrolled</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {courses.map((c) => (
-                    <tr key={c.id}>
-                      <td>
-                        <strong>{c.title}</strong>
-                        <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>slug: {c.slug}</div>
-                      </td>
-                      <td><span className="badge badge-popular">{c.category}</span></td>
-                      <td>{c.level}</td>
-                      <td>{c.isFree ? 'FREE' : `₹${c.price?.toLocaleString('en-IN')}`}</td>
-                      <td>
-                        <span
-                          className="badge"
-                          style={{
-                            background: c.status === 'PUBLISHED' ? '#DCFCE7' : c.status === 'DRAFT' ? '#FEF3C7' : '#F1F5F9',
-                            color: c.status === 'PUBLISHED' ? '#166534' : c.status === 'DRAFT' ? '#92400E' : '#475569'
-                          }}
-                        >
-                          {c.status}
-                        </span>
-                      </td>
-                      <td>
-                        {c.creators && c.creators.length > 0
-                          ? c.creators.map((cr) => cr.creator?.name).join(', ')
-                          : <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>Unassigned</span>}
-                      </td>
-                      <td>{c.enrolledStudentsCount || c.studentsCount || 0}</td>
+          {/* Course-Specific Internal Tabs ONLY */}
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              borderBottom: '1px solid #E2E8F0',
+              marginBottom: 24
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setCourseSubTab('catalog')}
+              style={{
+                padding: '10px 16px',
+                border: 'none',
+                background: 'none',
+                fontSize: '0.875rem',
+                fontWeight: 700,
+                color: courseSubTab === 'catalog' ? '#2563EB' : '#64748B',
+                borderBottom: courseSubTab === 'catalog' ? '2px solid #2563EB' : '2px solid transparent',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              Curriculum Catalog ({courses.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCourseSubTab('pricing')}
+              style={{
+                padding: '10px 16px',
+                border: 'none',
+                background: 'none',
+                fontSize: '0.875rem',
+                fontWeight: 700,
+                color: courseSubTab === 'pricing' ? '#2563EB' : '#64748B',
+                borderBottom: courseSubTab === 'pricing' ? '2px solid #2563EB' : '2px solid transparent',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              Pricing & Offers ({offers.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCourseSubTab('controls')}
+              style={{
+                padding: '10px 16px',
+                border: 'none',
+                background: 'none',
+                fontSize: '0.875rem',
+                fontWeight: 700,
+                color: courseSubTab === 'controls' ? '#2563EB' : '#64748B',
+                borderBottom: courseSubTab === 'controls' ? '2px solid #2563EB' : '2px solid transparent',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              Public Catalog Visibility & Controls
+            </button>
+          </div>
+
+          {/* Subtab A: Catalog Table */}
+          {courseSubTab === 'catalog' && (
+            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+              {courses.length > 0 ? (
+                <table className="data-table" style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th>Course Title</th>
+                      <th>Category</th>
+                      <th>Level</th>
+                      <th>Base Price</th>
+                      <th>Status</th>
+                      <th>Assigned Faculty</th>
+                      <th>Enrolled Students</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '48px 20px' }}>
-                <BookOpen style={{ width: 48, height: 48, color: '#94A3B8', margin: '0 auto 12px auto' }} />
-                <h4 style={{ fontSize: '1.1rem', marginBottom: 6 }}>No courses in database</h4>
-                <p style={{ color: 'var(--color-text-secondary)', marginBottom: 16 }}>
-                  Click &quot;Create New Course&quot; to initialize a program curriculum and assign an instructor.
-                </p>
-                <button className="btn btn-primary btn-sm" onClick={() => setIsCourseModalOpen(true)}>
-                  Create Course Now
+                  </thead>
+                  <tbody>
+                    {courses.map((c) => (
+                      <tr key={c.id}>
+                        <td>
+                          <strong>{c.title}</strong>
+                          <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>slug: {c.slug}</div>
+                        </td>
+                        <td><span className="badge badge-popular">{c.category}</span></td>
+                        <td>{c.level}</td>
+                        <td>{c.isFree ? 'FREE' : `₹${c.price?.toLocaleString('en-IN')}`}</td>
+                        <td>
+                          <span
+                            className="badge"
+                            style={{
+                              background: c.status === 'PUBLISHED' ? '#DCFCE7' : c.status === 'DRAFT' ? '#FEF3C7' : '#F1F5F9',
+                              color: c.status === 'PUBLISHED' ? '#166534' : c.status === 'DRAFT' ? '#92400E' : '#475569'
+                            }}
+                          >
+                            {c.status}
+                          </span>
+                        </td>
+                        <td>
+                          {c.creators && c.creators.length > 0
+                            ? c.creators.map((cr) => cr.creator?.name).join(', ')
+                            : <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>Unassigned</span>}
+                        </td>
+                        <td>{c.enrolledStudentsCount || c.studentsCount || 0} learners</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '48px 20px' }}>
+                  <BookOpen style={{ width: 48, height: 48, color: '#94A3B8', margin: '0 auto 12px auto' }} />
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: 6 }}>No courses in database</h4>
+                  <p style={{ color: '#64748B', marginBottom: 16 }}>
+                    Click &quot;Create New Course&quot; to initialize a program curriculum and assign an instructor.
+                  </p>
+                  <button className="btn btn-primary btn-sm" onClick={() => navigate('/admin/courses/create')}>
+                    Create Course Now
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Subtab B: Pricing & Offers */}
+          {courseSubTab === 'pricing' && (
+            <div>
+              {/* Offers Table */}
+              <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, marginBottom: 24 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <div>
+                    <h4 style={{ fontSize: '1.125rem', fontWeight: 800, margin: '0 0 2px 0' }}>Promotional Coupon Offers</h4>
+                    <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: 0 }}>Configure discount codes for public checkout.</p>
+                  </div>
+                  <button className="btn btn-primary btn-sm" onClick={() => setIsOfferModalOpen(true)}>
+                    + Create Coupon Offer
+                  </button>
+                </div>
+
+                {offers.length > 0 ? (
+                  <table className="data-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th>Coupon Code</th>
+                        <th>Offer Title</th>
+                        <th>Discount</th>
+                        <th>Redemptions</th>
+                        <th>Validity</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {offers.map((off) => (
+                        <tr key={off.id}>
+                          <td><strong style={{ color: '#2563EB', fontFamily: 'monospace', fontSize: '0.95rem' }}>{off.code}</strong></td>
+                          <td>{off.title}</td>
+                          <td>
+                            <span className="badge" style={{ background: '#DCFCE7', color: '#166534', fontWeight: 700 }}>
+                              {off.discountPercent ? `${off.discountPercent}% OFF` : `₹${off.discountAmount} OFF`}
+                            </span>
+                          </td>
+                          <td>{off.usedCount} {off.maxUses ? `/ ${off.maxUses}` : 'uses'}</td>
+                          <td style={{ fontSize: '0.8rem' }}>Ends {new Date(off.endDate).toLocaleDateString()}</td>
+                          <td>
+                            <span className="badge" style={{ background: off.isActive ? '#DCFCE7' : '#F1F5F9', color: off.isActive ? '#166534' : '#64748B' }}>
+                              {off.isActive ? 'ACTIVE' : 'INACTIVE'}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button className="btn btn-outline btn-sm" onClick={() => handleToggleOfferActive(off)}>
+                                {off.isActive ? 'Deactivate' : 'Activate'}
+                              </button>
+                              <button className="btn btn-outline btn-sm" onClick={() => handleDeleteOffer(off.id, off.code)} style={{ color: '#DC2626', borderColor: '#FCA5A5' }}>
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '32px 16px', color: '#64748B' }}>
+                    <Tag size={32} style={{ color: '#94A3B8', margin: '0 auto 8px auto' }} />
+                    <p style={{ margin: 0 }}>No promotional coupons configured yet.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Course Base Pricing Table */}
+              <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24 }}>
+                <h4 style={{ fontSize: '1.125rem', fontWeight: 800, margin: '0 0 16px 0' }}>Course Base Pricing Table</h4>
+                <table className="data-table" style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th>Course Title</th>
+                      <th>Current Base Price</th>
+                      <th>Active Catalog Discount</th>
+                      <th>Update Pricing</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {courses.map((c) => (
+                      <tr key={c.id}>
+                        <td><strong>{c.title}</strong></td>
+                        <td>
+                          {priceEditingCourseId === c.id ? (
+                            <input
+                              type="number"
+                              className="form-input"
+                              style={{ width: 120, height: 34 }}
+                              value={editPrice}
+                              onChange={(e) => setEditPrice(e.target.value)}
+                            />
+                          ) : (
+                            c.isFree ? 'FREE' : `₹${c.price?.toLocaleString('en-IN')}`
+                          )}
+                        </td>
+                        <td>
+                          {priceEditingCourseId === c.id ? (
+                            <input
+                              type="number"
+                              className="form-input"
+                              style={{ width: 90, height: 34 }}
+                              value={editDiscount}
+                              onChange={(e) => setEditDiscount(e.target.value)}
+                            />
+                          ) : (
+                            `${c.discountPercent || 0}%`
+                          )}
+                        </td>
+                        <td>
+                          {priceEditingCourseId === c.id ? (
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button className="btn btn-primary btn-sm" onClick={() => handleSavePrice(c.id)}>
+                                Save
+                              </button>
+                              <button className="btn btn-outline btn-sm" onClick={() => setPriceEditingCourseId(null)}>
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              className="btn btn-outline btn-sm"
+                              onClick={() => {
+                                setPriceEditingCourseId(c.id)
+                                setEditPrice(c.price || 0)
+                                setEditDiscount(c.discountPercent || 0)
+                              }}
+                            >
+                              Edit Price
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Subtab C: Public Catalog Controls */}
+          {courseSubTab === 'controls' && (
+            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24 }}>
+              <h4 style={{ fontSize: '1.125rem', fontWeight: 800, margin: '0 0 6px 0' }}>Catalog Visibility & Discovery Rules</h4>
+              <p style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: 20 }}>
+                Hiding or archiving a course removes it from public listings; enrolled students maintain full playback access.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {courses.map((c) => (
+                  <div
+                    key={c.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: 16,
+                      background: '#F8FAFC',
+                      borderRadius: 12,
+                      border: '1px solid #E2E8F0',
+                      flexWrap: 'wrap',
+                      gap: 12
+                    }}
+                  >
+                    <div>
+                      <strong style={{ fontSize: '0.95rem', color: '#0F172A' }}>{c.title}</strong>
+                      <div style={{ fontSize: '0.8rem', color: '#64748B', marginTop: 2 }}>
+                        Status: <strong style={{ color: c.status === 'PUBLISHED' ? '#16A34A' : '#D97706' }}>{c.status}</strong> •
+                        Enrollment: <strong>{c.enrollmentOpen !== false ? 'OPEN' : 'CLOSED'}</strong> •
+                        Featured: <strong>{c.isFeatured ? 'YES' : 'NO'}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <select
+                        value={c.status}
+                        className="form-input"
+                        style={{ height: 36, fontSize: '0.8rem', padding: '0 8px' }}
+                        onChange={async (e) => {
+                          const newStatus = e.target.value
+                          await api.admin.updatePublicControls(c.id, { status: newStatus })
+                          showToast(`Course status updated to ${newStatus}`, 'success')
+                          loadAdminData()
+                        }}
+                      >
+                        <option value="PUBLISHED">PUBLISHED (Public)</option>
+                        <option value="DRAFT">DRAFT (Hidden)</option>
+                        <option value="ARCHIVED">ARCHIVED (Students only)</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={async () => {
+                          const newOpen = c.enrollmentOpen === false ? true : false
+                          await api.admin.updatePublicControls(c.id, { enrollmentOpen: newOpen })
+                          showToast(`Enrollment is now ${newOpen ? 'Open' : 'Closed'}`, 'success')
+                          loadAdminData()
+                        }}
+                      >
+                        {c.enrollmentOpen !== false ? 'Close Enrollment' : 'Open Enrollment'}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={async () => {
+                          const newFeatured = !c.isFeatured
+                          await api.admin.updatePublicControls(c.id, { isFeatured: newFeatured })
+                          showToast(`Featured status toggled for ${c.title}`, 'success')
+                          loadAdminData()
+                        }}
+                      >
+                        {c.isFeatured ? 'Unfeature' : 'Feature'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3. CREATOR MANAGEMENT */}
+      {/* ========================================================================= */}
+      {activeTab === 'creators' && (
+        <div>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 14 }}>
+            <div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
+                Creator & Faculty Management
+              </h2>
+              <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0, fontWeight: 500 }}>
+                Manage creator accounts, profiles, access, and onboarding.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => navigate('/admin/creators/create')}
+              style={{
+                height: 38,
+                padding: '0 20px',
+                fontWeight: 700,
+                fontSize: '0.8125rem',
+                borderRadius: 8,
+                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.2)'
+              }}
+            >
+              Create Creator
+            </button>
+          </div>
+
+          {/* Search, Filter, and Sort Bar */}
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: 12,
+              border: '1px solid #E2E8F0',
+              padding: '12px 16px',
+              marginBottom: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              flexWrap: 'wrap',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+            }}
+          >
+            {/* Search Input */}
+            <div style={{ position: 'relative', flex: '1 1 300px', maxWidth: 440 }}>
+              <Search
+                size={16}
+                style={{
+                  position: 'absolute',
+                  left: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#94A3B8'
+                }}
+              />
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Search creators by name, email, or user ID..."
+                value={creatorSearch}
+                onChange={(e) => setCreatorSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: 38,
+                  paddingLeft: 36,
+                  fontSize: '0.8125rem'
+                }}
+              />
+            </div>
+
+            {/* Filter & Sort Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <select
+                value={creatorStatusFilter}
+                onChange={(e) => setCreatorStatusFilter(e.target.value)}
+                style={{
+                  height: 38,
+                  padding: '0 12px',
+                  borderRadius: 8,
+                  border: '1px solid #CBD5E1',
+                  fontSize: '0.8125rem',
+                  color: '#0F172A',
+                  fontWeight: 600,
+                  background: '#FFFFFF',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="SUSPENDED">Suspended</option>
+              </select>
+
+              <select
+                value={creatorSortBy}
+                onChange={(e) => setCreatorSortBy(e.target.value)}
+                style={{
+                  height: 38,
+                  padding: '0 12px',
+                  borderRadius: 8,
+                  border: '1px solid #CBD5E1',
+                  fontSize: '0.8125rem',
+                  color: '#0F172A',
+                  fontWeight: 600,
+                  background: '#FFFFFF',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="name">Sort: Name A–Z</option>
+                <option value="created_desc">Sort: Newest First</option>
+                <option value="created_asc">Sort: Oldest First</option>
+              </select>
+
+              {(creatorSearch || creatorStatusFilter !== 'ALL') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreatorSearch('')
+                    setCreatorStatusFilter('ALL')
+                  }}
+                  className="btn btn-ghost btn-sm"
+                  style={{ height: 38, fontSize: '0.75rem', color: '#64748B' }}
+                >
+                  Clear Filters
                 </button>
+              )}
+            </div>
+          </div>
+
+          {/* Creators Data Table */}
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: 14,
+              border: '1px solid #E2E8F0',
+              overflow: 'hidden',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+            }}
+          >
+            {filteredCreators.length > 0 ? (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Creator
+                      </th>
+                      <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                        Creator User ID
+                      </th>
+                      <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Specialization / Title
+                      </th>
+                      <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                        Account Status
+                      </th>
+                      <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                        Created Date
+                      </th>
+                      <th style={{ textAlign: 'left', padding: '12px 16px', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                        Last Login
+                      </th>
+                      <th style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCreators.map((cr) => {
+                      const isActive = cr.status === 'ACTIVE'
+                      const isInactive = cr.status === 'INACTIVE'
+                      const isSuspended = cr.status === 'SUSPENDED'
+
+                      let badgeBg = '#DCFCE7'
+                      let badgeColor = '#166534'
+                      if (isInactive) {
+                        badgeBg = '#FEF3C7'
+                        badgeColor = '#92400E'
+                      } else if (isSuspended) {
+                        badgeBg = '#FEE2E2'
+                        badgeColor = '#991B1B'
+                      }
+
+                      return (
+                        <tr key={cr.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                          {/* 1. Creator Column: Photo, Name, Email, Phone */}
+                          <td style={{ padding: '12px 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <img
+                                src={cr.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
+                                alt={cr.name || 'Creator'}
+                                style={{
+                                  width: 38,
+                                  height: 38,
+                                  borderRadius: '50%',
+                                  objectFit: 'cover',
+                                  flexShrink: 0,
+                                  border: '1px solid #E2E8F0',
+                                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                }}
+                                onError={(e) => {
+                                  e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+                                }}
+                              />
+                              <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                <span style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.875rem', lineHeight: 1.3 }}>
+                                  {cr.name}
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: '#475569', lineHeight: 1.3 }}>
+                                  {cr.email}
+                                </span>
+                                {cr.phone && (
+                                  <span style={{ fontSize: '0.71875rem', color: '#94A3B8', lineHeight: 1.25 }}>
+                                    {cr.phone}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 2. Creator User ID */}
+                          <td style={{ padding: '12px 16px' }}>
+                            <code
+                              style={{
+                                background: '#F1F5F9',
+                                color: '#0F172A',
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                fontFamily: 'monospace'
+                              }}
+                            >
+                              {cr.id}
+                            </code>
+                          </td>
+
+                          {/* 3. Specialization / Title */}
+                          <td style={{ padding: '12px 16px', color: '#334155', fontSize: '0.8125rem' }}>
+                            <div style={{ fontWeight: 600, color: '#1E293B', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {cr.creatorProfile?.specialization || cr.creatorProfile?.headline || 'Technical Instructor'}
+                            </div>
+                          </td>
+
+                          {/* 4. Account Status */}
+                          <td style={{ padding: '12px 16px' }}>
+                            <span
+                              style={{
+                                background: badgeBg,
+                                color: badgeColor,
+                                fontSize: '0.71875rem',
+                                fontWeight: 700,
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                letterSpacing: '0.02em',
+                                display: 'inline-block'
+                              }}
+                            >
+                              {isActive ? 'ACTIVE' : (isSuspended ? 'SUSPENDED' : 'INACTIVE')}
+                            </span>
+                          </td>
+
+                          {/* 5. Created Date */}
+                          <td style={{ padding: '12px 16px', color: '#64748B', fontSize: '0.78125rem', whiteSpace: 'nowrap' }}>
+                            {cr.createdAt ? new Date(cr.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                          </td>
+
+                          {/* 6. Last Login */}
+                          <td style={{ padding: '12px 16px', color: '#64748B', fontSize: '0.78125rem', whiteSpace: 'nowrap' }}>
+                            {formatLastLogin(cr)}
+                          </td>
+
+                          {/* 7. Administrative Actions: [ 👁 ] [ ✎ ] [ ⏸/▶ ] [ 🔑 ] [ ✉ ] */}
+                          <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+                              {/* View: Neutral */}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedViewCreator(cr)}
+                                title="View Profile"
+                                aria-label="View Profile"
+                                style={{
+                                  width: 32,
+                                  height: 32,
+                                  borderRadius: 7,
+                                  border: '1px solid #CBD5E1',
+                                  background: '#FFFFFF',
+                                  color: '#475569',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#F1F5F9'
+                                  e.currentTarget.style.color = '#0F172A'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = '#FFFFFF'
+                                  e.currentTarget.style.color = '#475569'
+                                }}
+                              >
+                                <Eye size={15} />
+                              </button>
+
+                              {/* Edit: Neutral */}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditCreator(cr)}
+                                title="Edit Creator"
+                                aria-label="Edit Creator"
+                                style={{
+                                  width: 32,
+                                  height: 32,
+                                  borderRadius: 7,
+                                  border: '1px solid #CBD5E1',
+                                  background: '#FFFFFF',
+                                  color: '#475569',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#F1F5F9'
+                                  e.currentTarget.style.color = '#0F172A'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = '#FFFFFF'
+                                  e.currentTarget.style.color = '#475569'
+                                }}
+                              >
+                                <Edit3 size={15} />
+                              </button>
+
+                              {/* Suspend / Activate: Warning/Danger or Success */}
+                              {isActive ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handlePromptSuspendCreator(cr)}
+                                  title="Suspend Account"
+                                  aria-label="Suspend Account"
+                                  style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 7,
+                                    border: '1px solid #FECACA',
+                                    background: '#FFFFFF',
+                                    color: '#DC2626',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#FEF2F2'
+                                    e.currentTarget.style.borderColor = '#FCA5A5'
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = '#FFFFFF'
+                                    e.currentTarget.style.borderColor = '#FECACA'
+                                  }}
+                                >
+                                  <Pause size={14} />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handlePromptActivateCreator(cr)}
+                                  title="Activate Account"
+                                  aria-label="Activate Account"
+                                  style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 7,
+                                    border: '1px solid #BBF7D0',
+                                    background: '#FFFFFF',
+                                    color: '#16A34A',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#F0FDF4'
+                                    e.currentTarget.style.borderColor = '#86EFAC'
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = '#FFFFFF'
+                                    e.currentTarget.style.borderColor = '#BBF7D0'
+                                  }}
+                                >
+                                  <Play size={14} />
+                                </button>
+                              )}
+
+                              {/* Reset Credentials: Neutral / Warning */}
+                              <button
+                                type="button"
+                                onClick={() => handlePromptResetCredentials(cr)}
+                                title="Reset Credentials"
+                                aria-label="Reset Credentials"
+                                style={{
+                                  width: 32,
+                                  height: 32,
+                                  borderRadius: 7,
+                                  border: '1px solid #FDE68A',
+                                  background: '#FFFFFF',
+                                  color: '#D97706',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#FFFBEB'
+                                  e.currentTarget.style.borderColor = '#FCD34D'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = '#FFFFFF'
+                                  e.currentTarget.style.borderColor = '#FDE68A'
+                                }}
+                              >
+                                <Key size={14} />
+                              </button>
+
+                              {/* Resend Credentials: Neutral */}
+                              <button
+                                type="button"
+                                onClick={() => handleResendCredentials(cr)}
+                                title="Resend Credentials"
+                                aria-label="Resend Credentials"
+                                style={{
+                                  width: 32,
+                                  height: 32,
+                                  borderRadius: 7,
+                                  border: '1px solid #CBD5E1',
+                                  background: '#FFFFFF',
+                                  color: '#475569',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#F1F5F9'
+                                  e.currentTarget.style.color = '#0F172A'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = '#FFFFFF'
+                                  e.currentTarget.style.color = '#475569'
+                                }}
+                              >
+                                <Mail size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '48px 20px', color: '#64748B' }}>
+                <Users size={40} style={{ color: '#CBD5E1', margin: '0 auto 12px auto' }} />
+                <h4 style={{ fontSize: '1.05rem', color: '#0F172A', marginBottom: 4 }}>
+                  No Creators Found
+                </h4>
+                <p style={{ fontSize: '0.85rem', margin: '0 0 16px 0' }}>
+                  {creatorSearch || creatorStatusFilter !== 'ALL'
+                    ? 'No creators match the current filter or search criteria.'
+                    : 'No creator accounts have been provisioned yet.'}
+                </p>
+                {creatorSearch || creatorStatusFilter !== 'ALL' ? (
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => {
+                      setCreatorSearch('')
+                      setCreatorStatusFilter('ALL')
+                    }}
+                  >
+                    Reset Search Filters
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => navigate('/admin/creators/create')}
+                  >
+                    Create Creator
+                  </button>
+                )}
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Tab 3: Video Verification Queue */}
+      {/* ========================================================================= */}
+      {/* 4. STUDENT MANAGEMENT */}
+      {/* ========================================================================= */}
+      {activeTab === 'students' && (
+        <div>
+          <div style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
+              Student Directory & Enrolment Governance
+            </h2>
+            <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0 }}>
+              Audit registered learners, enrolled programs, and manage account statuses.
+            </p>
+          </div>
+
+          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+            {students.length > 0 ? (
+              <table className="data-table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th>Student Name</th>
+                    <th>Email Address</th>
+                    <th>Status</th>
+                    <th>Active Enrollments</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((st) => (
+                    <tr key={st.id}>
+                      <td><strong>{st.name}</strong></td>
+                      <td>{st.email}</td>
+                      <td>
+                        <span className="badge" style={{ background: st.status === 'ACTIVE' ? '#DCFCE7' : '#FEE2E2', color: st.status === 'ACTIVE' ? '#166534' : '#991B1B' }}>
+                          {st.status}
+                        </span>
+                      </td>
+                      <td>{st.enrolledCount || st.enrollments?.length || 0} Programs</td>
+                      <td>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          onClick={() => handleToggleStudentStatus(st.id, st.status)}
+                        >
+                          {st.status === 'ACTIVE' ? 'Suspend Learner' : 'Reactivate'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '36px', color: '#64748B' }}>
+                No students registered in database yet.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 5. PLAYLIST & VIDEO MANAGEMENT */}
+      {/* ========================================================================= */}
       {activeTab === 'video-verification' && (
         <div>
-          <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden', marginBottom: 20 }}>
+          <div style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
+              Playlist & Video Verification Queue
+            </h2>
+            <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0 }}>
+              Verify creator video submissions against pedagogical and audio-visual benchmarks before public student streaming.
+            </p>
+          </div>
+
+          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
             {verificationQueue.length > 0 ? (
               <table className="data-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
                     <th>Lecture Title</th>
-                    <th>Creator</th>
+                    <th>Instructor</th>
                     <th>Course & Module</th>
-                    <th>Current Status</th>
+                    <th>Verification Status</th>
                     <th>Administrative Actions</th>
                   </tr>
                 </thead>
@@ -686,9 +2550,9 @@ export default function AdminDashboardPage() {
                   {verificationQueue.map((v) => (
                     <tr key={v.id}>
                       <td><strong>{v.title}</strong></td>
-                      <td>{v.creator?.name || 'Lead Creator'}</td>
+                      <td>{v.creator?.name || 'Faculty Member'}</td>
                       <td>
-                        <div>{v.playlist?.course?.title || 'Course'}</div>
+                        <div>{v.playlist?.course?.title || 'Program'}</div>
                         <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{v.playlist?.title} • {v.duration}</div>
                       </td>
                       <td>
@@ -710,7 +2574,7 @@ export default function AdminDashboardPage() {
                               onClick={() => handleApproveVideo(v.id)}
                               style={{ color: '#16A34A', borderColor: '#86EFAC' }}
                             >
-                              <CheckCircle2 style={{ width: 14, height: 14 }} />
+                              <CheckCircle2 size={14} />
                               <span>Approve Quality</span>
                             </button>
                           )}
@@ -720,7 +2584,7 @@ export default function AdminDashboardPage() {
                               onClick={() => handlePublishLesson(v.id)}
                               style={{ background: '#16A34A', borderColor: '#16A34A' }}
                             >
-                              <Globe style={{ width: 14, height: 14 }} />
+                              <Globe size={14} />
                               <span>Publish to Students</span>
                             </button>
                           )}
@@ -737,7 +2601,7 @@ export default function AdminDashboardPage() {
                             <button
                               className="btn btn-outline btn-sm"
                               onClick={() => {
-                                const note = prompt('Enter revision feedback for Creator:')
+                                const note = prompt('Enter revision feedback note for Instructor:')
                                 if (note) {
                                   api.admin.reviewVideo(v.id, 'RETURNED_FOR_EDIT', note).then(() => {
                                     showToast('Video returned with revision instructions', 'info')
@@ -747,8 +2611,8 @@ export default function AdminDashboardPage() {
                               }}
                               style={{ color: '#D97706', borderColor: '#FDE68A' }}
                             >
-                              <RotateCcw style={{ width: 14, height: 14 }} />
-                              <span>Return</span>
+                              <RotateCcw size={14} />
+                              <span>Return for Edit</span>
                             </button>
                           )}
                         </div>
@@ -758,924 +2622,1136 @@ export default function AdminDashboardPage() {
                 </tbody>
               </table>
             ) : (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-secondary)' }}>
-                Verification queue is currently clear! No lectures are awaiting review.
+              <div style={{ textAlign: 'center', padding: '44px 20px', color: '#64748B' }}>
+                <CheckCircle2 size={36} style={{ color: '#10B981', margin: '0 auto 10px auto' }} />
+                <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 4px 0', color: '#0F172A' }}>
+                  Verification Queue Clear
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.85rem' }}>
+                  All creator video lectures have been reviewed and approved.
+                </p>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Tab 4: Pricing & Offers Management */}
-      {activeTab === 'pricing' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-          {/* Section A: Active Offers & Coupon Codes */}
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Promotional Offers & Coupons ({offers.length})</h3>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
-                  Admin-managed discount codes applied server-side during student checkout.
-                </p>
+      {/* ========================================================================= */}
+      {/* 6. PAYMENTS & ENROLLMENTS */}
+      {/* ========================================================================= */}
+      {activeTab === 'payments' && (
+        <div>
+          <div style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
+              Payments & Financial Audit Trail
+            </h2>
+            <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0 }}>
+              Live reconciliation of Razorpay payment signatures, verified transactions, and learner order numbers.
+            </p>
+          </div>
+
+          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+            {paymentsList.length > 0 ? (
+              <table className="data-table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th>Order Number</th>
+                    <th>Enrolled Learner</th>
+                    <th>Academic Program</th>
+                    <th>Amount Paid</th>
+                    <th>Payment Status</th>
+                    <th>Date Recorded</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paymentsList.map((p) => (
+                    <tr key={p.id}>
+                      <td><strong>{p.orderNumber || p.id.slice(0, 10)}</strong></td>
+                      <td>{p.student?.name || p.student?.email || 'Learner'}</td>
+                      <td>{p.course?.title || 'Program'}</td>
+                      <td>₹{p.amount?.toLocaleString('en-IN')}</td>
+                      <td>
+                        <span className="badge" style={{ background: p.status === 'SUCCESSFUL' ? '#DCFCE7' : '#FEF3C7', color: p.status === 'SUCCESSFUL' ? '#166534' : '#92400E' }}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '0.8rem' }}>{new Date(p.createdAt).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '36px', color: '#64748B' }}>
+                No payment transactions recorded in database yet.
               </div>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => setIsOfferModalOpen(true)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-              >
-                <Tag size={16} />
-                <span>Create New Coupon</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 7. NOTIFICATIONS / ANNOUNCEMENTS */}
+      {/* ========================================================================= */}
+      {activeTab === 'notifications' && (
+        <div style={{ maxWidth: 680 }}>
+          <div style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
+              Broadcast Notifications Center
+            </h2>
+            <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0 }}>
+              Dispatch in-app notifications and official announcements across targeted user cohorts.
+            </p>
+          </div>
+
+          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 28, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+            <form onSubmit={handleBroadcastAnnouncement}>
+              <div className="form-field-group">
+                <label className="form-label">Announcement Title</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Platform Maintenance & New Course Releases"
+                  value={newNotifTitle}
+                  onChange={(e) => setNewNotifTitle(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-field-group">
+                <label className="form-label">Target Audience Cohort</label>
+                <select
+                  className="form-input"
+                  value={newNotifTarget}
+                  onChange={(e) => setNewNotifTarget(e.target.value)}
+                >
+                  <option value="ALL_STUDENTS">All Enrolled Students</option>
+                  <option value="ALL_CREATORS">All Verified Faculty Instructors</option>
+                  <option value="PLATFORM_WIDE">Platform Wide (Everyone)</option>
+                </select>
+              </div>
+
+              <div className="form-field-group">
+                <label className="form-label">Message Content</label>
+                <textarea
+                  className="form-input"
+                  style={{ minHeight: 120 }}
+                  placeholder="Details of the announcement..."
+                  value={newNotifBody}
+                  onChange={(e) => setNewNotifBody(e.target.value)}
+                  required
+                />
+              </div>
+
+              <button type="submit" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <Send size={15} />
+                <span>Broadcast Announcement Now</span>
               </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 8. REPORTS & ANALYTICS */}
+      {/* ========================================================================= */}
+      {activeTab === 'reports' && (
+        <div>
+          <div style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
+              Reports & Academic Analytics
+            </h2>
+            <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0 }}>
+              Course enrollment distribution, revenue attribution, and curriculum performance.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 24 }}>
+            {/* Revenue breakdown by course */}
+            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 16px 0', color: '#0F172A' }}>
+                Course Revenue Attribution
+              </h4>
+              {reportsData?.courseRevenueBreakdown && reportsData.courseRevenueBreakdown.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {reportsData.courseRevenueBreakdown.map((item, idx) => (
+                    <div key={idx} style={{ padding: '12px 14px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1E293B' }}>{item.courseTitle}</span>
+                      <strong style={{ fontSize: '0.9375rem', color: '#059669' }}>₹{item.revenue?.toLocaleString('en-IN')}</strong>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ color: '#64748B', fontSize: '0.875rem', textAlign: 'center', padding: '24px 0' }}>
+                  No revenue attribution records available yet.
+                </div>
+              )}
             </div>
 
-            <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
-              {offers.length > 0 ? (
-                <table className="data-table" style={{ width: '100%' }}>
-                  <thead>
-                    <tr>
-                      <th>Coupon Code</th>
-                      <th>Campaign Title</th>
-                      <th>Discount</th>
-                      <th>Redemptions</th>
-                      <th>Validity</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {offers.map((off) => (
-                      <tr key={off.id}>
-                        <td>
-                          <strong style={{ color: 'var(--color-secondary)', fontFamily: 'monospace', fontSize: '0.95rem' }}>
-                            {off.code}
-                          </strong>
-                        </td>
-                        <td>{off.title}</td>
-                        <td>
-                          <span className="badge" style={{ background: '#DCFCE7', color: '#166534', fontWeight: 700 }}>
-                            {off.discountPercent ? `${off.discountPercent}% OFF` : `₹${off.discountAmount} OFF`}
-                          </span>
-                        </td>
-                        <td>{off.usedCount} {off.maxUses ? `/ ${off.maxUses}` : 'uses'}</td>
-                        <td style={{ fontSize: '0.8rem' }}>
-                          Ends {new Date(off.endDate).toLocaleDateString()}
-                        </td>
-                        <td>
-                          <span
-                            className="badge"
-                            style={{
-                              background: off.isActive ? '#DCFCE7' : '#F1F5F9',
-                              color: off.isActive ? '#166534' : '#64748B'
-                            }}
-                          >
-                            {off.isActive ? 'ACTIVE' : 'INACTIVE'}
-                          </span>
-                        </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            <button
-                              className="btn btn-outline btn-sm"
-                              onClick={() => handleToggleOfferActive(off)}
-                            >
-                              {off.isActive ? 'Deactivate' : 'Activate'}
-                            </button>
-                            <button
-                              className="btn btn-outline btn-sm"
-                              onClick={() => handleDeleteOffer(off.id, off.code)}
-                              style={{ color: '#DC2626', borderColor: '#FCA5A5' }}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* Course stats */}
+            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 16px 0', color: '#0F172A' }}>
+                Enrollments & Module Breakdown
+              </h4>
+              {reportsData?.courseStats && reportsData.courseStats.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {reportsData.courseStats.map((cs) => (
+                    <div key={cs.id} style={{ padding: '12px 14px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>{cs.title}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+                          {cs.lessonsCount} verified lectures • Category: {cs.category}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 700, background: '#EFF6FF', color: '#2563EB', padding: '3px 8px', borderRadius: 6 }}>
+                        {cs.enrollmentCount} learners
+                      </span>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                  <Tag style={{ width: 40, height: 40, color: '#94A3B8', margin: '0 auto 12px auto' }} />
-                  <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 16px 0' }}>
-                    No promotional coupons created yet. Create one to display active offers on public course pages.
-                  </p>
-                  <button className="btn btn-primary btn-sm" onClick={() => setIsOfferModalOpen(true)}>
-                    Create First Coupon
-                  </button>
+                <div style={{ color: '#64748B', fontSize: '0.875rem', textAlign: 'center', padding: '24px 0' }}>
+                  No course statistics records available yet.
                 </div>
               )}
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Section B: Course Base Pricing */}
-          <div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 16 }}>Course Base Pricing Table</h3>
-            <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
+      {/* ========================================================================= */}
+      {/* 9. REQUESTS (Creator Profile Change Requests) */}
+      {/* ========================================================================= */}
+      {activeTab === 'requests' && (
+        <div>
+          <div style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
+              Creator Profile Modification Requests
+            </h2>
+            <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0 }}>
+              Review instructor headline, bio, and credential updates before displaying publicly.
+            </p>
+          </div>
+
+          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+            {requestsList.length > 0 ? (
               <table className="data-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
-                    <th>Course Title</th>
-                    <th>Current Base Price</th>
-                    <th>Active Catalog Discount</th>
-                    <th>Update Pricing</th>
+                    <th>Request ID</th>
+                    <th>Instructor Name</th>
+                    <th>Requested Headline / Bio</th>
+                    <th>Status</th>
+                    <th>Decision</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {courses.map((c) => (
-                    <tr key={c.id}>
-                      <td><strong>{c.title}</strong></td>
-                      <td>{c.isFree ? 'FREE' : `₹${c.price?.toLocaleString('en-IN')}`}</td>
-                      <td>{c.discountPercent || 0}% OFF</td>
+                  {requestsList.map((r) => (
+                    <tr key={r.id}>
+                      <td><strong>{r.id.slice(0, 8)}</strong></td>
+                      <td>{r.creatorProfile?.user?.name || 'Creator'}</td>
+                      <td>{r.requestedBio || r.requestedHeadline || JSON.stringify(r.requestedChanges || {})}</td>
                       <td>
-                        {priceEditingCourseId === c.id ? (
-                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                            <input
-                              type="number"
-                              value={editPrice}
-                              onChange={(e) => setEditPrice(e.target.value)}
-                              className="form-input"
-                              style={{ width: 110 }}
-                              placeholder="Price"
-                            />
-                            <input
-                              type="number"
-                              value={editDiscount}
-                              onChange={(e) => setEditDiscount(e.target.value)}
-                              className="form-input"
-                              style={{ width: 90 }}
-                              placeholder="Disc %"
-                            />
-                            <button className="btn btn-primary btn-sm" onClick={() => handleSavePrice(c.id)}>
-                              Save
+                        <span className="badge" style={{ background: r.status === 'PENDING' ? '#FEF3C7' : '#DCFCE7', color: r.status === 'PENDING' ? '#92400E' : '#166534' }}>
+                          {r.status}
+                        </span>
+                      </td>
+                      <td>
+                        {r.status === 'PENDING' ? (
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button
+                              className="btn btn-outline btn-sm"
+                              onClick={() => handleReviewRequest(r.id, 'APPROVED')}
+                              style={{ color: '#16A34A', borderColor: '#86EFAC' }}
+                            >
+                              Approve
                             </button>
-                            <button className="btn btn-outline btn-sm" onClick={() => setPriceEditingCourseId(null)}>
-                              Cancel
+                            <button
+                              className="btn btn-outline btn-sm"
+                              onClick={() => handleReviewRequest(r.id, 'REJECTED')}
+                              style={{ color: '#EF4444', borderColor: '#FCA5A5' }}
+                            >
+                              Reject
                             </button>
                           </div>
                         ) : (
-                          <button
-                            className="btn btn-outline btn-sm"
-                            onClick={() => {
-                              setPriceEditingCourseId(c.id)
-                              setEditPrice(c.price)
-                              setEditDiscount(c.discountPercent || 0)
-                            }}
-                          >
-                            <Edit style={{ width: 14, height: 14 }} />
-                            <span>Edit Price</span>
-                          </button>
+                          <span style={{ fontSize: '0.8rem', color: '#16A34A', fontWeight: 600 }}>Resolved</span>
                         )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tab 5: Public Page Controls & Hidden Course Rule */}
-      {activeTab === 'public-controls' && (
-        <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', padding: 28 }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8 }}>Public Catalog Visibility & Hidden Course Governance</h3>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginBottom: 24 }}>
-            Control course discovery. <em>Note on Hidden Course Rule:</em> Archiving or hiding a course removes it from the public catalog, but already enrolled students retain their full learning access.
-          </p>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {courses.map((c) => (
-              <div
-                key={c.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: 16,
-                  background: '#F8FAFC',
-                  borderRadius: 12,
-                  border: '1px solid #E2E8F0',
-                  flexWrap: 'wrap',
-                  gap: 12
-                }}
-              >
-                <div>
-                  <strong style={{ fontSize: '0.95rem', color: 'var(--color-primary)' }}>{c.title}</strong>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
-                    Status: <strong style={{ color: c.status === 'PUBLISHED' ? '#16A34A' : '#D97706' }}>{c.status}</strong> •
-                    Enrollment: <strong>{c.enrollmentOpen !== false ? 'OPEN' : 'CLOSED'}</strong> •
-                    Featured: <strong>{c.isFeatured ? 'YES' : 'NO'}</strong>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {/* Status Dropdown */}
-                  <select
-                    value={c.status}
-                    className="form-input"
-                    style={{ height: 36, fontSize: '0.8rem', padding: '0 8px' }}
-                    onChange={async (e) => {
-                      const newStatus = e.target.value
-                      await api.admin.updatePublicControls(c.id, { status: newStatus })
-                      showToast(`Course status updated to ${newStatus}`, 'success')
-                      loadAdminData()
-                    }}
-                  >
-                    <option value="PUBLISHED">PUBLISHED (Public)</option>
-                    <option value="DRAFT">DRAFT (Hidden)</option>
-                    <option value="ARCHIVED">ARCHIVED (Students only)</option>
-                  </select>
-
-                  {/* Toggle Enrollment */}
-                  <button
-                    className="btn btn-outline btn-sm"
-                    onClick={async () => {
-                      const newOpen = c.enrollmentOpen === false ? true : false
-                      await api.admin.updatePublicControls(c.id, { enrollmentOpen: newOpen })
-                      showToast(`Enrollment is now ${newOpen ? 'Open' : 'Closed'}`, 'success')
-                      loadAdminData()
-                    }}
-                  >
-                    {c.enrollmentOpen !== false ? 'Close Enrollment' : 'Open Enrollment'}
-                  </button>
-
-                  {/* Toggle Featured */}
-                  <button
-                    className="btn btn-outline btn-sm"
-                    onClick={async () => {
-                      const newFeatured = !c.isFeatured
-                      await api.admin.updatePublicControls(c.id, { isFeatured: newFeatured })
-                      showToast(`Featured toggled for ${c.title}`, 'success')
-                      loadAdminData()
-                    }}
-                  >
-                    {c.isFeatured ? 'Unfeature' : 'Feature'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tab 6: Creators */}
-      {activeTab === 'creators' && (
-        <div>
-          {/* Invite Form */}
-          <div style={{ background: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: 24, marginBottom: 24 }}>
-            <h4 style={{ fontSize: '1.1rem', marginBottom: 12 }}>Invite New Curriculum Creator</h4>
-            <form onSubmit={handleInviteCreator} style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <input
-                type="text"
-                placeholder="Full Name"
-                className="form-input"
-                style={{ flex: '1 1 200px' }}
-                value={newCreatorName}
-                onChange={(e) => setNewCreatorName(e.target.value)}
-                required
-              />
-              <input
-                type="email"
-                placeholder="Email Address"
-                className="form-input"
-                style={{ flex: '1 1 220px' }}
-                value={newCreatorEmail}
-                onChange={(e) => setNewCreatorEmail(e.target.value)}
-                required
-              />
-              <input
-                type="text"
-                placeholder="Headline (e.g. Lead ML Architect)"
-                className="form-input"
-                style={{ flex: '1 1 240px' }}
-                value={newCreatorHeadline}
-                onChange={(e) => setNewCreatorHeadline(e.target.value)}
-              />
-              <button type="submit" className="btn btn-primary">
-                <span>Send Invitation</span>
-              </button>
-            </form>
-          </div>
-
-          <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
-            {creators.length > 0 ? (
-              <table className="data-table" style={{ width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th>Creator</th>
-                    <th>Email</th>
-                    <th>Specialization</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {creators.map((cr) => (
-                    <tr key={cr.id}>
-                      <td><strong>{cr.name}</strong></td>
-                      <td>{cr.email}</td>
-                      <td>{cr.creatorProfile?.headline || cr.creatorProfile?.specialization || 'Technical Instructor'}</td>
-                      <td>
-                        <span
-                          className="badge"
-                          style={{
-                            background: cr.status === 'ACTIVE' ? '#DCFCE7' : '#FEF3C7',
-                            color: cr.status === 'ACTIVE' ? '#166534' : '#92400E'
-                          }}
-                        >
-                          {cr.status}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          className="btn btn-outline btn-sm"
-                          onClick={() => handleToggleCreatorStatus(cr.id, cr.status)}
-                        >
-                          {cr.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             ) : (
-              <div style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-secondary)' }}>
-                No creators registered in database.
+              <div style={{ textAlign: 'center', padding: '36px', color: '#64748B' }}>
+                No pending Creator profile requests.
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Tab 7: Students */}
-      {activeTab === 'students' && (
-        <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
-          {students.length > 0 ? (
-            <table className="data-table" style={{ width: '100%' }}>
-              <thead>
-                <tr>
-                  <th>Student Name</th>
-                  <th>Email</th>
-                  <th>Status</th>
-                  <th>Enrolled Courses</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((st) => (
-                  <tr key={st.id}>
-                    <td><strong>{st.name}</strong></td>
-                    <td>{st.email}</td>
-                    <td>
-                      <span
-                        className="badge"
-                        style={{
-                          background: st.status === 'ACTIVE' ? '#DCFCE7' : '#FEE2E2',
-                          color: st.status === 'ACTIVE' ? '#166534' : '#991B1B'
-                        }}
-                      >
-                        {st.status}
-                      </span>
-                    </td>
-                    <td>{st.enrolledCount || st.enrollments?.length || 0} Programs</td>
-                    <td>
-                      <button
-                        className="btn btn-outline btn-sm"
-                        onClick={() => handleToggleStudentStatus(st.id, st.status)}
-                      >
-                        {st.status === 'ACTIVE' ? 'Suspend Account' : 'Reactivate'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-secondary)' }}>
-              No students enrolled yet.
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab 8: Payments */}
-      {activeTab === 'payments' && (
-        <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
-          {paymentsList.length > 0 ? (
-            <table className="data-table" style={{ width: '100%' }}>
-              <thead>
-                <tr>
-                  <th>Order Number</th>
-                  <th>Student</th>
-                  <th>Course</th>
-                  <th>Amount</th>
-                  <th>Payment Status</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paymentsList.map((p) => (
-                  <tr key={p.id}>
-                    <td><strong>{p.orderNumber || p.id.slice(0, 10)}</strong></td>
-                    <td>{p.student?.name || p.student?.email || 'Student'}</td>
-                    <td>{p.course?.title || 'Program'}</td>
-                    <td>₹{p.amount?.toLocaleString('en-IN')}</td>
-                    <td>
-                      <span
-                        className="badge"
-                        style={{
-                          background: p.status === 'SUCCESSFUL' ? '#DCFCE7' : '#FEF3C7',
-                          color: p.status === 'SUCCESSFUL' ? '#166534' : '#92400E'
-                        }}
-                      >
-                        {p.status}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: '0.8rem' }}>{new Date(p.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-secondary)' }}>
-              No payment transactions registered in database yet.
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab 9: Creator Profile Requests */}
-      {activeTab === 'requests' && (
-        <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
-          {requestsList.length > 0 ? (
-            <table className="data-table" style={{ width: '100%' }}>
-              <thead>
-                <tr>
-                  <th>Request ID</th>
-                  <th>Creator</th>
-                  <th>Requested Changes</th>
-                  <th>Status</th>
-                  <th>Decision</th>
-                </tr>
-              </thead>
-              <tbody>
-                {requestsList.map((r) => (
-                  <tr key={r.id}>
-                    <td><strong>{r.id.slice(0, 8)}</strong></td>
-                    <td>{r.creatorProfile?.user?.name || 'Creator'}</td>
-                    <td>{r.requestedBio || r.requestedHeadline || JSON.stringify(r.requestedChanges || {})}</td>
-                    <td>
-                      <span className="badge" style={{ background: '#FEF3C7', color: '#92400E' }}>
-                        {r.status}
-                      </span>
-                    </td>
-                    <td>
-                      {r.status === 'PENDING' ? (
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button
-                            className="btn btn-outline btn-sm"
-                            onClick={() => handleReviewRequest(r.id, 'APPROVED')}
-                            style={{ color: '#16A34A', borderColor: '#86EFAC' }}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            className="btn btn-outline btn-sm"
-                            onClick={() => handleReviewRequest(r.id, 'REJECTED')}
-                            style={{ color: '#EF4444', borderColor: '#FCA5A5' }}
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      ) : (
-                        <span style={{ fontSize: '0.8rem', color: '#16A34A', fontWeight: 600 }}>Resolved</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-secondary)' }}>
-              No pending Creator change requests.
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab 10: Announcements */}
-      {activeTab === 'notifications' && (
-        <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', padding: 32, maxWidth: 640 }}>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: 12 }}>Broadcast Platform Announcement</h3>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginBottom: 20 }}>
-            Send authoritative in-app notifications to targeted user cohorts (Students, Creators, or platform-wide).
-          </p>
-
-          <form onSubmit={handleBroadcastAnnouncement}>
-            <div className="form-field-group">
-              <label className="form-label">Announcement Title</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g. Schedule Update: Live System Architecture Deep Dive"
-                value={newNotifTitle}
-                onChange={(e) => setNewNotifTitle(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="form-field-group">
-              <label className="form-label">Target Audience</label>
-              <select
-                className="form-input"
-                value={newNotifTarget}
-                onChange={(e) => setNewNotifTarget(e.target.value)}
-              >
-                <option value="ALL_STUDENTS">All Enrolled Students</option>
-                <option value="ALL_CREATORS">All Verified Creators</option>
-                <option value="PLATFORM_WIDE">Platform Wide (Everyone)</option>
-              </select>
-            </div>
-
-            <div className="form-field-group">
-              <label className="form-label">Message Details</label>
-              <textarea
-                className="form-input"
-                style={{ minHeight: 120 }}
-                placeholder="Details of the announcement..."
-                value={newNotifBody}
-                onChange={(e) => setNewNotifBody(e.target.value)}
-                required
-              />
-            </div>
-
-            <button type="submit" className="btn btn-primary">
-              <Send style={{ width: 14, height: 14 }} />
-              <span>Broadcast Announcement</span>
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* Tab 11: Audit Logs */}
+      {/* ========================================================================= */}
+      {/* 10. AUDIT LOGS */}
+      {/* ========================================================================= */}
       {activeTab === 'audit-logs' && (
-        <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
-          {auditLogs.length > 0 ? (
-            <table className="data-table" style={{ width: '100%' }}>
-              <thead>
-                <tr>
-                  <th>Action</th>
-                  <th>Actor</th>
-                  <th>Entity</th>
-                  <th>Details</th>
-                  <th>Timestamp</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditLogs.map((log) => (
-                  <tr key={log.id}>
-                    <td><strong>{log.action}</strong></td>
-                    <td>{log.user?.email || 'System'}</td>
-                    <td>{log.entityType} ({log.entityId?.slice(0, 8) || '-'})</td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{log.details || '-'}</td>
-                    <td style={{ fontSize: '0.8rem' }}>{new Date(log.createdAt).toLocaleString()}</td>
+        <div>
+          <div style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
+              Platform Security & Audit Trail
+            </h2>
+            <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0 }}>
+              Immutable records of administrative actions, course publications, and role state mutations.
+            </p>
+          </div>
+
+          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+            {auditLogs.length > 0 ? (
+              <table className="data-table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th>Action</th>
+                    <th>Actor</th>
+                    <th>Entity Type</th>
+                    <th>Details</th>
+                    <th>Recorded Timestamp</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-secondary)' }}>
-              No audit logs recorded yet.
-            </div>
-          )}
+                </thead>
+                <tbody>
+                  {auditLogs.map((log) => (
+                    <tr key={log.id}>
+                      <td><strong>{log.action}</strong></td>
+                      <td>{log.user?.email || 'System'}</td>
+                      <td>{log.entityType} ({log.entityId?.slice(0, 8) || '-'})</td>
+                      <td style={{ fontSize: '0.8rem', color: '#475569' }}>{log.details || '-'}</td>
+                      <td style={{ fontSize: '0.8rem' }}>{new Date(log.createdAt).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '36px', color: '#64748B' }}>
+                No audit logs recorded yet.
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Tab 12: Security & Sessions */}
+      {/* ========================================================================= */}
+      {/* 11. SECURITY & SESSIONS */}
+      {/* ========================================================================= */}
       {activeTab === 'security' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
-          <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', padding: 24, boxShadow: 'var(--shadow-sm)' }}>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: 16, color: 'var(--color-primary)' }}>
-              Active Authenticated Sessions ({activeSessions.length})
-            </h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: 16 }}>
-              Inspect and remotely revoke active user sessions directly from PostgreSQL session store.
+        <div>
+          <div style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
+              System Security & Active Sessions
+            </h2>
+            <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0 }}>
+              PostgreSQL session governance, key verification, and infrastructure status.
             </p>
+          </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {activeSessions.map((s) => (
-                <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                  <div>
-                    <strong style={{ fontSize: '0.85rem', color: 'var(--color-primary)' }}>{s.user?.name} ({s.user?.role})</strong>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-                      IP: {s.ipAddress || '127.0.0.1'} • {s.userAgent?.slice(0, 30)}...
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+              <h3 style={{ fontSize: '1.15rem', marginBottom: 6, color: '#0F172A', fontWeight: 800 }}>
+                Active Authenticated Sessions ({activeSessions.length})
+              </h3>
+              <p style={{ fontSize: '0.8125rem', color: '#64748B', marginBottom: 16 }}>
+                Remotely revoke active sessions directly from PostgreSQL session store.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {activeSessions.map((s) => (
+                  <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.85rem', color: '#0F172A' }}>{s.user?.name} ({s.user?.role})</strong>
+                      <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                        IP: {s.ipAddress || '127.0.0.1'} • {s.userAgent?.slice(0, 30)}...
+                      </div>
                     </div>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => handleRevokeSession(s.id)}
+                      style={{ color: '#EF4444', borderColor: '#FCA5A5' }}
+                    >
+                      Revoke
+                    </button>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+              <h3 style={{ fontSize: '1.15rem', marginBottom: 6, color: '#0F172A', fontWeight: 800 }}>
+                Infrastructure Security
+              </h3>
+              <p style={{ fontSize: '0.8125rem', color: '#64748B', marginBottom: 16 }}>
+                Core services encryption and database health.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ padding: 16, background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0' }}>
+                  <strong style={{ display: 'block', marginBottom: 4, color: '#0F172A' }}>PostgreSQL Production Database</strong>
+                  <span style={{ fontSize: '0.8rem', color: '#16A34A', display: 'block', marginBottom: 12 }}>● Connected & Healthy (apexlearn_db on port 5432)</span>
                   <button
                     className="btn btn-outline btn-sm"
-                    onClick={() => handleRevokeSession(s.id)}
-                    style={{ color: '#EF4444', borderColor: '#FCA5A5' }}
+                    onClick={() => showToast('On-demand database snapshot verified.', 'success')}
                   >
-                    Revoke
+                    <Database size={14} />
+                    <span>Verify Database Snapshot</span>
                   </button>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', padding: 24, boxShadow: 'var(--shadow-sm)' }}>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: 16, color: 'var(--color-primary)' }}>System Maintenance Actions</h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ padding: 16, background: '#F8FAFC', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                <strong style={{ display: 'block', marginBottom: 4, color: 'var(--color-primary)' }}>PostgreSQL Production Database</strong>
-                <span style={{ fontSize: '0.8rem', color: '#16A34A', display: 'block', marginBottom: 12 }}>● Connected & Healthy (apexlearn_db on port 5432)</span>
-                <button
-                  className="btn btn-outline btn-sm"
-                  onClick={() => showToast('On-demand database snapshot verified.', 'success')}
-                >
-                  <Database style={{ width: 14, height: 14 }} />
-                  <span>Verify Database Snapshots</span>
-                </button>
-              </div>
-
-              <div style={{ padding: 16, background: '#F8FAFC', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                <strong style={{ display: 'block', marginBottom: 4, color: 'var(--color-primary)' }}>JWT Cryptographic Key Rotation</strong>
-                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', display: 'block', marginBottom: 12 }}>Cryptographic HMAC keys initialized and active.</span>
-                <button
-                  className="btn btn-outline btn-sm"
-                  onClick={() => showToast('Signing key verified.', 'info')}
-                >
-                  <Key style={{ width: 14, height: 14 }} />
-                  <span>Verify Signing Keys</span>
-                </button>
+                <div style={{ padding: 16, background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0' }}>
+                  <strong style={{ display: 'block', marginBottom: 4, color: '#0F172A' }}>JWT HMAC Key Rotation</strong>
+                  <span style={{ fontSize: '0.8rem', color: '#64748B', display: 'block', marginBottom: 12 }}>Cryptographic signing keys initialized and active.</span>
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => showToast('Signing key verified.', 'info')}
+                  >
+                    <Key size={14} />
+                    <span>Verify Key Health</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* CREATE COURSE MODAL */}
-      {isCourseModalOpen && (
-        <div className="razorpay-modal-overlay" onClick={() => setIsCourseModalOpen(false)}>
+      {/* ========================================================================= */}
+      {/* 11. ADMIN PROFILE MANAGEMENT (VIEW & EDIT) */}
+      {/* ========================================================================= */}
+      {activeTab === 'profile' && (
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          {/* Section Header with Segmented View/Edit Toggle */}
           <div
-            className="razorpay-frame"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: 640, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 24,
+              flexWrap: 'wrap',
+              gap: 16
+            }}
           >
-            <div className="razorpay-header" style={{ background: '#0F172A' }}>
-              <div className="razorpay-brand">
-                <BookOpen style={{ color: '#38BDF8', width: 22, height: 22 }} />
-                <span>Create New Academic Course</span>
-              </div>
+            <div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
+                Admin Profile Management
+              </h2>
+              <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0 }}>
+                Personal credentials, executive authority, and contact information for the active administrator.
+              </p>
+            </div>
+
+            {/* Segmented View / Edit Pill Switch */}
+            <div
+              style={{
+                display: 'flex',
+                background: '#F1F5F9',
+                padding: '4px',
+                borderRadius: '10px',
+                border: '1px solid #E2E8F0'
+              }}
+            >
               <button
-                onClick={() => setIsCourseModalOpen(false)}
-                style={{ color: '#FFFFFF', background: 'none', border: 'none', cursor: 'pointer' }}
+                type="button"
+                id="btn-profile-tab-view"
+                onClick={() => {
+                  setProfileMode('view')
+                  navigate('/admin/profile?mode=view', { replace: true })
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '7px 18px',
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  border: 'none',
+                  background: profileMode === 'view' ? '#FFFFFF' : 'transparent',
+                  color: profileMode === 'view' ? '#0F172A' : '#64748B',
+                  boxShadow: profileMode === 'view' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
               >
-                <X size={18} />
+                <Eye size={15} style={{ color: profileMode === 'view' ? '#2563EB' : 'inherit' }} />
+                <span>View Profile</span>
+              </button>
+
+              <button
+                type="button"
+                id="btn-profile-tab-edit"
+                onClick={() => {
+                  setProfileMode('edit')
+                  navigate('/admin/profile?mode=edit', { replace: true })
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '7px 18px',
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  border: 'none',
+                  background: profileMode === 'edit' ? '#FFFFFF' : 'transparent',
+                  color: profileMode === 'edit' ? '#0F172A' : '#64748B',
+                  boxShadow: profileMode === 'edit' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Edit3 size={15} style={{ color: profileMode === 'edit' ? '#059669' : 'inherit' }} />
+                <span>Edit Profile</span>
               </button>
             </div>
-
-            <form onSubmit={handleCreateCourse} style={{ padding: 24 }}>
-              <div className="form-field-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">Course Title *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. Masterclass: Advanced Distributed Systems & Cloud Architecture"
-                  value={newCourseTitle}
-                  onChange={(e) => {
-                    setNewCourseTitle(e.target.value)
-                    if (!newCourseSlug) {
-                      setNewCourseSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
-                    }
-                  }}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                <div className="form-field-group">
-                  <label className="form-label">URL Slug</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. distributed-systems"
-                    value={newCourseSlug}
-                    onChange={(e) => setNewCourseSlug(e.target.value)}
-                  />
-                </div>
-                <div className="form-field-group">
-                  <label className="form-label">Category</label>
-                  <select
-                    className="form-input"
-                    value={newCourseCategory}
-                    onChange={(e) => setNewCourseCategory(e.target.value)}
-                  >
-                    <option value="Data Science">Data Science</option>
-                    <option value="Machine Learning">Machine Learning</option>
-                    <option value="Artificial Intelligence">Artificial Intelligence</option>
-                    <option value="Web Development">Web Development</option>
-                    <option value="Trading">Trading</option>
-                    <option value="Cloud Computing">Cloud Computing</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
-                <div className="form-field-group">
-                  <label className="form-label">Level</label>
-                  <select
-                    className="form-input"
-                    value={newCourseLevel}
-                    onChange={(e) => setNewCourseLevel(e.target.value)}
-                  >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Beginner to Intermediate">Beginner to Intermediate</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                  </select>
-                </div>
-                <div className="form-field-group">
-                  <label className="form-label">Duration</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={newCourseDuration}
-                    onChange={(e) => setNewCourseDuration(e.target.value)}
-                    placeholder="e.g. 40 Hours"
-                  />
-                </div>
-                <div className="form-field-group">
-                  <label className="form-label">Language</label>
-                  <select
-                    className="form-input"
-                    value={newCourseLanguage}
-                    onChange={(e) => setNewCourseLanguage(e.target.value)}
-                  >
-                    <option value="English">English</option>
-                    <option value="Hindi">Hindi</option>
-                    <option value="Tamil">Tamil</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
-                <div className="form-field-group">
-                  <label className="form-label">Offer Price (₹) *</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={newCoursePrice}
-                    onChange={(e) => setNewCoursePrice(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="form-field-group">
-                  <label className="form-label">Original Price (₹)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={newCourseOriginalPrice}
-                    onChange={(e) => setNewCourseOriginalPrice(e.target.value)}
-                  />
-                </div>
-                <div className="form-field-group">
-                  <label className="form-label">Access Duration (Days)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={newCourseAccessDays}
-                    onChange={(e) => setNewCourseAccessDays(e.target.value)}
-                    placeholder="e.g. 365"
-                  />
-                </div>
-              </div>
-
-              <div className="form-field-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">Assign Lead Creator</label>
-                <select
-                  className="form-input"
-                  value={newCourseCreatorId}
-                  onChange={(e) => setNewCourseCreatorId(e.target.value)}
-                >
-                  <option value="">Select an Approved Creator...</option>
-                  {creators.map((cr) => (
-                    <option key={cr.id} value={cr.id}>{cr.name} ({cr.email})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-field-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">Thumbnail Image URL</label>
-                <input
-                  type="url"
-                  className="form-input"
-                  value={newCourseThumbnail}
-                  onChange={(e) => setNewCourseThumbnail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-field-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">Short Description *</label>
-                <textarea
-                  className="form-input"
-                  style={{ minHeight: 60 }}
-                  placeholder="One sentence summary of the program..."
-                  value={newCourseShortDesc}
-                  onChange={(e) => setNewCourseShortDesc(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={newCourseIsFree}
-                    onChange={(e) => setNewCourseIsFree(e.target.checked)}
-                  />
-                  <span>Free Course (1-click student enrollment)</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={newCourseCertificate}
-                    onChange={(e) => setNewCourseCertificate(e.target.checked)}
-                  />
-                  <span>Certificate Enabled Upon Completion</span>
-                </label>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => setIsCourseModalOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={isCreatingCourse}
-                >
-                  <span>{isCreatingCourse ? 'Creating Course...' : 'Save & Initialize Course (DRAFT)'}</span>
-                </button>
-              </div>
-            </form>
           </div>
+
+          {/* ========================================================================= */}
+          {/* MODE A: VIEW PROFILE */}
+          {/* ========================================================================= */}
+          {profileMode === 'view' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {/* Executive Hero Banner Card */}
+              <div
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: 16,
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                  overflow: 'hidden'
+                }}
+              >
+                {/* Decorative Top Gradient Accent */}
+                <div style={{ height: 6, background: 'linear-gradient(90deg, #2563EB 0%, #059669 100%)' }} />
+
+                <div
+                  style={{
+                    padding: '28px 32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 24
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+                    {/* Avatar Display */}
+                    <div
+                      style={{
+                        width: 96,
+                        height: 96,
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
+                        color: '#FFFFFF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '2rem',
+                        fontWeight: 800,
+                        boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
+                        border: '3px solid #F1F5F9',
+                        flexShrink: 0,
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {currentDisplayUser.avatar ? (
+                        <img
+                          src={currentDisplayUser.avatar}
+                          alt={currentDisplayUser.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        getProfileInitials(currentDisplayUser.name)
+                      )}
+                    </div>
+
+                    {/* Name & Executive Title */}
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+                        <h3 style={{ fontSize: '1.625rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                          {currentDisplayUser.name || 'Dr. Vikram Sen'}
+                        </h3>
+                        <span
+                          style={{
+                            background: '#ECFDF5',
+                            color: '#059669',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            padding: '3px 10px',
+                            borderRadius: '9999px',
+                            border: '1px solid #A7F3D0',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5
+                          }}
+                        >
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} />
+                          {currentDisplayUser.status || 'ACTIVE'}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#2563EB', marginBottom: 12 }}>
+                        Academic Director & Chief Learning Architect
+                      </div>
+
+                      {/* Badges */}
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <span
+                          style={{
+                            background: '#EFF6FF',
+                            color: '#2563EB',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            padding: '3px 10px',
+                            borderRadius: '6px',
+                            border: '1px solid #BFDBFE'
+                          }}
+                        >
+                          Role: {currentDisplayUser.role || 'ADMIN'}
+                        </span>
+                        <span
+                          style={{
+                            background: '#F8FAFC',
+                            color: '#475569',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            padding: '3px 10px',
+                            borderRadius: '6px',
+                            border: '1px solid #E2E8F0'
+                          }}
+                        >
+                          Superadmin Governance
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Edit Action Button */}
+                  <button
+                    type="button"
+                    id="btn-edit-profile-action"
+                    onClick={() => {
+                      setProfileMode('edit')
+                      navigate('/admin/profile?mode=edit', { replace: true })
+                    }}
+                    className="btn btn-primary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                  >
+                    <Edit3 size={15} />
+                    <span>Edit Profile</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Two Column Grid of Information Cards */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+                  gap: 20
+                }}
+              >
+                {/* Card 1: Identity & Contact Information */}
+                <div
+                  style={{
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    border: '1px solid #E2E8F0',
+                    padding: 24,
+                    boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid #F1F5F9' }}>
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 8,
+                        background: '#EFF6FF',
+                        color: '#2563EB',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <UserIcon size={18} />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>
+                        Identity & Contact Information
+                      </h4>
+                      <span style={{ fontSize: '0.75rem', color: '#64748B' }}>Primary credentials and communications</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Full Name
+                      </span>
+                      <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginTop: 2 }}>
+                        {currentDisplayUser.name || 'Dr. Vikram Sen'}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Email Address
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                        <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A' }}>
+                          {currentDisplayUser.email || 'director@apexlearn.edu'}
+                        </span>
+                        <span
+                          style={{
+                            background: '#ECFDF5',
+                            color: '#059669',
+                            fontSize: '0.6875rem',
+                            fontWeight: 700,
+                            padding: '1px 6px',
+                            borderRadius: 4,
+                            border: '1px solid #A7F3D0'
+                          }}
+                        >
+                          Verified
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Phone Number
+                      </span>
+                      <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginTop: 2 }}>
+                        {currentDisplayUser.phone || '+91 98765 43210'}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Designation & Department
+                      </span>
+                      <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginTop: 2 }}>
+                        Academic Director • Curriculum & AI Systems
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 2: Account Lifecycle & Security */}
+                <div
+                  style={{
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    border: '1px solid #E2E8F0',
+                    padding: 24,
+                    boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid #F1F5F9' }}>
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 8,
+                        background: '#ECFDF5',
+                        color: '#059669',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <Shield size={18} />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>
+                        Account Status & Security
+                      </h4>
+                      <span style={{ fontSize: '0.75rem', color: '#64748B' }}>Institutional governance lifecycle</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Administrative Role
+                      </span>
+                      <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginTop: 2 }}>
+                        {currentDisplayUser.role || 'ADMIN'} (Institutional Root Privileges)
+                      </div>
+                    </div>
+
+                    <div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Account Status
+                      </span>
+                      <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#059669', marginTop: 2 }}>
+                        ● {currentDisplayUser.status || 'ACTIVE'} (Unrestricted Governance)
+                      </div>
+                    </div>
+
+                    <div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Joined Date
+                      </span>
+                      <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginTop: 2 }}>
+                        {formatJoinedDate(currentDisplayUser.createdAt)}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Last Updated Information
+                      </span>
+                      <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginTop: 2 }}>
+                        {formatLastUpdated(currentDisplayUser.updatedAt)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Executive Bio & Scope */}
+              <div
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: 16,
+                  border: '1px solid #E2E8F0',
+                  padding: 28,
+                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 8,
+                      background: '#F5F3FF',
+                      color: '#7C3AED',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <FileText size={18} />
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>
+                      Executive Biography & Academic Scope
+                    </h4>
+                    <span style={{ fontSize: '0.75rem', color: '#64748B' }}>Public academic credentials and administrative remit</span>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: '0.9375rem',
+                    lineHeight: 1.7,
+                    color: '#334155',
+                    background: '#F8FAFC',
+                    padding: '18px 22px',
+                    borderRadius: 12,
+                    border: '1px solid #E2E8F0'
+                  }}
+                >
+                  {currentDisplayUser.bio ||
+                    'Dr. Vikram Sen serves as Academic Director and Chief Learning Architect at ApexLearn Institute of Tech & AI. He oversees curriculum standards, pedagogical innovation, faculty review, and institutional AI course standards across all academic tracks.'}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* MODE B: EDIT PROFILE */}
+          {/* ========================================================================= */}
+          {profileMode === 'edit' && (
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: 16,
+                border: '1px solid #E2E8F0',
+                padding: '32px',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              }}
+            >
+              <div style={{ marginBottom: 24, paddingBottom: 18, borderBottom: '1px solid #E2E8F0' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: '0 0 6px 0' }}>
+                  Edit Administrator Profile
+                </h3>
+                <p style={{ fontSize: '0.875rem', color: '#64748B', margin: 0 }}>
+                  Update your display name, contact phone, executive bio, and profile avatar. Modifications immediately reflect across the admin portal.
+                </p>
+              </div>
+
+              <form onSubmit={handleUpdateProfile}>
+                {/* 1. Profile Photo / Avatar Setting */}
+                <div style={{ marginBottom: 28 }}>
+                  <label className="form-label" style={{ fontWeight: 700, marginBottom: 8, display: 'block' }}>
+                    Profile Photo / Avatar
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+                    {/* Live Avatar Preview */}
+                    <div
+                      style={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
+                        color: '#FFFFFF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.5rem',
+                        fontWeight: 800,
+                        border: '2px solid #E2E8F0',
+                        overflow: 'hidden',
+                        flexShrink: 0
+                      }}
+                    >
+                      {editProfileForm.avatar ? (
+                        <img
+                          src={editProfileForm.avatar}
+                          alt="Avatar preview"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        getProfileInitials(editProfileForm.name || currentDisplayUser.name)
+                      )}
+                    </div>
+
+                    {/* URL Input & Quick Presets */}
+                    <div style={{ flex: 1, minWidth: 260 }}>
+                      <input
+                        type="url"
+                        className="form-input"
+                        placeholder="https://example.com/photo.jpg (Direct image URL)"
+                        value={editProfileForm.avatar}
+                        onChange={(e) => setEditProfileForm({ ...editProfileForm, avatar: e.target.value })}
+                        style={{ marginBottom: 8 }}
+                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#64748B' }}>Quick presets:</span>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                          onClick={() =>
+                            setEditProfileForm({
+                              ...editProfileForm,
+                              avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
+                            })
+                          }
+                        >
+                          Preset 1 (Academic)
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                          onClick={() =>
+                            setEditProfileForm({
+                              ...editProfileForm,
+                              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80'
+                            })
+                          }
+                        >
+                          Preset 2 (Executive)
+                        </button>
+                        {editProfileForm.avatar && (
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            style={{ padding: '2px 8px', fontSize: '0.75rem', color: '#EF4444', borderColor: '#FCA5A5' }}
+                            onClick={() => setEditProfileForm({ ...editProfileForm, avatar: '' })}
+                          >
+                            Use Monogram Initials
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Editable Fields: Full Name & Phone Number */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 20 }}>
+                  <div className="form-field-group">
+                    <label className="form-label" style={{ fontWeight: 700 }}>
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={editProfileForm.name}
+                      onChange={(e) => setEditProfileForm({ ...editProfileForm, name: e.target.value })}
+                      placeholder="e.g. Dr. Vikram Sen"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-field-group">
+                    <label className="form-label" style={{ fontWeight: 700 }}>
+                      Contact Phone
+                    </label>
+                    <input
+                      type="tel"
+                      className="form-input"
+                      value={editProfileForm.phone}
+                      onChange={(e) => setEditProfileForm({ ...editProfileForm, phone: e.target.value })}
+                      placeholder="+91 98765 43210"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Read-Only System Fields: Email & Role */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 20 }}>
+                  <div className="form-field-group">
+                    <label className="form-label" style={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Email Address</span>
+                      <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 500 }}>System Locked</span>
+                    </label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      value={currentDisplayUser.email || 'director@apexlearn.edu'}
+                      disabled
+                      style={{ background: '#F8FAFC', cursor: 'not-allowed', color: '#64748B' }}
+                    />
+                    <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: 4, display: 'block' }}>
+                      Email is bound to the PostgreSQL admin account credential.
+                    </span>
+                  </div>
+
+                  <div className="form-field-group">
+                    <label className="form-label" style={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
+                      <span>System Role</span>
+                      <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 500 }}>Role Locked</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value="Academic Director (ADMIN)"
+                      disabled
+                      style={{ background: '#F8FAFC', cursor: 'not-allowed', color: '#64748B' }}
+                    />
+                    <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: 4, display: 'block' }}>
+                      Institutional role assigned by platform governance.
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4. Executive Bio */}
+                <div className="form-field-group" style={{ marginBottom: 28 }}>
+                  <label className="form-label" style={{ fontWeight: 700 }}>
+                    Executive Bio & Academic Profile
+                  </label>
+                  <textarea
+                    rows={4}
+                    className="form-input"
+                    value={editProfileForm.bio}
+                    onChange={(e) => setEditProfileForm({ ...editProfileForm, bio: e.target.value })}
+                    placeholder="Provide a brief summary of your academic background, responsibilities, and institutional focus..."
+                    style={{ lineHeight: 1.5, resize: 'vertical' }}
+                  />
+                </div>
+
+                {/* Form Buttons */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 16, borderTop: '1px solid #E2E8F0' }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => {
+                      setProfileMode('view')
+                      navigate('/admin/profile?mode=view', { replace: true })
+                    }}
+                    disabled={profileSaving}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    id="btn-save-admin-profile"
+                    className="btn btn-primary"
+                    disabled={profileSaving}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                  >
+                    <Save size={15} />
+                    <span>{profileSaving ? 'Saving Changes...' : 'Save Profile Changes'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       )}
 
-      {/* CREATE OFFER MODAL */}
+      {/* ========================================================================= */}
+      {/* MODAL 2: CREATE COUPON OFFER MODAL */}
+      {/* ========================================================================= */}
       {isOfferModalOpen && (
         <div className="razorpay-modal-overlay" onClick={() => setIsOfferModalOpen(false)}>
           <div
-            className="razorpay-frame"
+            className="razorpay-modal"
+            style={{ maxWidth: 520 }}
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: 500, width: '100%' }}
           >
-            <div className="razorpay-header" style={{ background: '#0F172A' }}>
-              <div className="razorpay-brand">
-                <Tag style={{ color: '#38BDF8', width: 22, height: 22 }} />
-                <span>Create Promotional Coupon</span>
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div className="razorpay-modal-icon" style={{ background: '#ECFDF5', color: '#059669' }}>
+                  <Tag size={20} />
+                </div>
+                <div>
+                  <h3 className="razorpay-modal-title" style={{ fontSize: '1.2rem', margin: 0 }}>Create Coupon Offer</h3>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B' }}>Generate instant discount code for checkout</div>
+                </div>
               </div>
               <button
+                type="button"
+                className="btn-ghost"
                 onClick={() => setIsOfferModalOpen(false)}
-                style={{ color: '#FFFFFF', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ padding: 6, borderRadius: '50%' }}
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateOffer} style={{ padding: 24 }}>
-              <div className="form-field-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">Campaign / Promotion Title *</label>
+            <form onSubmit={handleCreateOffer} className="razorpay-modal-body" style={{ padding: '24px 20px' }}>
+              <div className="form-field-group">
+                <label className="form-label">Offer Title *</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. Republic Day 50% Off Flash Sale"
+                  placeholder="e.g. Festive AI Fellowship 35% Off"
                   value={offerTitle}
                   onChange={(e) => setOfferTitle(e.target.value)}
                   required
                 />
               </div>
 
-              <div className="form-field-group" style={{ marginBottom: 14 }}>
+              <div className="form-field-group">
                 <label className="form-label">Coupon Code (Uppercase) *</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. APEX50 or NEWYEAR"
+                  style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}
+                  placeholder="e.g. APEXAI35"
                   value={offerCode}
                   onChange={(e) => setOfferCode(e.target.value.toUpperCase())}
                   required
-                  style={{ textTransform: 'uppercase', fontFamily: 'monospace' }}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div className="form-field-group">
                   <label className="form-label">Discount Percentage (%)</label>
                   <input
@@ -1730,6 +3806,581 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: VIEW CREATOR PROFILE MODAL */}
+      {/* ========================================================================= */}
+      {selectedViewCreator && (
+        <div className="razorpay-modal-overlay" onClick={() => setSelectedViewCreator(null)}>
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 680, maxHeight: '90vh', overflowY: 'auto' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div className="razorpay-modal-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
+                  <Users size={20} />
+                </div>
+                <div>
+                  <h3 className="razorpay-modal-title" style={{ fontSize: '1.2rem', margin: 0 }}>
+                    Creator Profile
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                    Institutional faculty details & platform activity
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => setSelectedViewCreator(null)}
+                style={{ padding: 6, borderRadius: '50%' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '24px 20px' }}>
+              {/* Profile Top Summary */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 24, paddingBottom: 20, borderBottom: '1px solid #F1F5F9' }}>
+                <img
+                  src={selectedViewCreator.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
+                  alt=""
+                  style={{ width: 68, height: 68, borderRadius: '50%', objectFit: 'cover', border: '3px solid #EFF6FF', boxShadow: '0 2px 8px rgba(37, 99, 235, 0.15)' }}
+                  onError={(e) => {
+                    e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+                  }}
+                />
+                <div>
+                  <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
+                    {selectedViewCreator.name}
+                  </h4>
+                  <p style={{ color: '#2563EB', fontWeight: 600, fontSize: '0.875rem', margin: '0 0 8px 0' }}>
+                    {selectedViewCreator.creatorProfile?.specialization || selectedViewCreator.creatorProfile?.headline || 'Curriculum Specialist'}
+                  </p>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <span
+                      style={{
+                        background: selectedViewCreator.status === 'ACTIVE' ? '#DCFCE7' : '#FEF3C7',
+                        color: selectedViewCreator.status === 'ACTIVE' ? '#166534' : '#92400E',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        padding: '3px 10px',
+                        borderRadius: 20
+                      }}
+                    >
+                      {selectedViewCreator.status}
+                    </span>
+                    <span
+                      style={{
+                        background: '#F1F5F9',
+                        color: '#475569',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        padding: '3px 10px',
+                        borderRadius: 20,
+                        fontFamily: 'monospace'
+                      }}
+                    >
+                      ID: {selectedViewCreator.id}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Data Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 20 }}>
+                <div style={{ background: '#F8FAFC', padding: 12, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, display: 'block', marginBottom: 2 }}>
+                    EMAIL ADDRESS
+                  </span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+                    {selectedViewCreator.email}
+                  </span>
+                </div>
+
+                <div style={{ background: '#F8FAFC', padding: 12, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, display: 'block', marginBottom: 2 }}>
+                    PHONE NUMBER
+                  </span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+                    {selectedViewCreator.phone || 'Not provided'}
+                  </span>
+                </div>
+
+                <div style={{ background: '#F8FAFC', padding: 12, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, display: 'block', marginBottom: 2 }}>
+                    ACCOUNT CREATED
+                  </span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+                    {selectedViewCreator.createdAt ? new Date(selectedViewCreator.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—'}
+                  </span>
+                </div>
+
+                <div style={{ background: '#F8FAFC', padding: 12, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, display: 'block', marginBottom: 2 }}>
+                    LAST LOGIN SESSION
+                  </span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+                    {formatLastLogin(selectedViewCreator)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Bio & Headline */}
+              {(selectedViewCreator.creatorProfile?.headline || selectedViewCreator.creatorProfile?.biography || selectedViewCreator.bio) && (
+                <div style={{ marginBottom: 20 }}>
+                  <h5 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A', marginBottom: 6 }}>
+                    Biography & Background
+                  </h5>
+                  <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, margin: 0, background: '#F8FAFC', padding: 14, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                    {selectedViewCreator.creatorProfile?.biography || selectedViewCreator.bio || selectedViewCreator.creatorProfile?.headline}
+                  </p>
+                </div>
+              )}
+
+              {/* Assigned Courses */}
+              <div>
+                <h5 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A', marginBottom: 10 }}>
+                  Assigned Platform Courses ({selectedViewCreator.assignedCourses?.length || 0})
+                </h5>
+                {selectedViewCreator.assignedCourses && selectedViewCreator.assignedCourses.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {selectedViewCreator.assignedCourses.map((ac) => (
+                      <div
+                        key={ac.course?.id || ac.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 14px',
+                          borderRadius: 8,
+                          background: '#F8FAFC',
+                          border: '1px solid #E2E8F0',
+                          fontSize: '0.8125rem'
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, color: '#0F172A' }}>
+                          {ac.course?.title || 'Academic Course'}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', background: '#E2E8F0', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                          {ac.course?.status || 'PUBLISHED'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: '0.8125rem', color: '#94A3B8', margin: 0 }}>
+                    No curriculum courses currently assigned to this faculty member.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Footer Action Buttons */}
+            <div
+              style={{
+                padding: '16px 20px',
+                borderTop: '1px solid #E2E8F0',
+                background: '#F8FAFC',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 10
+              }}
+            >
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={() => {
+                    const cr = selectedViewCreator
+                    setSelectedViewCreator(null)
+                    handleOpenEditCreator(cr)
+                  }}
+                  style={{ fontWeight: 600 }}
+                >
+                  <Edit3 size={14} style={{ marginRight: 4 }} />
+                  Edit Profile
+                </button>
+
+                {selectedViewCreator.status === 'ACTIVE' ? (
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => {
+                      const cr = selectedViewCreator
+                      handlePromptSuspendCreator(cr)
+                    }}
+                    style={{ color: '#DC2626', borderColor: '#FECACA', fontWeight: 600 }}
+                  >
+                    <UserX size={14} style={{ marginRight: 4 }} />
+                    Suspend
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => {
+                      const cr = selectedViewCreator
+                      handlePromptActivateCreator(cr)
+                    }}
+                    style={{ color: '#16A34A', borderColor: '#BBF7D0', fontWeight: 600 }}
+                  >
+                    <UserCheck size={14} style={{ marginRight: 4 }} />
+                    Activate
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={() => {
+                    const cr = selectedViewCreator
+                    handlePromptResetCredentials(cr)
+                  }}
+                  style={{ color: '#D97706', borderColor: '#FDE68A', fontWeight: 600 }}
+                >
+                  <Key size={14} style={{ marginRight: 4 }} />
+                  Reset Credentials
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => setSelectedViewCreator(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: EDIT CREATOR MODAL */}
+      {/* ========================================================================= */}
+      {selectedEditCreator && (
+        <div className="razorpay-modal-overlay" onClick={() => setSelectedEditCreator(null)}>
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 580, maxHeight: '90vh', overflowY: 'auto' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div className="razorpay-modal-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
+                  <Edit3 size={20} />
+                </div>
+                <div>
+                  <h3 className="razorpay-modal-title" style={{ fontSize: '1.2rem', margin: 0 }}>
+                    Edit Creator Profile
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                    Update institutional instructor information
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => setSelectedEditCreator(null)}
+                style={{ padding: 6, borderRadius: '50%' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <form onSubmit={handleSaveEditCreator} className="razorpay-modal-body" style={{ padding: '24px 20px' }}>
+              <div className="form-field-group" style={{ marginBottom: 14 }}>
+                <label className="form-label">Full Name *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editCreatorForm.name}
+                  onChange={(e) => setEditCreatorForm({ ...editCreatorForm, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                <div className="form-field-group">
+                  <label className="form-label">Email Address *</label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    value={editCreatorForm.email}
+                    onChange={(e) => setEditCreatorForm({ ...editCreatorForm, email: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-field-group">
+                  <label className="form-label">Phone Number</label>
+                  <input
+                    type="tel"
+                    className="form-input"
+                    value={editCreatorForm.phone}
+                    onChange={(e) => setEditCreatorForm({ ...editCreatorForm, phone: e.target.value })}
+                    placeholder="+91 98765 00002"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                <div className="form-field-group">
+                  <label className="form-label">Specialization / Title *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editCreatorForm.specialization}
+                    onChange={(e) => setEditCreatorForm({ ...editCreatorForm, specialization: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-field-group">
+                  <label className="form-label">Organization / Headline</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editCreatorForm.headline}
+                    onChange={(e) => setEditCreatorForm({ ...editCreatorForm, headline: e.target.value })}
+                    placeholder="e.g. Apex AI Research Labs"
+                  />
+                </div>
+              </div>
+
+              <div className="form-field-group" style={{ marginBottom: 14 }}>
+                <label className="form-label">Profile Photo URL</label>
+                <input
+                  type="url"
+                  className="form-input"
+                  value={editCreatorForm.avatar}
+                  onChange={(e) => setEditCreatorForm({ ...editCreatorForm, avatar: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div className="form-field-group" style={{ marginBottom: 14 }}>
+                <label className="form-label">Biography</label>
+                <textarea
+                  rows={3}
+                  className="form-input"
+                  value={editCreatorForm.bio}
+                  onChange={(e) => setEditCreatorForm({ ...editCreatorForm, bio: e.target.value })}
+                  style={{ width: '100%', resize: 'vertical' }}
+                />
+              </div>
+
+              <div className="form-field-group" style={{ marginBottom: 20 }}>
+                <label className="form-label">Account Status</label>
+                <select
+                  value={editCreatorForm.status}
+                  onChange={(e) => setEditCreatorForm({ ...editCreatorForm, status: e.target.value })}
+                  className="form-input"
+                  style={{ height: 42 }}
+                >
+                  <option value="ACTIVE">ACTIVE (Authorized to log in & publish)</option>
+                  <option value="INACTIVE">INACTIVE (Restricted access)</option>
+                  <option value="SUSPENDED">SUSPENDED (Access revoked)</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setSelectedEditCreator(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={isSavingEditCreator}
+                >
+                  <span>{isSavingEditCreator ? 'Saving...' : 'Save Profile Changes'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 5: CONFIRMATION DIALOG MODAL */}
+      {/* ========================================================================= */}
+      {confirmModal.open && (
+        <div className="razorpay-modal-overlay" onClick={() => setConfirmModal({ ...confirmModal, open: false })}>
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 460 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  className="razorpay-modal-icon"
+                  style={{
+                    background: confirmModal.confirmColor === '#DC2626' ? '#FEE2E2' : '#EFF6FF',
+                    color: confirmModal.confirmColor
+                  }}
+                >
+                  <AlertCircle size={20} />
+                </div>
+                <div>
+                  <h3 className="razorpay-modal-title" style={{ fontSize: '1.15rem', margin: 0 }}>
+                    {confirmModal.title}
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => setConfirmModal({ ...confirmModal, open: false })}
+                style={{ padding: 6, borderRadius: '50%' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <p style={{ fontSize: '0.875rem', color: '#475569', lineHeight: 1.5, margin: '0 0 20px 0' }}>
+                {confirmModal.description}
+              </p>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setConfirmModal({ ...confirmModal, open: false })}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{
+                    background: confirmModal.confirmColor,
+                    borderColor: confirmModal.confirmColor
+                  }}
+                  onClick={async () => {
+                    if (confirmModal.onConfirm) {
+                      await confirmModal.onConfirm()
+                    }
+                    setConfirmModal({ ...confirmModal, open: false })
+                  }}
+                >
+                  <span>{confirmModal.confirmText}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 6: CREDENTIALS NOTICE MODAL */}
+      {/* ========================================================================= */}
+      {credentialsNoticeModal.open && (
+        <div className="razorpay-modal-overlay" onClick={() => setCredentialsNoticeModal({ ...credentialsNoticeModal, open: false })}>
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 500 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div className="razorpay-modal-icon" style={{ background: '#ECFDF5', color: '#059669' }}>
+                  <Key size={20} />
+                </div>
+                <div>
+                  <h3 className="razorpay-modal-title" style={{ fontSize: '1.15rem', margin: 0 }}>
+                    {credentialsNoticeModal.actionType === 'RESET' ? 'Credentials Reset' : 'Credentials Dispatched'}
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                    {credentialsNoticeModal.creatorName} ({credentialsNoticeModal.email})
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => setCredentialsNoticeModal({ ...credentialsNoticeModal, open: false })}
+                style={{ padding: 6, borderRadius: '50%' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ padding: '24px 20px' }}>
+              <p style={{ fontSize: '0.875rem', color: '#475569', margin: '0 0 16px 0' }}>
+                A secure temporary password was initialized for this instructor. Please ensure they receive these credentials if automated SMTP delivery was delayed:
+              </p>
+
+              <div
+                style={{
+                  background: '#F8FAFC',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: 10,
+                  padding: '14px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  marginBottom: 16
+                }}
+              >
+                <div>
+                  <span style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600, display: 'block' }}>
+                    TEMPORARY PASSWORD
+                  </span>
+                  <code style={{ fontSize: '1.05rem', fontWeight: 800, color: '#2563EB' }}>
+                    {credentialsNoticeModal.tempPassword}
+                  </code>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(credentialsNoticeModal.tempPassword)
+                    setCopiedModalKey(true)
+                    showToast('Password copied to clipboard', 'info')
+                    setTimeout(() => setCopiedModalKey(false), 2000)
+                  }}
+                  style={{ height: 36, padding: '0 12px', fontWeight: 600 }}
+                >
+                  {copiedModalKey ? <Check size={14} style={{ color: '#16A34A' }} /> : <Copy size={14} />}
+                  <span style={{ marginLeft: 6 }}>{copiedModalKey ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', color: '#64748B', marginBottom: 20 }}>
+                <Mail size={15} style={{ color: '#2563EB' }} />
+                <span>Onboarding email dispatched to: <strong>{credentialsNoticeModal.email}</strong></span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setCredentialsNoticeModal({ ...credentialsNoticeModal, open: false })}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

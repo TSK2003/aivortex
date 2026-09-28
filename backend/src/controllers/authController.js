@@ -245,9 +245,44 @@ export async function me(req, res, next) {
         phone: user.phone,
         bio: user.bio,
         status: user.status,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
         creatorProfile: user.creatorProfile
       }
     })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updateMyProfile(req, res, next) {
+  try {
+    const userId = req.user.id
+    const { name, phone, bio, avatar } = req.body
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: name !== undefined ? name.trim() : undefined,
+        phone: phone !== undefined ? (phone ? phone.trim() : null) : undefined,
+        bio: bio !== undefined ? (bio ? bio.trim() : null) : undefined,
+        avatar: avatar !== undefined ? (avatar ? avatar.trim() : null) : undefined
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatar: true,
+        phone: true,
+        bio: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    })
+
+    return successResponse(res, { user: updated }, 'Profile updated successfully')
   } catch (err) {
     next(err)
   }

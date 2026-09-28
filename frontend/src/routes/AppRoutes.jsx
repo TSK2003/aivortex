@@ -25,6 +25,8 @@ import StudentSignupPage from '../pages/student/StudentSignupPage'
 import StudentDashboardPage from '../pages/student/StudentDashboardPage'
 import CreatorDashboardPage from '../pages/creator/CreatorDashboardPage'
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage'
+import AdminCreateCoursePage from '../pages/admin/AdminCreateCoursePage'
+import AdminCreateCreatorPage from '../pages/admin/AdminCreateCreatorPage'
 import LearningPlayerPage from '../pages/student/LearningPlayerPage'
 
 export default function AppRoutes() {
@@ -116,8 +118,10 @@ export default function AppRoutes() {
       >
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboardPage />} />
+        <Route path="creators/create" element={<AdminCreateCreatorPage />} />
         <Route path="creators" element={<AdminDashboardPage />} />
         <Route path="students" element={<AdminDashboardPage />} />
+        <Route path="courses/create" element={<AdminCreateCoursePage />} />
         <Route path="courses" element={<AdminDashboardPage />} />
         <Route path="playlists" element={<AdminDashboardPage />} />
         <Route path="video-verification" element={<AdminDashboardPage />} />
@@ -131,6 +135,7 @@ export default function AppRoutes() {
         <Route path="reports" element={<AdminDashboardPage />} />
         <Route path="audit-logs" element={<AdminDashboardPage />} />
         <Route path="security" element={<AdminDashboardPage />} />
+        <Route path="profile" element={<AdminDashboardPage />} />
       </Route>
 
       {/* Global Fallback Route */}
