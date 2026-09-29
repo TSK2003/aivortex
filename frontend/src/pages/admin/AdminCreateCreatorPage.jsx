@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
   Users,
@@ -15,17 +15,20 @@ import {
   CheckCircle2,
   Lock,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  User,
+  Camera,
+  Trash2,
+  Phone,
+  ChevronDown
 } from 'lucide-react'
 import { useToast } from '../../contexts/ToastContext'
 import api from '../../services/api'
-
-const AVATAR_PRESETS = [
-  { label: 'Dr. Rivera (AI Lead)', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Prof. Chen (ML)', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Dr. Sarah (Data Science)', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Marcus (DevOps)', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80' }
-]
+import {
+  INTERNATIONAL_COUNTRY_CODES,
+  formatToE164,
+  validateInternationalPhone
+} from '../../utils/formatters'
 
 export default function AdminCreateCreatorPage() {
   const navigate = useNavigate()
@@ -35,10 +38,89 @@ export default function AdminCreateCreatorPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
-  const [avatar, setAvatar] = useState(AVATAR_PRESETS[0].url)
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+91')
+  const [nationalPhone, setNationalPhone] = useState('')
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false)
+  const [countrySearch, setCountrySearch] = useState('')
+  const countryDropdownRef = useRef(null)
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target)) {
+        setIsCountryDropdownOpen(false)
+      }
+    }
+    if (isCountryDropdownOpen) {
+      document.addEventListener('mousedown', handleOutsideClick)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+    }
+  }, [isCountryDropdownOpen])
+
+  const selectedCountry = useMemo(() => {
+    return (
+      INTERNATIONAL_COUNTRY_CODES.find((c) => c.dialCode === phoneCountryCode) ||
+      INTERNATIONAL_COUNTRY_CODES[0]
+    )
+  }, [phoneCountryCode])
+
+  const filteredCountryCodes = useMemo(() => {
+    if (!countrySearch.trim()) return INTERNATIONAL_COUNTRY_CODES
+    const q = countrySearch.toLowerCase().trim()
+    return INTERNATIONAL_COUNTRY_CODES.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.dialCode.toLowerCase().includes(q) ||
+        c.code.toLowerCase().includes(q)
+    )
+  }, [countrySearch])
+
+  const handleCountryCodeChange = (newCode) => {
+    setPhoneCountryCode(newCode)
+    setIsCountryDropdownOpen(false)
+    setCountrySearch('')
+    const formatted = nationalPhone.trim() ? formatToE164(newCode, nationalPhone) : ''
+    setPhone(formatted)
+    if (nationalPhone.trim()) {
+      const err = validateInternationalPhone(newCode, nationalPhone)
+      setErrors((prev) => ({ ...prev, phone: err || null }))
+    } else {
+      setErrors((prev) => ({ ...prev, phone: null }))
+    }
+  }
+
+  const handleNationalPhoneChange = (e) => {
+    const val = e.target.value.replace(/[^0-9+\s\-()]/g, '').slice(0, 25)
+    setNationalPhone(val)
+    const formatted = val.trim() ? formatToE164(phoneCountryCode, val) : ''
+    setPhone(formatted)
+    if (val.trim()) {
+      const err = validateInternationalPhone(phoneCountryCode, val)
+      setErrors((prev) => ({ ...prev, phone: err || null }))
+    } else {
+      setErrors((prev) => ({ ...prev, phone: null }))
+    }
+  }
+  const [avatar, setAvatar] = useState('')
   const [specialization, setSpecialization] = useState('')
   const [bio, setBio] = useState('')
   const [organization, setOrganization] = useState('')
+
+  // Neutral creator initials helper
+  const getCreatorInitials = (nameStr) => {
+    if (!nameStr || typeof nameStr !== 'string') return ''
+    const cleaned = nameStr.trim().replace(/^(dr\.|dr|prof\.|prof|mr\.|mr|mrs\.|mrs|ms\.|ms|er\.|er)\s+/i, '').trim()
+    const target = cleaned || nameStr.trim()
+    const parts = target.split(/\s+/).filter(Boolean)
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+    }
+    if (parts.length === 1 && parts[0].length > 0) {
+      return parts[0].slice(0, 2).toUpperCase()
+    }
+    return ''
+  }
 
   // Section 2: Credentials State
   const [userId, setUserId] = useState('')
@@ -115,6 +197,10 @@ export default function AdminCreateCreatorPage() {
     if (!specialization.trim()) {
       errs.specialization = 'Professional title or specialization is required'
     }
+    if (nationalPhone.trim()) {
+      const pErr = validateInternationalPhone(phoneCountryCode, nationalPhone)
+      if (pErr) errs.phone = pErr
+    }
     if (password && password.length < 8) {
       errs.password = 'Password must be at least 8 characters'
     }
@@ -145,7 +231,8 @@ export default function AdminCreateCreatorPage() {
         name: true,
         email: true,
         specialization: true,
-        password: true
+        password: true,
+        phone: true
       })
       showToast('Please correct the highlighted form errors before proceeding.', 'error')
       return
@@ -154,17 +241,21 @@ export default function AdminCreateCreatorPage() {
     try {
       setIsSubmitting(true)
 
+      const finalPhone = nationalPhone.trim()
+        ? formatToE164(phoneCountryCode, nationalPhone)
+        : null
+
       const payload = {
         name: name.trim(),
         email: email.trim().toLowerCase(),
-        phone: phone ? phone.trim() : null,
+        phone: finalPhone,
         avatar: avatar ? avatar.trim() : null,
         specialization: specialization.trim(),
         bio: bio ? bio.trim() : null,
         organization: organization ? organization.trim() : null,
         userId: userId ? userId.trim() : null,
         password: password ? password.trim() : null,
-        status,
+        status: status || 'ACTIVE',
         sendEmail
       }
 
@@ -249,14 +340,25 @@ export default function AdminCreateCreatorPage() {
               </div>
               <span
                 style={{
-                  background: creator.status === 'ACTIVE' ? '#DCFCE7' : '#FEF3C7',
-                  color: creator.status === 'ACTIVE' ? '#166534' : '#92400E',
+                  background: creator.status === 'ACTIVE' ? '#DCFCE7' : (creator.status === 'SUSPENDED' ? '#FEE2E2' : '#F1F5F9'),
+                  color: creator.status === 'ACTIVE' ? '#166534' : (creator.status === 'SUSPENDED' ? '#991B1B' : '#475569'),
                   fontSize: '0.75rem',
                   fontWeight: 700,
                   padding: '4px 10px',
-                  borderRadius: 20
+                  borderRadius: 20,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6
                 }}
               >
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: creator.status === 'ACTIVE' ? '#16A34A' : (creator.status === 'SUSPENDED' ? '#DC2626' : '#94A3B8')
+                  }}
+                />
                 STATUS: {creator.status}
               </span>
             </div>
@@ -561,14 +663,155 @@ export default function AdminCreateCreatorPage() {
                 <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#1E293B' }}>
                   Phone Number
                 </label>
-                <input
-                  type="tel"
-                  placeholder="e.g. +91 98765 00002"
-                  className="form-input"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  style={{ width: '100%', height: 44 }}
-                />
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  {/* Country Code Selector */}
+                  <div style={{ position: 'relative' }} ref={countryDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsCountryDropdownOpen((prev) => !prev)}
+                      style={{
+                        height: 44,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '0 10px',
+                        background: '#F8FAFC',
+                        border: '1px solid #CBD5E1',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: '#0F172A',
+                        whiteSpace: 'nowrap',
+                        boxSizing: 'border-box',
+                        flexShrink: 0
+                      }}
+                      aria-label="Select Country Code"
+                    >
+                      <span style={{ fontSize: '1.05rem', lineHeight: 1 }}>{selectedCountry.flag}</span>
+                      <span>{selectedCountry.dialCode}</span>
+                      <ChevronDown
+                        size={14}
+                        style={{
+                          color: '#64748B',
+                          transition: 'transform 0.2s',
+                          transform: isCountryDropdownOpen ? 'rotate(180deg)' : 'none'
+                        }}
+                      />
+                    </button>
+
+                    {isCountryDropdownOpen && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          marginTop: 4,
+                          width: 250,
+                          maxHeight: 230,
+                          overflowY: 'auto',
+                          background: '#FFFFFF',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: 8,
+                          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08)',
+                          zIndex: 100,
+                          padding: '6px 0'
+                        }}
+                      >
+                        <div style={{ padding: '0 8px 6px 8px', borderBottom: '1px solid #F1F5F9' }}>
+                          <input
+                            type="text"
+                            value={countrySearch}
+                            onChange={(e) => setCountrySearch(e.target.value)}
+                            placeholder="Search country or code..."
+                            onClick={(e) => e.stopPropagation()}
+                            autoFocus
+                            style={{
+                              width: '100%',
+                              height: 32,
+                              padding: '0 8px',
+                              fontSize: '0.78rem',
+                              border: '1px solid #CBD5E1',
+                              borderRadius: 6,
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+                        {filteredCountryCodes.map((c) => (
+                          <div
+                            key={c.code}
+                            onClick={() => handleCountryCodeChange(c.dialCode)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '7px 12px',
+                              fontSize: '0.8125rem',
+                              cursor: 'pointer',
+                              background: c.dialCode === selectedCountry.dialCode ? '#EFF6FF' : 'transparent',
+                              color: c.dialCode === selectedCountry.dialCode ? '#1D4ED8' : '#1E293B',
+                              fontWeight: c.dialCode === selectedCountry.dialCode ? 600 : 400
+                            }}
+                            onMouseEnter={(e) => {
+                              if (c.dialCode !== selectedCountry.dialCode) e.currentTarget.style.background = '#F8FAFC'
+                            }}
+                            onMouseLeave={(e) => {
+                              if (c.dialCode !== selectedCountry.dialCode) e.currentTarget.style.background = 'transparent'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                              <span style={{ fontSize: '1rem', lineHeight: 1 }}>{c.flag}</span>
+                              <span style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{c.name}</span>
+                            </div>
+                            <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, marginLeft: 8 }}>
+                              {c.dialCode}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* National Phone Input */}
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <Phone
+                      size={14}
+                      style={{
+                        position: 'absolute',
+                        left: 12,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: touched.phone && errors.phone ? '#EF4444' : '#94A3B8',
+                        pointerEvents: 'none'
+                      }}
+                    />
+                    <input
+                      type="tel"
+                      className="form-input"
+                      value={nationalPhone}
+                      onChange={handleNationalPhoneChange}
+                      onBlur={() => handleBlur('phone')}
+                      placeholder={selectedCountry.placeholder || '98765 00002'}
+                      style={{
+                        width: '100%',
+                        height: 44,
+                        paddingLeft: 34,
+                        borderColor: touched.phone && errors.phone ? '#EF4444' : '#CBD5E1',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {touched.phone && errors.phone ? (
+                  <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <AlertCircle size={12} /> {errors.phone}
+                  </p>
+                ) : (
+                  <span style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: 4, display: 'block' }}>
+                    Select country code and enter a valid phone number.
+                  </span>
+                )}
               </div>
 
               {/* Professional Title / Specialization */}
@@ -615,50 +858,132 @@ export default function AdminCreateCreatorPage() {
                 />
               </div>
 
-              {/* Profile Photo URL & Presets */}
+              {/* Profile Photo Upload & URL */}
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#1E293B' }}>
-                  Profile Photo URL
+                  Profile Photo
                 </label>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10 }}>
-                  <img
-                    src={avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
-                    alt="Avatar Preview"
-                    style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '2px solid #E2E8F0' }}
-                    onError={(e) => {
-                      e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+                <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 8 }}>
+                  <div
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: '50%',
+                      background: '#F1F5F9',
+                      color: '#1E293B',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.15rem',
+                      fontWeight: 800,
+                      border: '2px solid #E2E8F0',
+                      flexShrink: 0,
+                      overflow: 'hidden'
                     }}
-                  />
-                  <input
-                    type="url"
-                    placeholder="https://..."
-                    className="form-input"
-                    value={avatar}
-                    onChange={(e) => setAvatar(e.target.value)}
-                    style={{ flex: 1, height: 44 }}
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748B', alignSelf: 'center', fontWeight: 600 }}>Presets:</span>
-                  {AVATAR_PRESETS.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => setAvatar(p.url)}
-                      style={{
-                        background: avatar === p.url ? '#EFF6FF' : '#F8FAFC',
-                        border: `1px solid ${avatar === p.url ? '#2563EB' : '#E2E8F0'}`,
-                        color: avatar === p.url ? '#2563EB' : '#475569',
-                        padding: '4px 10px',
-                        borderRadius: 6,
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
+                  >
+                    {avatar ? (
+                      <img
+                        src={avatar}
+                        alt="Avatar Preview"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                        }}
+                      />
+                    ) : (
+                      getCreatorInitials(name) || <User size={22} style={{ color: '#64748B' }} />
+                    )}
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
+                      <label
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          background: '#FFFFFF',
+                          color: '#2563EB',
+                          border: '1px solid #CBD5E1',
+                          borderRadius: 8,
+                          padding: '7px 14px',
+                          fontSize: '0.8125rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#EFF6FF'
+                          e.currentTarget.style.borderColor = '#93C5FD'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#FFFFFF'
+                          e.currentTarget.style.borderColor = '#CBD5E1'
+                        }}
+                      >
+                        <Camera size={14} />
+                        <span>{avatar ? 'Change Photo' : 'Upload Photo'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (!file) return
+                            if (!file.type.startsWith('image/')) {
+                              showToast('Please select a valid image file', 'error')
+                              return
+                            }
+                            if (file.size > 2 * 1024 * 1024) {
+                              showToast('Image size must be less than 2MB', 'error')
+                              return
+                            }
+                            const reader = new FileReader()
+                            reader.onload = (loadEvt) => {
+                              setAvatar(loadEvt.target?.result || '')
+                              showToast('Profile image selected', 'info')
+                            }
+                            reader.readAsDataURL(file)
+                          }}
+                        />
+                      </label>
+
+                      {avatar && (
+                        <button
+                          type="button"
+                          onClick={() => setAvatar('')}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            background: '#FFFFFF',
+                            color: '#DC2626',
+                            border: '1px solid #FECACA',
+                            borderRadius: 8,
+                            padding: '7px 12px',
+                            fontSize: '0.8125rem',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#FEF2F2'
+                            e.currentTarget.style.borderColor = '#FCA5A5'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#FFFFFF'
+                            e.currentTarget.style.borderColor = '#FECACA'
+                          }}
+                        >
+                          <Trash2 size={13} />
+                          <span>Remove Photo</span>
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748B', lineHeight: 1.4 }}>
+                      Supported formats: JPG, PNG, WebP. Maximum size: 2MB. If no photo is selected, initials avatar will be displayed.
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -908,58 +1233,91 @@ export default function AdminCreateCreatorPage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
+              {/* Option 1: ACTIVE */}
               <div
                 onClick={() => setStatus('ACTIVE')}
                 style={{
-                  border: `2px solid ${status === 'ACTIVE' ? '#2563EB' : '#E2E8F0'}`,
-                  background: status === 'ACTIVE' ? '#EFF6FF' : '#FFFFFF',
+                  border: `2px solid ${status === 'ACTIVE' ? '#16A34A' : '#E2E8F0'}`,
+                  background: status === 'ACTIVE' ? '#F0FDF4' : '#FFFFFF',
                   borderRadius: 12,
-                  padding: 18,
+                  padding: 16,
                   cursor: 'pointer',
                   transition: 'all 0.15s ease'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <input
                     type="radio"
                     checked={status === 'ACTIVE'}
                     onChange={() => setStatus('ACTIVE')}
-                    style={{ accentColor: '#2563EB' }}
+                    style={{ accentColor: '#16A34A' }}
                   />
-                  <span style={{ fontWeight: 800, color: '#0F172A', fontSize: '0.95rem' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16A34A' }} />
+                  <span style={{ fontWeight: 800, color: '#0F172A', fontSize: '0.9rem' }}>
                     Active (Recommended)
                   </span>
                 </div>
-                <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: 0, paddingLeft: 24 }}>
+                <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: 0, paddingLeft: 22 }}>
                   Account is immediately activated. The instructor can log in to Creator Studio and build curriculum right away.
                 </p>
               </div>
 
+              {/* Option 2: SUSPENDED */}
               <div
-                onClick={() => setStatus('INACTIVE')}
+                onClick={() => setStatus('SUSPENDED')}
                 style={{
-                  border: `2px solid ${status === 'INACTIVE' ? '#D97706' : '#E2E8F0'}`,
-                  background: status === 'INACTIVE' ? '#FFFBEB' : '#FFFFFF',
+                  border: `2px solid ${status === 'SUSPENDED' ? '#DC2626' : '#E2E8F0'}`,
+                  background: status === 'SUSPENDED' ? '#FEF2F2' : '#FFFFFF',
                   borderRadius: 12,
-                  padding: 18,
+                  padding: 16,
                   cursor: 'pointer',
                   transition: 'all 0.15s ease'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <input
+                    type="radio"
+                    checked={status === 'SUSPENDED'}
+                    onChange={() => setStatus('SUSPENDED')}
+                    style={{ accentColor: '#DC2626' }}
+                  />
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#DC2626' }} />
+                  <span style={{ fontWeight: 800, color: '#0F172A', fontSize: '0.9rem' }}>
+                    Suspended
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: 0, paddingLeft: 22 }}>
+                  Account is created with suspended privileges. Portal login and curriculum editing are restricted until activated.
+                </p>
+              </div>
+
+              {/* Option 3: INACTIVE */}
+              <div
+                onClick={() => setStatus('INACTIVE')}
+                style={{
+                  border: `2px solid ${status === 'INACTIVE' ? '#64748B' : '#E2E8F0'}`,
+                  background: status === 'INACTIVE' ? '#F8FAFC' : '#FFFFFF',
+                  borderRadius: 12,
+                  padding: 16,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <input
                     type="radio"
                     checked={status === 'INACTIVE'}
                     onChange={() => setStatus('INACTIVE')}
-                    style={{ accentColor: '#D97706' }}
+                    style={{ accentColor: '#64748B' }}
                   />
-                  <span style={{ fontWeight: 800, color: '#0F172A', fontSize: '0.95rem' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#94A3B8' }} />
+                  <span style={{ fontWeight: 800, color: '#0F172A', fontSize: '0.9rem' }}>
                     Inactive (Hold Access)
                   </span>
                 </div>
-                <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: 0, paddingLeft: 24 }}>
-                  Account profile is provisioned in advance, but portal login access is blocked until manually activated by Admin.
+                <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: 0, paddingLeft: 22 }}>
+                  Account profile is provisioned in advance, but portal login access is held until manually activated by Admin.
                 </p>
               </div>
             </div>
@@ -1075,22 +1433,37 @@ export default function AdminCreateCreatorPage() {
             </h3>
 
             <div style={{ textAlign: 'center', paddingBottom: 16, borderBottom: '1px solid #F1F5F9' }}>
-              <img
-                src={avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
-                alt="Instructor"
+              <div
                 style={{
                   width: 72,
                   height: 72,
                   borderRadius: '50%',
-                  objectFit: 'cover',
+                  background: '#F1F5F9',
+                  color: '#1E293B',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.4rem',
+                  fontWeight: 800,
                   margin: '0 auto 12px auto',
                   border: '3px solid #EFF6FF',
-                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.15)'
+                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.15)',
+                  overflow: 'hidden'
                 }}
-                onError={(e) => {
-                  e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
-                }}
-              />
+              >
+                {avatar ? (
+                  <img
+                    src={avatar}
+                    alt="Instructor"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                ) : (
+                  getCreatorInitials(name) || <User size={28} style={{ color: '#64748B' }} />
+                )}
+              </div>
               <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
                 {name.trim() || 'Dr. Instructor Name'}
               </h4>
@@ -1114,14 +1487,18 @@ export default function AdminCreateCreatorPage() {
                 </span>
                 <span
                   style={{
-                    background: status === 'ACTIVE' ? '#DCFCE7' : '#FEF3C7',
-                    color: status === 'ACTIVE' ? '#166534' : '#92400E',
+                    background: status === 'ACTIVE' ? '#DCFCE7' : (status === 'SUSPENDED' ? '#FEE2E2' : '#F1F5F9'),
+                    color: status === 'ACTIVE' ? '#166534' : (status === 'SUSPENDED' ? '#991B1B' : '#475569'),
                     padding: '3px 8px',
                     borderRadius: 6,
                     fontSize: '0.75rem',
-                    fontWeight: 700
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5
                   }}
                 >
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: status === 'ACTIVE' ? '#16A34A' : (status === 'SUSPENDED' ? '#DC2626' : '#94A3B8') }} />
                   {status}
                 </span>
               </div>
@@ -1218,7 +1595,7 @@ export default function AdminCreateCreatorPage() {
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: status === 'ACTIVE' ? '#10B981' : '#F59E0B'
+              background: status === 'ACTIVE' ? '#16A34A' : (status === 'SUSPENDED' ? '#DC2626' : '#94A3B8')
             }}
           />
           <span style={{ fontSize: '0.8125rem', color: '#475569', fontWeight: 600 }}>

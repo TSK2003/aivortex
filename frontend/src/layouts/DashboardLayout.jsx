@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 import NotificationDropdown from '../components/common/NotificationDropdown'
 import BrandLogo from '../components/common/BrandLogo'
 import api from '../services/api'
@@ -92,6 +93,7 @@ const STUDENT_NAV = [
 
 export default function DashboardLayout({ role = 'student' }) {
   const { user, logout } = useAuth()
+  const { isDark } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -116,7 +118,7 @@ export default function DashboardLayout({ role = 'student' }) {
             })
           }
         })
-        .catch(() => {})
+        .catch(() => { })
     }
   }, [role, location.pathname])
 
@@ -150,7 +152,7 @@ export default function DashboardLayout({ role = 'student' }) {
       <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-header">
           <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-            <BrandLogo size="sm" />
+            <BrandLogo size="sm" theme={isDark ? 'dark' : 'light'} />
           </a>
           <button
             className="btn-ghost sidebar-close-mobile"
@@ -331,24 +333,24 @@ export default function DashboardLayout({ role = 'student' }) {
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '10px 14px',
-              background: '#FEF2F2',
-              border: '1px solid #FECACA',
+              background: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
+              border: `1px solid ${isDark ? 'rgba(239, 68, 68, 0.25)' : '#FECACA'}`,
               borderRadius: '10px',
-              color: '#DC2626',
+              color: isDark ? '#F87171' : '#DC2626',
               cursor: 'pointer',
               fontWeight: 700,
               fontSize: '0.875rem',
-              transition: 'all 0.2s ease',
+              transition: 'background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease',
               boxShadow: '0 1px 2px rgba(220, 38, 38, 0.05)',
               boxSizing: 'border-box'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#FEE2E2'
-              e.currentTarget.style.borderColor = '#F87171'
+              e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2'
+              e.currentTarget.style.borderColor = isDark ? 'rgba(239, 68, 68, 0.4)' : '#F87171'
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#FEF2F2'
-              e.currentTarget.style.borderColor = '#FECACA'
+              e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2'
+              e.currentTarget.style.borderColor = isDark ? 'rgba(239, 68, 68, 0.25)' : '#FECACA'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -357,12 +359,13 @@ export default function DashboardLayout({ role = 'student' }) {
                   width: 28,
                   height: 28,
                   borderRadius: 6,
-                  background: '#FEE2E2',
+                  background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#DC2626',
-                  flexShrink: 0
+                  color: isDark ? '#F87171' : '#DC2626',
+                  flexShrink: 0,
+                  transition: 'background-color 0.3s ease, color 0.3s ease'
                 }}
               >
                 <LogOut size={15} />
@@ -375,26 +378,7 @@ export default function DashboardLayout({ role = 'student' }) {
 
       {/* Main content area */}
       <div className="dashboard-main">
-        {/* Topbar */}
-        <header className="dashboard-topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <button
-              className="btn-ghost mobile-sidebar-toggle"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu size={20} />
-            </button>
-            <h1 className="topbar-title" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)', margin: 0 }}>
-              {roleLabel}
-            </h1>
-          </div>
-          <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <NotificationDropdown />
-            <div style={{ width: 1, height: 22, background: '#E2E8F0' }} />
-            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
-          </div>
-        </header>
-        {/* Topbar: Use AdminHeader for Admin role; default topbar for student & creator */}
+        {/* Single Topbar: Admin uses specialized AdminHeader; Student and Creator use dashboard-topbar */}
         {role === 'admin' ? (
           <AdminHeader
             onToggleSidebar={handleToggleSidebar}
@@ -408,8 +392,10 @@ export default function DashboardLayout({ role = 'student' }) {
           <header className="dashboard-topbar">
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <button
+                type="button"
                 className="btn-ghost mobile-sidebar-toggle"
                 onClick={() => setSidebarOpen(true)}
+                aria-label="Toggle Navigation Sidebar"
               >
                 <Menu size={20} />
               </button>
@@ -417,7 +403,9 @@ export default function DashboardLayout({ role = 'student' }) {
                 {roleLabel}
               </h1>
             </div>
-            <div className="topbar-actions">
+            <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <NotificationDropdown />
+              <div style={{ width: 1, height: 22, background: '#E2E8F0' }} />
               <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
             </div>
           </header>

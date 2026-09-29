@@ -123,6 +123,8 @@ export default function AppRoutes() {
         <Route path="creators" element={<AdminDashboardPage />} />
         <Route path="students" element={<AdminDashboardPage />} />
         <Route path="courses/create" element={<AdminCreateCoursePage />} />
+        <Route path="courses/:courseId/edit" element={<AdminCreateCoursePage />} />
+        <Route path="courses/edit" element={<AdminCreateCoursePage />} />
         <Route path="courses" element={<AdminDashboardPage />} />
         <Route path="playlists" element={<AdminDashboardPage />} />
         <Route path="video-verification" element={<AdminDashboardPage />} />

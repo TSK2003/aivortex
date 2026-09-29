@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Users,
@@ -37,12 +37,47 @@ import {
   UserX,
   Copy,
   Pause,
-  Play
+  Play,
+  Filter,
+  ArrowUpDown,
+  EyeOff,
+  Sparkles,
+  Upload,
+  Link2,
+  ChevronDown
 } from 'lucide-react'
 import { useToast } from '../../contexts/ToastContext'
 import { useAuth } from '../../contexts/AuthContext'
 import StatCard from '../../components/admin/StatCard'
+import CustomSelect from '../../components/common/CustomSelect'
 import api from '../../services/api'
+import {
+  INTERNATIONAL_COUNTRY_CODES,
+  parsePhoneNumber,
+  formatToE164,
+  validateInternationalPhone
+} from '../../utils/formatters'
+
+const CREATOR_STATUS_OPTIONS = [
+  { value: 'ALL', label: 'All Statuses', dotColor: '#2563EB' },
+  { value: 'ACTIVE', label: 'Active', dotColor: '#16A34A' },
+  { value: 'SUSPENDED', label: 'Suspended', dotColor: '#DC2626' },
+  { value: 'INACTIVE', label: 'Inactive', dotColor: '#94A3B8' }
+]
+
+const CREATOR_SORT_OPTIONS = [
+  { value: 'created_desc', label: 'Newest First' },
+  { value: 'created_asc', label: 'Oldest First' },
+  { value: 'name_asc', label: 'Name A–Z' },
+  { value: 'name_desc', label: 'Name Z–A' },
+  { value: 'last_login', label: 'Last Login' }
+]
+
+const EDIT_CREATOR_STATUS_OPTIONS = [
+  { value: 'ACTIVE', label: 'Active', dotColor: '#16A34A' },
+  { value: 'SUSPENDED', label: 'Suspended', dotColor: '#DC2626' },
+  { value: 'INACTIVE', label: 'Inactive', dotColor: '#94A3B8' }
+]
 
 export default function AdminDashboardPage() {
   const location = useLocation()
@@ -123,7 +158,57 @@ export default function AdminDashboardPage() {
     bio: '',
     status: 'ACTIVE'
   })
+  const [phoneError, setPhoneError] = useState('')
+  const [editCreatorCountryCode, setEditCreatorCountryCode] = useState('+91')
+  const [editCreatorNationalPhone, setEditCreatorNationalPhone] = useState('')
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false)
+  const [countrySearch, setCountrySearch] = useState('')
+  const countryDropdownRef = useRef(null)
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target)) {
+        setIsCountryDropdownOpen(false)
+      }
+    }
+    if (isCountryDropdownOpen) {
+      document.addEventListener('mousedown', handleOutsideClick)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+    }
+  }, [isCountryDropdownOpen])
+
+  const selectedCountry = useMemo(() => {
+    return (
+      INTERNATIONAL_COUNTRY_CODES.find((c) => c.dialCode === editCreatorCountryCode) ||
+      INTERNATIONAL_COUNTRY_CODES[0]
+    )
+  }, [editCreatorCountryCode])
+
+  const filteredCountryCodes = useMemo(() => {
+    if (!countrySearch.trim()) return INTERNATIONAL_COUNTRY_CODES
+    const q = countrySearch.toLowerCase().trim()
+    return INTERNATIONAL_COUNTRY_CODES.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.dialCode.toLowerCase().includes(q) ||
+        c.code.toLowerCase().includes(q)
+    )
+  }, [countrySearch])
+
   const [isSavingEditCreator, setIsSavingEditCreator] = useState(false)
+  const [changePasswordModal, setChangePasswordModal] = useState({
+    open: false,
+    creator: null,
+    newPassword: '',
+    confirmPassword: '',
+    showNewPassword: false,
+    showConfirmPassword: false,
+    sendEmail: true,
+    isSubmitting: false,
+    error: ''
+  })
   const [confirmModal, setConfirmModal] = useState({
     open: false,
     title: '',
@@ -289,6 +374,20 @@ export default function AdminDashboardPage() {
     return name.slice(0, 2).toUpperCase()
   }
 
+  const getCreatorInitials = (name) => {
+    if (!name || typeof name !== 'string') return ''
+    const cleaned = name.trim().replace(/^(dr\.|dr|prof\.|prof|mr\.|mr|mrs\.|mrs|ms\.|ms|er\.|er)\s+/i, '').trim()
+    const target = cleaned || name.trim()
+    const parts = target.split(/\s+/).filter(Boolean)
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+    }
+    if (parts.length === 1 && parts[0].length > 0) {
+      return parts[0].slice(0, 2).toUpperCase()
+    }
+    return ''
+  }
+
   const currentDisplayUser = adminProfile || authUser || {
     name: 'Dr. Vikram Sen',
     email: 'director@apexlearn.edu',
@@ -441,8 +540,12 @@ export default function AdminDashboardPage() {
   const filteredCreators = useMemo(() => {
     return creators
       .filter((cr) => {
-        if (creatorStatusFilter !== 'ALL' && cr.status !== creatorStatusFilter) {
-          return false
+        if (creatorStatusFilter !== 'ALL') {
+          const current = (cr.status || 'ACTIVE').toUpperCase()
+          const target = creatorStatusFilter.toUpperCase()
+          if (current !== target) {
+            return false
+          }
         }
         if (creatorSearch.trim()) {
           const q = creatorSearch.trim().toLowerCase()
@@ -457,8 +560,16 @@ export default function AdminDashboardPage() {
         return true
       })
       .sort((a, b) => {
-        if (creatorSortBy === 'name') {
+        if (creatorSortBy === 'name' || creatorSortBy === 'name_asc') {
           return (a.name || '').localeCompare(b.name || '')
+        }
+        if (creatorSortBy === 'name_desc') {
+          return (b.name || '').localeCompare(a.name || '')
+        }
+        if (creatorSortBy === 'last_login') {
+          const aLogin = new Date(a.lastLoginAt || a.lastLogin || a.updatedAt || 0).getTime()
+          const bLogin = new Date(b.lastLoginAt || b.lastLogin || b.updatedAt || 0).getTime()
+          return bLogin - aLogin
         }
         if (creatorSortBy === 'created_asc') {
           return new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
@@ -469,6 +580,13 @@ export default function AdminDashboardPage() {
 
   const handleOpenEditCreator = (cr) => {
     setSelectedEditCreator(cr)
+    const parsed = parsePhoneNumber(cr.phone || '')
+    setEditCreatorCountryCode(parsed.countryCode)
+    setEditCreatorNationalPhone(parsed.nationalNumber)
+    setIsCountryDropdownOpen(false)
+    setCountrySearch('')
+    const rawStatus = (cr.status || 'ACTIVE').toUpperCase()
+    const safeStatus = ['ACTIVE', 'SUSPENDED', 'INACTIVE'].includes(rawStatus) ? rawStatus : 'ACTIVE'
     setEditCreatorForm({
       name: cr.name || '',
       email: cr.email || '',
@@ -477,8 +595,184 @@ export default function AdminDashboardPage() {
       specialization: cr.creatorProfile?.specialization || '',
       headline: cr.creatorProfile?.headline || '',
       bio: cr.creatorProfile?.biography || cr.bio || '',
-      status: cr.status || 'ACTIVE'
+      status: safeStatus
     })
+    setPhoneError('')
+  }
+
+  const handleCountryCodeChange = (newCode) => {
+    setEditCreatorCountryCode(newCode)
+    setIsCountryDropdownOpen(false)
+    setCountrySearch('')
+    const formatted = editCreatorNationalPhone.trim() ? formatToE164(newCode, editCreatorNationalPhone) : ''
+    setEditCreatorForm((prev) => ({ ...prev, phone: formatted }))
+    const errorMsg = validateInternationalPhone(newCode, editCreatorNationalPhone)
+    setPhoneError(errorMsg)
+  }
+
+  const handleNationalPhoneChange = (e) => {
+    const raw = e.target.value
+    // Allow digits, spaces, hyphens, and parentheses without rigid 16-char cutoff
+    const sanitized = raw.replace(/[^0-9+\s\-()]/g, '').slice(0, 25)
+    setEditCreatorNationalPhone(sanitized)
+    const formatted = sanitized.trim() ? formatToE164(editCreatorCountryCode, sanitized) : ''
+    setEditCreatorForm((prev) => ({ ...prev, phone: formatted }))
+    const errorMsg = validateInternationalPhone(editCreatorCountryCode, sanitized)
+    setPhoneError(errorMsg)
+  }
+
+  // Change Password Modal Handlers
+  const handleOpenChangePassword = (cr) => {
+    setChangePasswordModal({
+      open: true,
+      creator: cr,
+      newPassword: '',
+      confirmPassword: '',
+      showNewPassword: false,
+      showConfirmPassword: false,
+      sendEmail: true,
+      isSubmitting: false,
+      error: ''
+    })
+  }
+
+  const handleGenerateChangePassword = () => {
+    const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+    const lowercase = 'abcdefghijkmnpqrstuvwxyz'
+    const numbers = '23456789'
+    const specials = '!@#$%^&*'
+    const allChars = uppercase + lowercase + numbers + specials
+
+    // Ensure at least 1 uppercase, 1 lowercase, 1 number, and 1 special character
+    const chars = [
+      uppercase[Math.floor(Math.random() * uppercase.length)],
+      lowercase[Math.floor(Math.random() * lowercase.length)],
+      numbers[Math.floor(Math.random() * numbers.length)],
+      specials[Math.floor(Math.random() * specials.length)]
+    ]
+
+    // Generate 14 characters total (strictly between 8 and 32 characters)
+    for (let i = 0; i < 10; i++) {
+      chars.push(allChars[Math.floor(Math.random() * allChars.length)])
+    }
+
+    // Shuffle characters randomly
+    for (let i = chars.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[chars[i], chars[j]] = [chars[j], chars[i]]
+    }
+
+    const generated = chars.join('')
+    setChangePasswordModal((prev) => ({
+      ...prev,
+      newPassword: generated,
+      confirmPassword: generated,
+      showNewPassword: true,
+      showConfirmPassword: true,
+      error: ''
+    }))
+  }
+
+  const passwordCriteria = useMemo(() => {
+    const pwd = changePasswordModal.newPassword || ''
+    const hasMinLen = pwd.length >= 8
+    const hasMaxLen = pwd.length <= 32 && pwd.length > 0
+    const hasUpper = /[A-Z]/.test(pwd)
+    const hasLower = /[a-z]/.test(pwd)
+    const hasNumber = /[0-9]/.test(pwd)
+    const hasSpecial = /[^A-Za-z0-9]/.test(pwd)
+    const isValid = hasMinLen && hasMaxLen && hasUpper && hasLower && hasNumber && hasSpecial
+
+    return {
+      hasMinLen,
+      hasMaxLen,
+      hasUpper,
+      hasLower,
+      hasNumber,
+      hasSpecial,
+      isValid
+    }
+  }, [changePasswordModal.newPassword])
+
+  const changePasswordStrength = useMemo(() => {
+    const pwd = changePasswordModal.newPassword || ''
+    if (!pwd) return { score: 0, label: 'None', color: '#94A3B8' }
+
+    let criteriaMet = 0
+    if (pwd.length >= 8 && pwd.length <= 32) criteriaMet += 1
+    if (/[A-Z]/.test(pwd)) criteriaMet += 1
+    if (/[a-z]/.test(pwd)) criteriaMet += 1
+    if (/[0-9]/.test(pwd)) criteriaMet += 1
+    if (/[^A-Za-z0-9]/.test(pwd)) criteriaMet += 1
+
+    if (pwd.length < 8) {
+      return { score: Math.min(25, criteriaMet * 5), label: 'Too Short', color: '#EF4444' }
+    }
+
+    if (criteriaMet <= 2) return { score: 25, label: 'Weak', color: '#EF4444' }
+    if (criteriaMet === 3) return { score: 50, label: 'Fair', color: '#F59E0B' }
+    if (criteriaMet === 4) return { score: 75, label: 'Good', color: '#3B82F6' }
+    if (pwd.length >= 12) return { score: 100, label: 'Strong', color: '#10B981' }
+    return { score: 85, label: 'Strong', color: '#10B981' }
+  }, [changePasswordModal.newPassword])
+
+  const handleSaveChangePassword = async (e) => {
+    if (e) e.preventDefault()
+    const { creator, newPassword, confirmPassword, sendEmail } = changePasswordModal
+    if (!newPassword || newPassword.length < 8) {
+      setChangePasswordModal((prev) => ({ ...prev, error: 'Password must be at least 8 characters long.' }))
+      return
+    }
+    if (newPassword.length > 32) {
+      setChangePasswordModal((prev) => ({ ...prev, error: 'Password cannot exceed 32 characters.' }))
+      return
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      setChangePasswordModal((prev) => ({ ...prev, error: 'Password must contain at least one uppercase letter.' }))
+      return
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      setChangePasswordModal((prev) => ({ ...prev, error: 'Password must contain at least one lowercase letter.' }))
+      return
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      setChangePasswordModal((prev) => ({ ...prev, error: 'Password must contain at least one number.' }))
+      return
+    }
+    if (!/[^A-Za-z0-9]/.test(newPassword)) {
+      setChangePasswordModal((prev) => ({ ...prev, error: 'Password must contain at least one special character.' }))
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setChangePasswordModal((prev) => ({ ...prev, error: 'New password and confirmation do not match.' }))
+      return
+    }
+
+    try {
+      setChangePasswordModal((prev) => ({ ...prev, isSubmitting: true, error: '' }))
+      await api.admin.resetCreatorPassword(creator.id, {
+        newPassword,
+        sendEmail
+      })
+      showToast('Password updated successfully.', 'success')
+      setChangePasswordModal({
+        open: false,
+        creator: null,
+        newPassword: '',
+        confirmPassword: '',
+        showNewPassword: false,
+        showConfirmPassword: false,
+        sendEmail: true,
+        isSubmitting: false,
+        error: ''
+      })
+    } catch (err) {
+      setChangePasswordModal((prev) => ({
+        ...prev,
+        isSubmitting: false,
+        error: err.message || 'Failed to update password.'
+      }))
+    }
   }
 
   const handleSaveEditCreator = async (e) => {
@@ -492,10 +786,70 @@ export default function AdminDashboardPage() {
       return
     }
 
+    const phoneValidationMsg = validateInternationalPhone(editCreatorCountryCode, editCreatorNationalPhone)
+    if (phoneValidationMsg) {
+      setPhoneError(phoneValidationMsg)
+      showToast(phoneValidationMsg, 'error')
+      return
+    }
+
     try {
       setIsSavingEditCreator(true)
-      await api.admin.updateCreator(selectedEditCreator.id, editCreatorForm)
+      const finalPhone = editCreatorNationalPhone.trim()
+        ? formatToE164(editCreatorCountryCode, editCreatorNationalPhone)
+        : null
+
+      const rawStatus = (editCreatorForm.status || selectedEditCreator.status || 'ACTIVE').toUpperCase()
+      const normalizedStatus = ['ACTIVE', 'SUSPENDED', 'INACTIVE'].includes(rawStatus) ? rawStatus : 'ACTIVE'
+
+      const payload = {
+        ...editCreatorForm,
+        name: editCreatorForm.name.trim(),
+        email: editCreatorForm.email.trim(),
+        phone: finalPhone,
+        avatar: editCreatorForm.avatar ? editCreatorForm.avatar.trim() : null,
+        status: normalizedStatus
+      }
+      const res = await api.admin.updateCreator(selectedEditCreator.id, payload)
       showToast(`Profile updated for ${editCreatorForm.name}`, 'success')
+
+      const savedCreator = res?.data?.creator
+      const newStatus = (savedCreator?.status || payload.status || 'ACTIVE').toUpperCase()
+
+      setCreators((prev) =>
+        prev.map((c) =>
+          c.id === selectedEditCreator.id
+            ? {
+                ...c,
+                ...(savedCreator || {}),
+                ...payload,
+                status: newStatus,
+                creatorProfile: {
+                  ...c.creatorProfile,
+                  ...(savedCreator?.creatorProfile || {}),
+                  specialization: payload.specialization,
+                  headline: payload.headline,
+                  biography: payload.bio
+                }
+              }
+            : c
+        )
+      )
+      if (selectedViewCreator?.id === selectedEditCreator.id) {
+        setSelectedViewCreator((prev) => ({
+          ...prev,
+          ...(savedCreator || {}),
+          ...payload,
+          status: newStatus,
+          creatorProfile: {
+            ...prev?.creatorProfile,
+            ...(savedCreator?.creatorProfile || {}),
+            specialization: payload.specialization,
+            headline: payload.headline,
+            biography: payload.bio
+          }
+        }))
+      }
       setSelectedEditCreator(null)
       loadAdminData()
     } catch (err) {
@@ -509,15 +863,22 @@ export default function AdminDashboardPage() {
     setConfirmModal({
       open: true,
       title: 'Suspend Creator Account?',
-      description: `This will immediately restrict platform login and curriculum publishing rights for ${cr.name} (${cr.email}).`,
+      description: `Are you sure you want to suspend this creator account? This will immediately restrict platform login and curriculum publishing rights for ${cr.name} (${cr.email}).`,
       confirmText: 'Suspend Account',
       confirmColor: '#DC2626',
       onConfirm: async () => {
         try {
           await api.admin.updateCreatorStatus(cr.id, 'SUSPENDED')
           showToast(`Account suspended for ${cr.name}`, 'success')
+          setCreators((prev) =>
+            prev.map((c) => (c.id === cr.id ? { ...c, status: 'SUSPENDED' } : c))
+          )
           if (selectedViewCreator?.id === cr.id) {
             setSelectedViewCreator((prev) => ({ ...prev, status: 'SUSPENDED' }))
+          }
+          if (selectedEditCreator?.id === cr.id) {
+            setSelectedEditCreator((prev) => ({ ...prev, status: 'SUSPENDED' }))
+            setEditCreatorForm((prev) => ({ ...prev, status: 'SUSPENDED' }))
           }
           loadAdminData()
         } catch (err) {
@@ -531,15 +892,22 @@ export default function AdminDashboardPage() {
     setConfirmModal({
       open: true,
       title: 'Activate Creator Account?',
-      description: `This will grant full login authorization and course publishing rights to ${cr.name} (${cr.email}).`,
+      description: `Are you sure you want to activate this creator account? This will grant full login authorization and course publishing rights to ${cr.name} (${cr.email}).`,
       confirmText: 'Activate Account',
       confirmColor: '#16A34A',
       onConfirm: async () => {
         try {
           await api.admin.updateCreatorStatus(cr.id, 'ACTIVE')
           showToast(`Account activated for ${cr.name}`, 'success')
+          setCreators((prev) =>
+            prev.map((c) => (c.id === cr.id ? { ...c, status: 'ACTIVE' } : c))
+          )
           if (selectedViewCreator?.id === cr.id) {
             setSelectedViewCreator((prev) => ({ ...prev, status: 'ACTIVE' }))
+          }
+          if (selectedEditCreator?.id === cr.id) {
+            setSelectedEditCreator((prev) => ({ ...prev, status: 'ACTIVE' }))
+            setEditCreatorForm((prev) => ({ ...prev, status: 'ACTIVE' }))
           }
           loadAdminData()
         } catch (err) {
@@ -576,23 +944,34 @@ export default function AdminDashboardPage() {
     })
   }
 
-  const handleResendCredentials = async (cr) => {
-    try {
-      const res = await api.admin.resendCreatorCredentials(cr.id)
-      const tempPassword = res.data?.tempPasswordGenerated || 'ApexCreator2026!'
-      setCredentialsNoticeModal({
-        open: true,
-        creatorName: cr.name,
-        email: cr.email,
-        tempPassword,
-        actionType: 'RESENT'
-      })
-      showToast(`Onboarding credentials dispatched to ${cr.email}`, 'success')
-      loadAdminData()
-    } catch (err) {
-      showToast(err.message || 'Failed to resend credentials', 'error')
-    }
+  const handlePromptResendCredentials = (cr) => {
+    setConfirmModal({
+      open: true,
+      title: 'Dispatch Onboarding Credentials?',
+      description: `This will dispatch onboarding access credentials directly to ${cr.name}'s registered email address: ${cr.email}.`,
+      confirmText: 'Send Credentials',
+      confirmColor: '#2563EB',
+      onConfirm: async () => {
+        try {
+          const res = await api.admin.resendCreatorCredentials(cr.id)
+          const tempPassword = res.data?.tempPasswordGenerated || 'ApexCreator2026!'
+          setCredentialsNoticeModal({
+            open: true,
+            creatorName: cr.name,
+            email: cr.email,
+            tempPassword,
+            actionType: 'RESENT'
+          })
+          showToast(`Onboarding credentials dispatched to ${cr.email}`, 'success')
+          loadAdminData()
+        } catch (err) {
+          showToast(err.message || 'Failed to resend credentials', 'error')
+        }
+      }
+    })
   }
+
+  const handleResendCredentials = handlePromptResendCredentials
 
   const formatLastLogin = (creator) => {
     const session = creator.sessions?.[0]
@@ -773,18 +1152,6 @@ export default function AdminDashboardPage() {
     .filter((p) => p.status === 'SUCCESSFUL' || p.status === 'PAID')
     .reduce((sum, p) => sum + (p.amount || 0), 0)
 
-  return (
-    <div>
-      {/* Top Header */}
-      <div className="dashboard-welcome-banner">
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-            aivortex Administration
-          </h1>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
-            Full administrative authority over curriculum, course creation, creators, students, pricing, offers, and video quality control.
-          </p>
-        </div>
   const pendingReviewsTotal =
     (overviewData?.pendingVerificationCount ?? verificationQueue.length) +
     (overviewData?.pendingRequestsCount ?? requestsList.filter((r) => r.status === 'PENDING').length)
@@ -884,18 +1251,6 @@ export default function AdminDashboardPage() {
             }}
           >
             <StatCard
-              title="Active Students"
-              value={overviewData?.totalStudents ?? students.length}
-              icon={Users}
-              iconBg="#EFF6FF"
-              iconColor="#2563EB"
-              subtext="Enrolled in active cohorts"
-              badge="Learners"
-              badgeType="info"
-              onClick={() => navigate('/admin/students')}
-            />
-
-            <StatCard
               title="Approved Creators"
               value={overviewData?.totalCreators ?? creators.length}
               icon={GraduationCap}
@@ -905,6 +1260,18 @@ export default function AdminDashboardPage() {
               badge="Instructors"
               badgeType="success"
               onClick={() => navigate('/admin/creators')}
+            />
+
+            <StatCard
+              title="Active Students"
+              value={overviewData?.totalStudents ?? students.length}
+              icon={Users}
+              iconBg="#EFF6FF"
+              iconColor="#2563EB"
+              subtext="Enrolled in active cohorts"
+              badge="Learners"
+              badgeType="info"
+              onClick={() => navigate('/admin/students')}
             />
 
             <StatCard
@@ -944,623 +1311,583 @@ export default function AdminDashboardPage() {
             />
           </div>
 
-          {/* Useful Dashboard Sections: 2-Column Responsive Layout */}
+          {/* Middle: Review & Queue Sections (2 Equal-Width Columns) */}
           <div
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
               gap: 24,
-              alignItems: 'start'
+              marginBottom: 24,
+              alignItems: 'stretch'
             }}
           >
-            {/* Left Column (Primary Queues & Activity) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {/* Section 1: Video Review Queue */}
+            {/* Section 1: Video Review Queue */}
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: 16,
+                border: '1px solid #E2E8F0',
+                boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%'
+              }}
+            >
               <div
                 style={{
-                  background: '#FFFFFF',
-                  borderRadius: 16,
-                  border: '1px solid #E2E8F0',
-                  boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
-                  overflow: 'hidden'
+                  padding: '16px 20px',
+                  borderBottom: '1px solid #E2E8F0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: '#FAFAFA'
                 }}
               >
-                <div
-                  style={{
-                    padding: '16px 20px',
-                    borderBottom: '1px solid #E2E8F0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: '#FAFAFA'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div
-                      style={{
-                        width: 30,
-                        height: 30,
-                        borderRadius: 8,
-                        background: '#FEF3C7',
-                        color: '#D97706',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      <Video size={16} />
-                    </div>
-                    <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
-                      Video Verification Queue
-                    </span>
-                    {verificationQueue.length > 0 && (
-                      <span
-                        style={{
-                          background: '#FEE2E2',
-                          color: '#DC2626',
-                          fontSize: '0.6875rem',
-                          fontWeight: 700,
-                          padding: '2px 7px',
-                          borderRadius: 9999
-                        }}
-                      >
-                        {verificationQueue.length} pending
-                      </span>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => navigate('/admin/playlists')}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div
                     style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#2563EB',
-                      fontSize: '0.8125rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'inline-flex',
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: '#FEF3C7',
+                      color: '#D97706',
+                      display: 'flex',
                       alignItems: 'center',
-                      gap: 4
+                      justifyContent: 'center'
                     }}
                   >
-                    <span>Open Queue</span>
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
-
-                <div style={{ padding: 16 }}>
-                  {verificationQueue.length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {verificationQueue.slice(0, 4).map((v) => (
-                        <div
-                          key={v.id}
-                          style={{
-                            padding: '12px 14px',
-                            background: '#F8FAFC',
-                            borderRadius: 12,
-                            border: '1px solid #E2E8F0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: 12
-                          }}
-                        >
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <div
-                              style={{
-                                fontSize: '0.875rem',
-                                fontWeight: 700,
-                                color: '#0F172A',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
-                              }}
-                            >
-                              {v.title}
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
-                              Instructor: <strong style={{ color: '#334155' }}>{v.creator?.name || 'Creator'}</strong> • {v.playlist?.course?.title || 'Program'}
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                            <span
-                              style={{
-                                background: '#FEF3C7',
-                                color: '#92400E',
-                                fontSize: '0.6875rem',
-                                fontWeight: 700,
-                                padding: '3px 8px',
-                                borderRadius: 6
-                              }}
-                            >
-                              SUBMITTED
-                            </span>
-                            <button
-                              type="button"
-                              className="btn btn-outline btn-sm"
-                              onClick={() => navigate('/admin/playlists')}
-                              style={{ height: 30, fontSize: '0.75rem', padding: '0 10px', fontWeight: 600 }}
-                            >
-                              Review
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: '28px 16px', color: '#64748B' }}>
-                      <CheckCircle2 size={32} style={{ color: '#10B981', margin: '0 auto 8px auto' }} />
-                      <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
-                        Verification Queue Clear
-                      </div>
-                      <div style={{ fontSize: '0.8125rem', marginTop: 2 }}>
-                        All creator video submissions are reviewed and processed.
-                      </div>
-                    </div>
+                    <Video size={16} />
+                  </div>
+                  <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
+                    Video Verification Queue
+                  </span>
+                  {verificationQueue.length > 0 && (
+                    <span
+                      style={{
+                        background: '#FEE2E2',
+                        color: '#DC2626',
+                        fontSize: '0.6875rem',
+                        fontWeight: 700,
+                        padding: '2px 7px',
+                        borderRadius: 9999
+                      }}
+                    >
+                      {verificationQueue.length} pending
+                    </span>
                   )}
                 </div>
-              </div>
 
-              {/* Section 2: Recent Course Orders & Enrollments */}
-              <div
-                style={{
-                  background: '#FFFFFF',
-                  borderRadius: 16,
-                  border: '1px solid #E2E8F0',
-                  boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
-                  overflow: 'hidden'
-                }}
-              >
-                <div
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/playlists')}
                   style={{
-                    padding: '16px 20px',
-                    borderBottom: '1px solid #E2E8F0',
-                    display: 'flex',
+                    background: 'none',
+                    border: 'none',
+                    color: '#2563EB',
+                    fontSize: '0.8125rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: '#FAFAFA'
+                    gap: 4
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div
-                      style={{
-                        width: 30,
-                        height: 30,
-                        borderRadius: 8,
-                        background: '#ECFDF5',
-                        color: '#059669',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      <CreditCard size={16} />
-                    </div>
-                    <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
-                      Recent Enrollments & Payments
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => navigate('/admin/payments')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#2563EB',
-                      fontSize: '0.8125rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4
-                    }}
-                  >
-                    <span>View All Payments</span>
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
-
-                <div style={{ padding: 16 }}>
-                  {(recentOrders.length > 0 || paymentsList.length > 0) ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {(recentOrders.length > 0 ? recentOrders : paymentsList).slice(0, 5).map((order) => (
-                        <div
-                          key={order.id}
-                          style={{
-                            padding: '12px 14px',
-                            background: '#F8FAFC',
-                            borderRadius: 12,
-                            border: '1px solid #E2E8F0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: 12
-                          }}
-                        >
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <div
-                              style={{
-                                fontSize: '0.875rem',
-                                fontWeight: 700,
-                                color: '#0F172A',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
-                              }}
-                            >
-                              {order.student?.name || order.student?.email || 'Student'}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: '0.75rem',
-                                color: '#64748B',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                marginTop: 2
-                              }}
-                            >
-                              {order.course?.title || 'Program'}
-                            </div>
-                          </div>
-
-                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                            <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0F172A' }}>
-                              ₹{order.amount?.toLocaleString('en-IN')}
-                            </div>
-                            <span
-                              style={{
-                                background: '#DCFCE7',
-                                color: '#166534',
-                                fontSize: '0.6875rem',
-                                fontWeight: 700,
-                                padding: '2px 6px',
-                                borderRadius: 4,
-                                display: 'inline-block',
-                                marginTop: 2
-                              }}
-                            >
-                              PAID
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: '28px 16px', color: '#64748B' }}>
-                      <CreditCard size={32} style={{ color: '#94A3B8', margin: '0 auto 8px auto' }} />
-                      <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
-                        No Transactions Recorded
-                      </div>
-                      <div style={{ fontSize: '0.8125rem', marginTop: 2 }}>
-                        Paid enrollments will appear here automatically.
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  <span>Open Queue</span>
+                  <ArrowRight size={14} />
+                </button>
               </div>
-            </div>
 
-            {/* Right Column (Secondary feeds & platform actions) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {/* Section 3: Pending Creator Requests */}
-              <div
-                style={{
-                  background: '#FFFFFF',
-                  borderRadius: 16,
-                  border: '1px solid #E2E8F0',
-                  boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
-                  overflow: 'hidden'
-                }}
-              >
-                <div
-                  style={{
-                    padding: '16px 20px',
-                    borderBottom: '1px solid #E2E8F0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: '#FAFAFA'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div
-                      style={{
-                        width: 30,
-                        height: 30,
-                        borderRadius: 8,
-                        background: '#EFF6FF',
-                        color: '#2563EB',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      <UserCheck size={16} />
-                    </div>
-                    <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
-                      Creator Profile Requests
-                    </span>
-                    {requestsList.filter((r) => r.status === 'PENDING').length > 0 && (
-                      <span
+              <div style={{ padding: 16, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                {verificationQueue.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {verificationQueue.slice(0, 4).map((v) => (
+                      <div
+                        key={v.id}
                         style={{
-                          background: '#EFF6FF',
-                          color: '#2563EB',
-                          fontSize: '0.6875rem',
-                          fontWeight: 700,
-                          padding: '2px 7px',
-                          borderRadius: 9999
+                          padding: '12px 14px',
+                          background: '#F8FAFC',
+                          borderRadius: 12,
+                          border: '1px solid #E2E8F0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 12
                         }}
                       >
-                        {requestsList.filter((r) => r.status === 'PENDING').length} new
-                      </span>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => navigate('/admin/requests')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#2563EB',
-                      fontSize: '0.8125rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4
-                    }}
-                  >
-                    <span>View All</span>
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
-
-                <div style={{ padding: 16 }}>
-                  {requestsList.filter((r) => r.status === 'PENDING').length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {requestsList.filter((r) => r.status === 'PENDING').slice(0, 3).map((r) => (
-                        <div
-                          key={r.id}
-                          style={{
-                            padding: '12px 14px',
-                            background: '#F8FAFC',
-                            borderRadius: 12,
-                            border: '1px solid #E2E8F0'
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                            <strong style={{ fontSize: '0.875rem', color: '#0F172A' }}>
-                              {r.creatorProfile?.user?.name || 'Creator'}
-                            </strong>
-                            <span
-                              style={{
-                                background: '#FEF3C7',
-                                color: '#92400E',
-                                fontSize: '0.6875rem',
-                                fontWeight: 700,
-                                padding: '2px 6px',
-                                borderRadius: 4
-                              }}
-                            >
-                              PENDING
-                            </span>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div
+                            style={{
+                              fontSize: '0.875rem',
+                              fontWeight: 700,
+                              color: '#0F172A',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}
+                          >
+                            {v.title}
                           </div>
-                          <p style={{ fontSize: '0.8125rem', color: '#475569', margin: '0 0 10px 0', lineHeight: 1.4 }}>
-                            {r.requestedHeadline || r.requestedBio || 'Requested bio change'}
-                          </p>
+                          <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+                            Instructor: <strong style={{ color: '#334155' }}>{v.creator?.name || 'Creator'}</strong> • {v.playlist?.course?.title || 'Program'}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                          <span
+                            style={{
+                              background: '#FEF3C7',
+                              color: '#92400E',
+                              fontSize: '0.6875rem',
+                              fontWeight: 700,
+                              padding: '3px 8px',
+                              borderRadius: 6
+                            }}
+                          >
+                            SUBMITTED
+                          </span>
                           <button
                             type="button"
                             className="btn btn-outline btn-sm"
-                            onClick={() => navigate('/admin/requests')}
-                            style={{ height: 28, fontSize: '0.75rem', padding: '0 10px', fontWeight: 600 }}
+                            onClick={() => navigate('/admin/playlists')}
+                            style={{ height: 30, fontSize: '0.75rem', padding: '0 10px', fontWeight: 600 }}
                           >
-                            Review & Decide
+                            Review
                           </button>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: '24px 16px', color: '#64748B' }}>
-                      <CheckCircle2 size={28} style={{ color: '#10B981', margin: '0 auto 6px auto' }} />
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
-                        No pending creator profile requests
                       </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '36px 16px', color: '#64748B', margin: 'auto 0' }}>
+                    <CheckCircle2 size={32} style={{ color: '#10B981', margin: '0 auto 8px auto' }} />
+                    <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+                      Verification Queue Clear
                     </div>
-                  )}
-                </div>
+                    <div style={{ fontSize: '0.8125rem', marginTop: 2 }}>
+                      All creator video submissions are reviewed and processed.
+                    </div>
+                  </div>
+                )}
               </div>
+            </div>
 
-              {/* Section 4: Recent Platform Activity (Audit Trail) */}
+            {/* Section 2: Creator Profile Requests */}
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: 16,
+                border: '1px solid #E2E8F0',
+                boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%'
+              }}
+            >
               <div
                 style={{
-                  background: '#FFFFFF',
-                  borderRadius: 16,
-                  border: '1px solid #E2E8F0',
-                  boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
-                  overflow: 'hidden'
+                  padding: '16px 20px',
+                  borderBottom: '1px solid #E2E8F0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: '#FAFAFA'
                 }}
               >
-                <div
-                  style={{
-                    padding: '16px 20px',
-                    borderBottom: '1px solid #E2E8F0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: '#FAFAFA'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div
-                      style={{
-                        width: 30,
-                        height: 30,
-                        borderRadius: 8,
-                        background: '#F1F5F9',
-                        color: '#475569',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      <FileText size={16} />
-                    </div>
-                    <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
-                      Recent Platform Activity
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => navigate('/admin/audit-logs')}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div
                     style={{
-                      background: 'none',
-                      border: 'none',
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: '#EFF6FF',
                       color: '#2563EB',
-                      fontSize: '0.8125rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'inline-flex',
+                      display: 'flex',
                       alignItems: 'center',
-                      gap: 4
+                      justifyContent: 'center'
                     }}
                   >
-                    <span>Full Audit</span>
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
-
-                <div style={{ padding: 16 }}>
-                  {(recentAuditLogs.length > 0 ? recentAuditLogs : auditLogs).length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {(recentAuditLogs.length > 0 ? recentAuditLogs : auditLogs).slice(0, 4).map((log) => (
-                        <div
-                          key={log.id}
-                          style={{
-                            padding: '10px 12px',
-                            background: '#F8FAFC',
-                            borderRadius: 10,
-                            border: '1px solid #E2E8F0'
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                            <span
-                              style={{
-                                fontSize: '0.6875rem',
-                                fontWeight: 700,
-                                background: '#E2E8F0',
-                                color: '#1E293B',
-                                padding: '1px 6px',
-                                borderRadius: 4,
-                                letterSpacing: '0.02em'
-                              }}
-                            >
-                              {log.action}
-                            </span>
-                            <span style={{ fontSize: '0.6875rem', color: '#94A3B8' }}>
-                              {new Date(log.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '0.78125rem', color: '#334155', fontWeight: 500, marginTop: 4 }}>
-                            {log.details || `Performed on ${log.entityType}`}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: '24px 16px', color: '#64748B' }}>
-                      <div style={{ fontSize: '0.8125rem' }}>No activity records available.</div>
-                    </div>
+                    <UserCheck size={16} />
+                  </div>
+                  <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
+                    Creator Profile Requests
+                  </span>
+                  {requestsList.filter((r) => r.status === 'PENDING').length > 0 && (
+                    <span
+                      style={{
+                        background: '#EFF6FF',
+                        color: '#2563EB',
+                        fontSize: '0.6875rem',
+                        fontWeight: 700,
+                        padding: '2px 7px',
+                        borderRadius: 9999
+                      }}
+                    >
+                      {requestsList.filter((r) => r.status === 'PENDING').length} new
+                    </span>
                   )}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/requests')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#2563EB',
+                    fontSize: '0.8125rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                >
+                  <span>View All</span>
+                  <ArrowRight size={14} />
+                </button>
               </div>
 
-              {/* Section 5: System Health & Quick Governance Shortcuts */}
+              <div style={{ padding: 16, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                {requestsList.filter((r) => r.status === 'PENDING').length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {requestsList.filter((r) => r.status === 'PENDING').slice(0, 4).map((r) => (
+                      <div
+                        key={r.id}
+                        style={{
+                          padding: '12px 14px',
+                          background: '#F8FAFC',
+                          borderRadius: 12,
+                          border: '1px solid #E2E8F0'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                          <strong style={{ fontSize: '0.875rem', color: '#0F172A' }}>
+                            {r.creatorProfile?.user?.name || 'Creator'}
+                          </strong>
+                          <span
+                            style={{
+                              background: '#FEF3C7',
+                              color: '#92400E',
+                              fontSize: '0.6875rem',
+                              fontWeight: 700,
+                              padding: '2px 6px',
+                              borderRadius: 4
+                            }}
+                          >
+                            PENDING
+                          </span>
+                        </div>
+                        <p style={{ fontSize: '0.8125rem', color: '#475569', margin: '0 0 10px 0', lineHeight: 1.4 }}>
+                          {r.requestedHeadline || r.requestedBio || 'Requested bio change'}
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          onClick={() => navigate('/admin/requests')}
+                          style={{ height: 28, fontSize: '0.75rem', padding: '0 10px', fontWeight: 600 }}
+                        >
+                          Review & Decide
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '36px 16px', color: '#64748B', margin: 'auto 0' }}>
+                    <CheckCircle2 size={32} style={{ color: '#10B981', margin: '0 auto 8px auto' }} />
+                    <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+                      No Pending Creator Profile Requests
+                    </div>
+                    <div style={{ fontSize: '0.8125rem', marginTop: 2 }}>
+                      All creator update requests have been reviewed.
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Lower: Recent Enrollments & Recent Platform Activity (2 Equal-Width Columns) */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+              gap: 24,
+              alignItems: 'stretch'
+            }}
+          >
+            {/* Card 1: Recent Enrollments & Payments */}
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: 16,
+                border: '1px solid #E2E8F0',
+                boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%'
+              }}
+            >
               <div
                 style={{
-                  background: '#FFFFFF',
-                  borderRadius: 16,
-                  border: '1px solid #E2E8F0',
-                  boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
-                  padding: 20
+                  padding: '16px 20px',
+                  borderBottom: '1px solid #E2E8F0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: '#FAFAFA'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                  <Shield size={18} style={{ color: '#059669' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: '#ECFDF5',
+                      color: '#059669',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <CreditCard size={16} />
+                  </div>
                   <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
-                    Platform Architecture Health
+                    Recent Enrollments & Payments
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/payments')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#2563EB',
+                    fontSize: '0.8125rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                >
+                  <span>View All Payments</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+
+              <div style={{ padding: 16, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                {(recentOrders.length > 0 || paymentsList.length > 0) ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {(recentOrders.length > 0 ? recentOrders : paymentsList).slice(0, 5).map((order) => (
+                      <div
+                        key={order.id}
+                        style={{
+                          padding: '12px 14px',
+                          background: '#F8FAFC',
+                          borderRadius: 12,
+                          border: '1px solid #E2E8F0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 12,
+                          minHeight: 58,
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div
+                            style={{
+                              fontSize: '0.875rem',
+                              fontWeight: 700,
+                              color: '#0F172A',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}
+                          >
+                            {order.student?.name || order.student?.email || 'Student'}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '0.75rem',
+                              color: '#64748B',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              marginTop: 2
+                            }}
+                          >
+                            {order.course?.title || 'Academic Course'}
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0F172A' }}>
+                            ₹{order.amount?.toLocaleString('en-IN')}
+                          </div>
+                          <span
+                            style={{
+                              background: '#DCFCE7',
+                              color: '#166534',
+                              fontSize: '0.6875rem',
+                              fontWeight: 700,
+                              padding: '2px 6px',
+                              borderRadius: 4,
+                              display: 'inline-block',
+                              marginTop: 2
+                            }}
+                          >
+                            {order.status === 'SUCCESSFUL' || order.status === 'PAID' ? 'PAID' : (order.status || 'PAID')}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '36px 16px', color: '#64748B', margin: 'auto 0' }}>
+                    <CreditCard size={32} style={{ color: '#94A3B8', margin: '0 auto 8px auto' }} />
+                    <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+                      No Transactions Recorded
+                    </div>
+                    <div style={{ fontSize: '0.8125rem', marginTop: 2 }}>
+                      Paid enrollments will appear here automatically.
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Card 2: Recent Platform Activity */}
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: 16,
+                border: '1px solid #E2E8F0',
+                boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%'
+              }}
+            >
+              <div
+                style={{
+                  padding: '16px 20px',
+                  borderBottom: '1px solid #E2E8F0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: '#FAFAFA'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div
                     style={{
-                      padding: '10px 12px',
-                      background: '#F8FAFC',
-                      borderRadius: 10,
-                      border: '1px solid #E2E8F0',
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: '#F1F5F9',
+                      color: '#475569',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'space-between'
+                      justifyContent: 'center'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Database size={15} style={{ color: '#2563EB' }} />
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>
-                        PostgreSQL Database
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: '#16A34A', background: '#DCFCE7', padding: '2px 8px', borderRadius: 9999 }}>
-                      HEALTHY
-                    </span>
+                    <FileText size={16} />
                   </div>
-
-                  <div
-                    style={{
-                      padding: '10px 12px',
-                      background: '#F8FAFC',
-                      borderRadius: 10,
-                      border: '1px solid #E2E8F0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Key size={15} style={{ color: '#D97706' }} />
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#0F172A' }}>
-                        Active Sessions
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569' }}>
-                      {activeSessions.length} active
-                    </span>
-                  </div>
+                  <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
+                    Recent Platform Activity
+                  </span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm"
-                    onClick={() => navigate('/admin/creators')}
-                    style={{ height: 34, fontSize: '0.75rem', fontWeight: 600 }}
-                  >
-                    + Invite Faculty
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm"
-                    onClick={() => navigate('/admin/notifications')}
-                    style={{ height: 34, fontSize: '0.75rem', fontWeight: 600 }}
-                  >
-                    Broadcast Alert
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/audit-logs')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#2563EB',
+                    fontSize: '0.8125rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                >
+                  <span>Full Audit</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+
+              <div style={{ padding: 16, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                {(recentAuditLogs.length > 0 ? recentAuditLogs : auditLogs).length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {(recentAuditLogs.length > 0 ? recentAuditLogs : auditLogs).slice(0, 5).map((log) => (
+                      <div
+                        key={log.id}
+                        style={{
+                          padding: '12px 14px',
+                          background: '#F8FAFC',
+                          borderRadius: 12,
+                          border: '1px solid #E2E8F0',
+                          minHeight: 58,
+                          boxSizing: 'border-box',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                          <span
+                            style={{
+                              fontSize: '0.6875rem',
+                              fontWeight: 700,
+                              background: '#E2E8F0',
+                              color: '#1E293B',
+                              padding: '1px 6px',
+                              borderRadius: 4,
+                              letterSpacing: '0.02em'
+                            }}
+                          >
+                            {log.action}
+                          </span>
+                          <span style={{ fontSize: '0.6875rem', color: '#94A3B8' }}>
+                            {log.createdAt ? new Date(log.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '0.78125rem',
+                            color: '#334155',
+                            fontWeight: 500,
+                            marginTop: 3,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                        >
+                          {log.details || `Performed on ${log.entityType}`}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '36px 16px', color: '#64748B', margin: 'auto 0' }}>
+                    <FileText size={32} style={{ color: '#94A3B8', margin: '0 auto 8px auto' }} />
+                    <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+                      No Activity Records Available
+                    </div>
+                    <div style={{ fontSize: '0.8125rem', marginTop: 2 }}>
+                      System events and audit logs will appear here.
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1690,6 +2017,7 @@ export default function AdminDashboardPage() {
                       <th>Status</th>
                       <th>Assigned Faculty</th>
                       <th>Enrolled Students</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1719,6 +2047,16 @@ export default function AdminDashboardPage() {
                             : <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>Unassigned</span>}
                         </td>
                         <td>{c.enrolledStudentsCount || c.studentsCount || 0} learners</td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            className="btn btn-outline btn-xs"
+                            onClick={() => navigate(`/admin/courses/${c.id}/edit`)}
+                            title="Edit Course"
+                            style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600 }}
+                          >
+                            Edit
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1995,13 +2333,13 @@ export default function AdminDashboardPage() {
             </button>
           </div>
 
-          {/* Search, Filter, and Sort Bar */}
+          {/* Search, Filter, and Sort Toolbar */}
           <div
             style={{
               background: '#FFFFFF',
               borderRadius: 12,
               border: '1px solid #E2E8F0',
-              padding: '12px 16px',
+              padding: '14px 16px',
               marginBottom: 20,
               display: 'flex',
               alignItems: 'center',
@@ -2012,86 +2350,101 @@ export default function AdminDashboardPage() {
             }}
           >
             {/* Search Input */}
-            <div style={{ position: 'relative', flex: '1 1 300px', maxWidth: 440 }}>
+            <div style={{ position: 'relative', flex: '1 1 320px', minWidth: 260 }}>
               <Search
                 size={16}
                 style={{
                   position: 'absolute',
-                  left: 12,
+                  left: 14,
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: '#94A3B8'
+                  color: '#94A3B8',
+                  pointerEvents: 'none'
                 }}
               />
               <input
                 type="text"
-                className="form-input"
                 placeholder="Search creators by name, email, or user ID..."
                 value={creatorSearch}
                 onChange={(e) => setCreatorSearch(e.target.value)}
                 style={{
                   width: '100%',
-                  height: 38,
-                  paddingLeft: 36,
-                  fontSize: '0.8125rem'
+                  height: 40,
+                  paddingLeft: 38,
+                  paddingRight: 14,
+                  borderRadius: 8,
+                  border: '1px solid #CBD5E1',
+                  background: '#FFFFFF',
+                  fontSize: '0.84rem',
+                  color: '#0F172A',
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                  transition: 'border-color 0.15s ease, box-shadow 0.15s ease'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#2563EB'
+                  e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)'
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = '#CBD5E1'
+                  e.target.style.boxShadow = 'none'
                 }}
               />
             </div>
 
             {/* Filter & Sort Controls */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <select
-                value={creatorStatusFilter}
-                onChange={(e) => setCreatorStatusFilter(e.target.value)}
-                style={{
-                  height: 38,
-                  padding: '0 12px',
-                  borderRadius: 8,
-                  border: '1px solid #CBD5E1',
-                  fontSize: '0.8125rem',
-                  color: '#0F172A',
-                  fontWeight: 600,
-                  background: '#FFFFFF',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-                <option value="SUSPENDED">Suspended</option>
-              </select>
+              {/* Status Custom Dropdown */}
+              <div style={{ minWidth: 175 }}>
+                <CustomSelect
+                  options={CREATOR_STATUS_OPTIONS}
+                  value={creatorStatusFilter}
+                  onChange={(e) => setCreatorStatusFilter(e.target.value)}
+                  icon={<Filter size={14} />}
+                  prefix="Status:"
+                  buttonStyle={{
+                    height: 40,
+                    borderRadius: 8,
+                    padding: '0 12px',
+                    border: '1px solid #CBD5E1',
+                    background: '#FFFFFF'
+                  }}
+                  menuStyle={{ minWidth: 175 }}
+                />
+              </div>
 
-              <select
-                value={creatorSortBy}
-                onChange={(e) => setCreatorSortBy(e.target.value)}
-                style={{
-                  height: 38,
-                  padding: '0 12px',
-                  borderRadius: 8,
-                  border: '1px solid #CBD5E1',
-                  fontSize: '0.8125rem',
-                  color: '#0F172A',
-                  fontWeight: 600,
-                  background: '#FFFFFF',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="name">Sort: Name A–Z</option>
-                <option value="created_desc">Sort: Newest First</option>
-                <option value="created_asc">Sort: Oldest First</option>
-              </select>
+              {/* Sort Custom Dropdown */}
+              <div style={{ minWidth: 185 }}>
+                <CustomSelect
+                  options={CREATOR_SORT_OPTIONS}
+                  value={creatorSortBy}
+                  onChange={(e) => setCreatorSortBy(e.target.value)}
+                  icon={<ArrowUpDown size={14} />}
+                  prefix="Sort:"
+                  buttonStyle={{
+                    height: 40,
+                    borderRadius: 8,
+                    padding: '0 12px',
+                    border: '1px solid #CBD5E1',
+                    background: '#FFFFFF'
+                  }}
+                  menuStyle={{ minWidth: 185 }}
+                />
+              </div>
 
-              {(creatorSearch || creatorStatusFilter !== 'ALL') && (
+              {/* Clear Filters Button */}
+              {(creatorSearch || creatorStatusFilter !== 'ALL' || creatorSortBy !== 'created_desc') && (
                 <button
                   type="button"
                   onClick={() => {
                     setCreatorSearch('')
                     setCreatorStatusFilter('ALL')
+                    setCreatorSortBy('created_desc')
                   }}
                   className="btn btn-ghost btn-sm"
-                  style={{ height: 38, fontSize: '0.75rem', color: '#64748B' }}
+                  style={{ height: 40, fontSize: '0.78125rem', color: '#64748B', padding: '0 10px', fontWeight: 600 }}
                 >
-                  Clear Filters
+                  Reset
                 </button>
               )}
             </div>
@@ -2137,18 +2490,26 @@ export default function AdminDashboardPage() {
                   </thead>
                   <tbody>
                     {filteredCreators.map((cr) => {
-                      const isActive = cr.status === 'ACTIVE'
-                      const isInactive = cr.status === 'INACTIVE'
-                      const isSuspended = cr.status === 'SUSPENDED'
+                      const normalizedStatus = (cr.status || 'ACTIVE').toUpperCase()
+                      const isActive = normalizedStatus === 'ACTIVE'
+                      const isSuspended = normalizedStatus === 'SUSPENDED'
+                      const isInactive = normalizedStatus === 'INACTIVE'
 
                       let badgeBg = '#DCFCE7'
                       let badgeColor = '#166534'
-                      if (isInactive) {
-                        badgeBg = '#FEF3C7'
-                        badgeColor = '#92400E'
-                      } else if (isSuspended) {
+                      let badgeDot = '#16A34A'
+                      let badgeLabel = 'ACTIVE'
+
+                      if (isSuspended) {
                         badgeBg = '#FEE2E2'
                         badgeColor = '#991B1B'
+                        badgeDot = '#DC2626'
+                        badgeLabel = 'SUSPENDED'
+                      } else if (isInactive) {
+                        badgeBg = '#F1F5F9'
+                        badgeColor = '#475569'
+                        badgeDot = '#94A3B8'
+                        badgeLabel = 'INACTIVE'
                       }
 
                       return (
@@ -2156,22 +2517,38 @@ export default function AdminDashboardPage() {
                           {/* 1. Creator Column: Photo, Name, Email, Phone */}
                           <td style={{ padding: '12px 16px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                              <img
-                                src={cr.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
-                                alt={cr.name || 'Creator'}
+                              <div
                                 style={{
                                   width: 38,
                                   height: 38,
                                   borderRadius: '50%',
-                                  objectFit: 'cover',
-                                  flexShrink: 0,
+                                  background: '#F1F5F9',
+                                  color: '#334155',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.8125rem',
+                                  fontWeight: 700,
+                                  letterSpacing: '0.02em',
                                   border: '1px solid #E2E8F0',
-                                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                                  flexShrink: 0,
+                                  overflow: 'hidden'
                                 }}
-                                onError={(e) => {
-                                  e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
-                                }}
-                              />
+                              >
+                                {cr.avatar ? (
+                                  <img
+                                    src={cr.avatar}
+                                    alt={cr.name || 'Creator'}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none'
+                                    }}
+                                  />
+                                ) : (
+                                  getCreatorInitials(cr.name) || <UserIcon size={16} style={{ color: '#64748B' }} />
+                                )}
+                              </div>
                               <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
                                 <span style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.875rem', lineHeight: 1.3 }}>
                                   {cr.name}
@@ -2223,10 +2600,20 @@ export default function AdminDashboardPage() {
                                 padding: '3px 8px',
                                 borderRadius: 6,
                                 letterSpacing: '0.02em',
-                                display: 'inline-block'
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5
                               }}
                             >
-                              {isActive ? 'ACTIVE' : (isSuspended ? 'SUSPENDED' : 'INACTIVE')}
+                              <span
+                                style={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: '50%',
+                                  backgroundColor: badgeDot
+                                }}
+                              />
+                              {badgeLabel}
                             </span>
                           </td>
 
@@ -2240,22 +2627,22 @@ export default function AdminDashboardPage() {
                             {formatLastLogin(cr)}
                           </td>
 
-                          {/* 7. Administrative Actions: [ 👁 ] [ ✎ ] [ ⏸/▶ ] [ 🔑 ] [ ✉ ] */}
-                          <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                          {/* 7. Administrative Actions: Compact, Icon-Based [ View ] [ Edit ] [ Change Password ] [ Suspend/Activate ] */}
+                          <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-                              {/* View: Neutral */}
+                              {/* 1. View Profile: Neutral */}
                               <button
                                 type="button"
                                 onClick={() => setSelectedViewCreator(cr)}
                                 title="View Profile"
                                 aria-label="View Profile"
                                 style={{
-                                  width: 32,
-                                  height: 32,
-                                  borderRadius: 7,
+                                  width: 34,
+                                  height: 34,
+                                  borderRadius: 8,
                                   border: '1px solid #CBD5E1',
                                   background: '#FFFFFF',
-                                  color: '#475569',
+                                  color: '#334155',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
@@ -2265,28 +2652,30 @@ export default function AdminDashboardPage() {
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.background = '#F1F5F9'
                                   e.currentTarget.style.color = '#0F172A'
+                                  e.currentTarget.style.borderColor = '#94A3B8'
                                 }}
                                 onMouseLeave={(e) => {
                                   e.currentTarget.style.background = '#FFFFFF'
-                                  e.currentTarget.style.color = '#475569'
+                                  e.currentTarget.style.color = '#334155'
+                                  e.currentTarget.style.borderColor = '#CBD5E1'
                                 }}
                               >
                                 <Eye size={15} />
                               </button>
 
-                              {/* Edit: Neutral */}
+                              {/* 2. Edit Profile: Neutral */}
                               <button
                                 type="button"
                                 onClick={() => handleOpenEditCreator(cr)}
-                                title="Edit Creator"
-                                aria-label="Edit Creator"
+                                title="Edit Profile"
+                                aria-label="Edit Profile"
                                 style={{
-                                  width: 32,
-                                  height: 32,
-                                  borderRadius: 7,
+                                  width: 34,
+                                  height: 34,
+                                  borderRadius: 8,
                                   border: '1px solid #CBD5E1',
                                   background: '#FFFFFF',
-                                  color: '#475569',
+                                  color: '#334155',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
@@ -2296,88 +2685,27 @@ export default function AdminDashboardPage() {
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.background = '#F1F5F9'
                                   e.currentTarget.style.color = '#0F172A'
+                                  e.currentTarget.style.borderColor = '#94A3B8'
                                 }}
                                 onMouseLeave={(e) => {
                                   e.currentTarget.style.background = '#FFFFFF'
-                                  e.currentTarget.style.color = '#475569'
+                                  e.currentTarget.style.color = '#334155'
+                                  e.currentTarget.style.borderColor = '#CBD5E1'
                                 }}
                               >
                                 <Edit3 size={15} />
                               </button>
 
-                              {/* Suspend / Activate: Warning/Danger or Success */}
-                              {isActive ? (
-                                <button
-                                  type="button"
-                                  onClick={() => handlePromptSuspendCreator(cr)}
-                                  title="Suspend Account"
-                                  aria-label="Suspend Account"
-                                  style={{
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: 7,
-                                    border: '1px solid #FECACA',
-                                    background: '#FFFFFF',
-                                    color: '#DC2626',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s ease'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = '#FEF2F2'
-                                    e.currentTarget.style.borderColor = '#FCA5A5'
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = '#FFFFFF'
-                                    e.currentTarget.style.borderColor = '#FECACA'
-                                  }}
-                                >
-                                  <Pause size={14} />
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => handlePromptActivateCreator(cr)}
-                                  title="Activate Account"
-                                  aria-label="Activate Account"
-                                  style={{
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: 7,
-                                    border: '1px solid #BBF7D0',
-                                    background: '#FFFFFF',
-                                    color: '#16A34A',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s ease'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = '#F0FDF4'
-                                    e.currentTarget.style.borderColor = '#86EFAC'
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = '#FFFFFF'
-                                    e.currentTarget.style.borderColor = '#BBF7D0'
-                                  }}
-                                >
-                                  <Play size={14} />
-                                </button>
-                              )}
-
-                              {/* Reset Credentials: Neutral / Warning */}
+                              {/* 3. Change Password: Amber Key */}
                               <button
                                 type="button"
-                                onClick={() => handlePromptResetCredentials(cr)}
-                                title="Reset Credentials"
-                                aria-label="Reset Credentials"
+                                onClick={() => handleOpenChangePassword(cr)}
+                                title="Change Password"
+                                aria-label="Change Password"
                                 style={{
-                                  width: 32,
-                                  height: 32,
-                                  borderRadius: 7,
+                                  width: 34,
+                                  height: 34,
+                                  borderRadius: 8,
                                   border: '1px solid #FDE68A',
                                   background: '#FFFFFF',
                                   color: '#D97706',
@@ -2396,39 +2724,71 @@ export default function AdminDashboardPage() {
                                   e.currentTarget.style.borderColor = '#FDE68A'
                                 }}
                               >
-                                <Key size={14} />
+                                <Key size={15} />
                               </button>
 
-                              {/* Resend Credentials: Neutral */}
-                              <button
-                                type="button"
-                                onClick={() => handleResendCredentials(cr)}
-                                title="Resend Credentials"
-                                aria-label="Resend Credentials"
-                                style={{
-                                  width: 32,
-                                  height: 32,
-                                  borderRadius: 7,
-                                  border: '1px solid #CBD5E1',
-                                  background: '#FFFFFF',
-                                  color: '#475569',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.15s ease'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = '#F1F5F9'
-                                  e.currentTarget.style.color = '#0F172A'
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = '#FFFFFF'
-                                  e.currentTarget.style.color = '#475569'
-                                }}
-                              >
-                                <Mail size={14} />
-                              </button>
+                              {/* 4. Suspend / Activate: Semantic Red / Green */}
+                              {isActive ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handlePromptSuspendCreator(cr)}
+                                  title="Suspend Account"
+                                  aria-label="Suspend Account"
+                                  style={{
+                                    width: 34,
+                                    height: 34,
+                                    borderRadius: 8,
+                                    border: '1px solid #FECACA',
+                                    background: '#FFFFFF',
+                                    color: '#DC2626',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#FEF2F2'
+                                    e.currentTarget.style.borderColor = '#FCA5A5'
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = '#FFFFFF'
+                                    e.currentTarget.style.borderColor = '#FECACA'
+                                  }}
+                                >
+                                  <UserX size={15} />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handlePromptActivateCreator(cr)}
+                                  title="Activate Account"
+                                  aria-label="Activate Account"
+                                  style={{
+                                    width: 34,
+                                    height: 34,
+                                    borderRadius: 8,
+                                    border: '1px solid #BBF7D0',
+                                    background: '#FFFFFF',
+                                    color: '#16A34A',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#F0FDF4'
+                                    e.currentTarget.style.borderColor = '#86EFAC'
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = '#FFFFFF'
+                                    e.currentTarget.style.borderColor = '#BBF7D0'
+                                  }}
+                                >
+                                  <UserCheck size={15} />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -3829,17 +4189,17 @@ export default function AdminDashboardPage() {
         <div className="razorpay-modal-overlay" onClick={() => setSelectedViewCreator(null)}>
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 680, maxHeight: '90vh', overflowY: 'auto' }}
+            style={{ maxWidth: 640, maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="razorpay-modal-header" style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div className="razorpay-modal-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
-                  <Users size={20} />
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Users size={18} />
                 </div>
                 <div>
-                  <h3 className="razorpay-modal-title" style={{ fontSize: '1.2rem', margin: 0 }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
                     Creator Profile
                   </h3>
                   <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
@@ -3851,95 +4211,151 @@ export default function AdminDashboardPage() {
                 type="button"
                 className="btn-ghost"
                 onClick={() => setSelectedViewCreator(null)}
-                style={{ padding: 6, borderRadius: '50%' }}
+                aria-label="Close Profile Modal"
+                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             {/* Body */}
-            <div style={{ padding: '24px 20px' }}>
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
               {/* Profile Top Summary */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 24, paddingBottom: 20, borderBottom: '1px solid #F1F5F9' }}>
-                <img
-                  src={selectedViewCreator.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
-                  alt=""
-                  style={{ width: 68, height: 68, borderRadius: '50%', objectFit: 'cover', border: '3px solid #EFF6FF', boxShadow: '0 2px 8px rgba(37, 99, 235, 0.15)' }}
-                  onError={(e) => {
-                    e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #F1F5F9' }}>
+                <div
+                  style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: '50%',
+                    background: '#F1F5F9',
+                    color: '#1E293B',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.25rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.02em',
+                    border: '2px solid #E2E8F0',
+                    boxShadow: '0 2px 6px rgba(15, 23, 42, 0.06)',
+                    flexShrink: 0,
+                    overflow: 'hidden'
                   }}
-                />
-                <div>
-                  <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
-                    {selectedViewCreator.name}
-                  </h4>
-                  <p style={{ color: '#2563EB', fontWeight: 600, fontSize: '0.875rem', margin: '0 0 8px 0' }}>
-                    {selectedViewCreator.creatorProfile?.specialization || selectedViewCreator.creatorProfile?.headline || 'Curriculum Specialist'}
-                  </p>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <span
-                      style={{
-                        background: selectedViewCreator.status === 'ACTIVE' ? '#DCFCE7' : '#FEF3C7',
-                        color: selectedViewCreator.status === 'ACTIVE' ? '#166534' : '#92400E',
-                        fontSize: '0.72rem',
-                        fontWeight: 800,
-                        padding: '3px 10px',
-                        borderRadius: 20
+                >
+                  {selectedViewCreator.avatar ? (
+                    <img
+                      src={selectedViewCreator.avatar}
+                      alt={selectedViewCreator.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
                       }}
-                    >
-                      {selectedViewCreator.status}
-                    </span>
-                    <span
+                    />
+                  ) : (
+                    getCreatorInitials(selectedViewCreator.name) || <UserIcon size={24} style={{ color: '#64748B' }} />
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                    <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                      {selectedViewCreator.name}
+                    </h4>
+                    {(() => {
+                      const vStatus = (selectedViewCreator.status || 'ACTIVE').toUpperCase()
+                      const vIsActive = vStatus === 'ACTIVE'
+                      const vIsSuspended = vStatus === 'SUSPENDED'
+                      const vBg = vIsActive ? '#DCFCE7' : (vIsSuspended ? '#FEE2E2' : '#F1F5F9')
+                      const vColor = vIsActive ? '#166534' : (vIsSuspended ? '#991B1B' : '#475569')
+                      const vDot = vIsActive ? '#16A34A' : (vIsSuspended ? '#DC2626' : '#94A3B8')
+                      const vLabel = vIsActive ? 'ACTIVE' : (vIsSuspended ? 'SUSPENDED' : 'INACTIVE')
+                      return (
+                        <span
+                          style={{
+                            background: vBg,
+                            color: vColor,
+                            fontSize: '0.6875rem',
+                            fontWeight: 700,
+                            padding: '3px 9px',
+                            borderRadius: 9999,
+                            letterSpacing: '0.02em',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5
+                          }}
+                        >
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: vDot }} />
+                          {vLabel}
+                        </span>
+                      )
+                    })()}
+                  </div>
+                  <div style={{ color: '#2563EB', fontWeight: 600, fontSize: '0.8125rem', marginBottom: 6 }}>
+                    {selectedViewCreator.creatorProfile?.specialization || selectedViewCreator.creatorProfile?.headline || 'Curriculum Specialist'}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>User ID:</span>
+                    <code
                       style={{
                         background: '#F1F5F9',
-                        color: '#475569',
+                        color: '#334155',
                         fontSize: '0.72rem',
                         fontWeight: 700,
-                        padding: '3px 10px',
-                        borderRadius: 20,
+                        padding: '1px 6px',
+                        borderRadius: 4,
                         fontFamily: 'monospace'
                       }}
                     >
-                      ID: {selectedViewCreator.id}
-                    </span>
+                      {selectedViewCreator.id}
+                    </code>
                   </div>
                 </div>
               </div>
 
-              {/* Data Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 20 }}>
-                <div style={{ background: '#F8FAFC', padding: 12, borderRadius: 10, border: '1px solid #E2E8F0' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, display: 'block', marginBottom: 2 }}>
-                    EMAIL ADDRESS
-                  </span>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+              {/* Information Cards (2x2 Grid) */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 20 }}>
+                <div style={{ background: '#F8FAFC', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                    <Mail size={13} style={{ color: '#2563EB' }} />
+                    <span style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 700, letterSpacing: '0.03em' }}>
+                      EMAIL ADDRESS
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#0F172A', wordBreak: 'break-all' }}>
                     {selectedViewCreator.email}
                   </span>
                 </div>
 
-                <div style={{ background: '#F8FAFC', padding: 12, borderRadius: 10, border: '1px solid #E2E8F0' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, display: 'block', marginBottom: 2 }}>
-                    PHONE NUMBER
-                  </span>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+                <div style={{ background: '#F8FAFC', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                    <Phone size={13} style={{ color: '#2563EB' }} />
+                    <span style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 700, letterSpacing: '0.03em' }}>
+                      PHONE NUMBER
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#0F172A' }}>
                     {selectedViewCreator.phone || 'Not provided'}
                   </span>
                 </div>
 
-                <div style={{ background: '#F8FAFC', padding: 12, borderRadius: 10, border: '1px solid #E2E8F0' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, display: 'block', marginBottom: 2 }}>
-                    ACCOUNT CREATED
-                  </span>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
-                    {selectedViewCreator.createdAt ? new Date(selectedViewCreator.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—'}
+                <div style={{ background: '#F8FAFC', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                    <Calendar size={13} style={{ color: '#2563EB' }} />
+                    <span style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 700, letterSpacing: '0.03em' }}>
+                      ACCOUNT CREATED
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#0F172A' }}>
+                    {selectedViewCreator.createdAt ? new Date(selectedViewCreator.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                   </span>
                 </div>
 
-                <div style={{ background: '#F8FAFC', padding: 12, borderRadius: 10, border: '1px solid #E2E8F0' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, display: 'block', marginBottom: 2 }}>
-                    LAST LOGIN SESSION
-                  </span>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+                <div style={{ background: '#F8FAFC', padding: '10px 14px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                    <Clock size={13} style={{ color: '#2563EB' }} />
+                    <span style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 700, letterSpacing: '0.03em' }}>
+                      LAST LOGIN
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#0F172A' }}>
                     {formatLastLogin(selectedViewCreator)}
                   </span>
                 </div>
@@ -3948,22 +4364,22 @@ export default function AdminDashboardPage() {
               {/* Bio & Headline */}
               {(selectedViewCreator.creatorProfile?.headline || selectedViewCreator.creatorProfile?.biography || selectedViewCreator.bio) && (
                 <div style={{ marginBottom: 20 }}>
-                  <h5 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A', marginBottom: 6 }}>
+                  <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: 8, letterSpacing: '-0.01em' }}>
                     Biography & Background
-                  </h5>
-                  <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, margin: 0, background: '#F8FAFC', padding: 14, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                  </div>
+                  <div style={{ fontSize: '0.8125rem', color: '#475569', lineHeight: 1.5, background: '#F8FAFC', padding: '12px 14px', borderRadius: 8, border: '1px solid #E2E8F0' }}>
                     {selectedViewCreator.creatorProfile?.biography || selectedViewCreator.bio || selectedViewCreator.creatorProfile?.headline}
-                  </p>
+                  </div>
                 </div>
               )}
 
               {/* Assigned Courses */}
               <div>
-                <h5 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A', marginBottom: 10 }}>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A', marginBottom: 8, letterSpacing: '-0.01em' }}>
                   Assigned Platform Courses ({selectedViewCreator.assignedCourses?.length || 0})
-                </h5>
+                </div>
                 {selectedViewCreator.assignedCourses && selectedViewCreator.assignedCourses.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {selectedViewCreator.assignedCourses.map((ac) => (
                       <div
                         key={ac.course?.id || ac.id}
@@ -3971,104 +4387,46 @@ export default function AdminDashboardPage() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          padding: '10px 14px',
-                          borderRadius: 8,
+                          padding: '8px 12px',
+                          borderRadius: 6,
                           background: '#F8FAFC',
                           border: '1px solid #E2E8F0',
                           fontSize: '0.8125rem'
                         }}
                       >
-                        <span style={{ fontWeight: 700, color: '#0F172A' }}>
+                        <span style={{ fontWeight: 600, color: '#0F172A' }}>
                           {ac.course?.title || 'Academic Course'}
                         </span>
-                        <span style={{ fontSize: '0.72rem', background: '#E2E8F0', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                        <span style={{ fontSize: '0.6875rem', background: '#E2E8F0', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
                           {ac.course?.status || 'PUBLISHED'}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p style={{ fontSize: '0.8125rem', color: '#94A3B8', margin: 0 }}>
+                  <p style={{ fontSize: '0.8125rem', color: '#94A3B8', margin: 0, fontStyle: 'italic' }}>
                     No curriculum courses currently assigned to this faculty member.
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Footer Action Buttons */}
+            {/* Footer: Read-Only Close Action */}
             <div
               style={{
-                padding: '16px 20px',
+                padding: '14px 24px',
                 borderTop: '1px solid #E2E8F0',
                 background: '#F8FAFC',
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: 10
+                justifyContent: 'flex-end',
+                alignItems: 'center'
               }}
             >
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  type="button"
-                  className="btn btn-outline btn-sm"
-                  onClick={() => {
-                    const cr = selectedViewCreator
-                    setSelectedViewCreator(null)
-                    handleOpenEditCreator(cr)
-                  }}
-                  style={{ fontWeight: 600 }}
-                >
-                  <Edit3 size={14} style={{ marginRight: 4 }} />
-                  Edit Profile
-                </button>
-
-                {selectedViewCreator.status === 'ACTIVE' ? (
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm"
-                    onClick={() => {
-                      const cr = selectedViewCreator
-                      handlePromptSuspendCreator(cr)
-                    }}
-                    style={{ color: '#DC2626', borderColor: '#FECACA', fontWeight: 600 }}
-                  >
-                    <UserX size={14} style={{ marginRight: 4 }} />
-                    Suspend
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm"
-                    onClick={() => {
-                      const cr = selectedViewCreator
-                      handlePromptActivateCreator(cr)
-                    }}
-                    style={{ color: '#16A34A', borderColor: '#BBF7D0', fontWeight: 600 }}
-                  >
-                    <UserCheck size={14} style={{ marginRight: 4 }} />
-                    Activate
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  className="btn btn-outline btn-sm"
-                  onClick={() => {
-                    const cr = selectedViewCreator
-                    handlePromptResetCredentials(cr)
-                  }}
-                  style={{ color: '#D97706', borderColor: '#FDE68A', fontWeight: 600 }}
-                >
-                  <Key size={14} style={{ marginRight: 4 }} />
-                  Reset Credentials
-                </button>
-              </div>
-
               <button
                 type="button"
                 className="btn btn-outline btn-sm"
                 onClick={() => setSelectedViewCreator(null)}
+                style={{ height: 36, padding: '0 22px', fontWeight: 600, borderRadius: 8 }}
               >
                 Close
               </button>
@@ -4084,21 +4442,21 @@ export default function AdminDashboardPage() {
         <div className="razorpay-modal-overlay" onClick={() => setSelectedEditCreator(null)}>
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 580, maxHeight: '90vh', overflowY: 'auto' }}
+            style={{ maxWidth: 620, maxHeight: '90vh', overflowY: 'auto', borderRadius: 16 }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div className="razorpay-modal-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
-                  <Edit3 size={20} />
+            <div className="razorpay-modal-header" style={{ padding: '18px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Edit3 size={18} />
                 </div>
                 <div>
-                  <h3 className="razorpay-modal-title" style={{ fontSize: '1.2rem', margin: 0 }}>
+                  <h3 className="razorpay-modal-title" style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
                     Edit Creator Profile
                   </h3>
-                  <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
-                    Update institutional instructor information
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+                    Update institutional instructor information & credentials
                   </div>
                 </div>
               </div>
@@ -4106,121 +4464,486 @@ export default function AdminDashboardPage() {
                 type="button"
                 className="btn-ghost"
                 onClick={() => setSelectedEditCreator(null)}
-                style={{ padding: 6, borderRadius: '50%' }}
+                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
+                aria-label="Close"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             {/* Form Body */}
-            <form onSubmit={handleSaveEditCreator} className="razorpay-modal-body" style={{ padding: '24px 20px' }}>
-              <div className="form-field-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">Full Name *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={editCreatorForm.name}
-                  onChange={(e) => setEditCreatorForm({ ...editCreatorForm, name: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+            <form onSubmit={handleSaveEditCreator} style={{ padding: '22px 24px' }}>
+              {/* Row 1: Full Name & Email Address */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginBottom: 14 }}>
                 <div className="form-field-group">
-                  <label className="form-label">Email Address *</label>
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1E293B', marginBottom: 6, display: 'block' }}>
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editCreatorForm.name}
+                    onChange={(e) => setEditCreatorForm({ ...editCreatorForm, name: e.target.value })}
+                    placeholder="e.g. Dr. Alex Rivera"
+                    required
+                    style={{ height: 40, fontSize: '0.875rem' }}
+                  />
+                </div>
+
+                <div className="form-field-group">
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1E293B', marginBottom: 6, display: 'block' }}>
+                    Email Address *
+                  </label>
                   <input
                     type="email"
                     className="form-input"
                     value={editCreatorForm.email}
                     onChange={(e) => setEditCreatorForm({ ...editCreatorForm, email: e.target.value })}
+                    placeholder="creator@aivortex.edu"
                     required
-                  />
-                </div>
-
-                <div className="form-field-group">
-                  <label className="form-label">Phone Number</label>
-                  <input
-                    type="tel"
-                    className="form-input"
-                    value={editCreatorForm.phone}
-                    onChange={(e) => setEditCreatorForm({ ...editCreatorForm, phone: e.target.value })}
-                    placeholder="+91 98765 00002"
+                    style={{ height: 40, fontSize: '0.875rem' }}
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+              {/* Row 2: Phone Number (International selector & validation) & Specialization / Title */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginBottom: 14 }}>
                 <div className="form-field-group">
-                  <label className="form-label">Specialization / Title *</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1E293B', margin: 0 }}>
+                      Phone Number
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {/* Country Code Selector */}
+                    <div style={{ position: 'relative' }} ref={countryDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={() => setIsCountryDropdownOpen((prev) => !prev)}
+                        style={{
+                          height: 40,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '0 10px',
+                          background: '#F8FAFC',
+                          border: '1px solid #CBD5E1',
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          fontSize: '0.875rem',
+                          fontWeight: 600,
+                          color: '#0F172A',
+                          whiteSpace: 'nowrap',
+                          boxSizing: 'border-box',
+                          flexShrink: 0
+                        }}
+                        aria-label="Select Country Code"
+                      >
+                        <span style={{ fontSize: '1.05rem', lineHeight: 1 }}>{selectedCountry.flag}</span>
+                        <span>{selectedCountry.dialCode}</span>
+                        <ChevronDown
+                          size={14}
+                          style={{
+                            color: '#64748B',
+                            transition: 'transform 0.2s',
+                            transform: isCountryDropdownOpen ? 'rotate(180deg)' : 'none'
+                          }}
+                        />
+                      </button>
+
+                      {isCountryDropdownOpen && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            marginTop: 4,
+                            width: 250,
+                            maxHeight: 230,
+                            overflowY: 'auto',
+                            background: '#FFFFFF',
+                            border: '1px solid #E2E8F0',
+                            borderRadius: 8,
+                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08)',
+                            zIndex: 100,
+                            padding: '6px 0'
+                          }}
+                        >
+                          <div style={{ padding: '0 8px 6px 8px', borderBottom: '1px solid #F1F5F9' }}>
+                            <input
+                              type="text"
+                              value={countrySearch}
+                              onChange={(e) => setCountrySearch(e.target.value)}
+                              placeholder="Search country or code..."
+                              onClick={(e) => e.stopPropagation()}
+                              autoFocus
+                              style={{
+                                width: '100%',
+                                height: 32,
+                                padding: '0 8px',
+                                fontSize: '0.78rem',
+                                border: '1px solid #CBD5E1',
+                                borderRadius: 6,
+                                boxSizing: 'border-box'
+                              }}
+                            />
+                          </div>
+                          {filteredCountryCodes.map((c) => (
+                            <div
+                              key={c.code}
+                              onClick={() => handleCountryCodeChange(c.dialCode)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '7px 12px',
+                                fontSize: '0.8125rem',
+                                cursor: 'pointer',
+                                background: c.dialCode === selectedCountry.dialCode ? '#EFF6FF' : 'transparent',
+                                color: c.dialCode === selectedCountry.dialCode ? '#1D4ED8' : '#1E293B',
+                                fontWeight: c.dialCode === selectedCountry.dialCode ? 600 : 400
+                              }}
+                              onMouseEnter={(e) => {
+                                if (c.dialCode !== selectedCountry.dialCode) e.currentTarget.style.background = '#F8FAFC'
+                              }}
+                              onMouseLeave={(e) => {
+                                if (c.dialCode !== selectedCountry.dialCode) e.currentTarget.style.background = 'transparent'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                                <span style={{ fontSize: '1rem', lineHeight: 1 }}>{c.flag}</span>
+                                <span style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{c.name}</span>
+                              </div>
+                              <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, marginLeft: 8 }}>
+                                {c.dialCode}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* National Phone Input */}
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Phone
+                        size={14}
+                        style={{
+                          position: 'absolute',
+                          left: 12,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          color: phoneError ? '#EF4444' : '#94A3B8',
+                          pointerEvents: 'none'
+                        }}
+                      />
+                      <input
+                        type="tel"
+                        className="form-input"
+                        value={editCreatorNationalPhone}
+                        onChange={handleNationalPhoneChange}
+                        placeholder={selectedCountry.placeholder || '98765 00002'}
+                        style={{
+                          width: '100%',
+                          height: 40,
+                          paddingLeft: 34,
+                          borderColor: phoneError ? '#EF4444' : '#CBD5E1',
+                          fontSize: '0.875rem'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {phoneError ? (
+                    <span style={{ fontSize: '0.72rem', color: '#DC2626', marginTop: 4, display: 'block', fontWeight: 500 }}>
+                      {phoneError}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: 4, display: 'block' }}>
+                      Select country code and enter a valid phone number.
+                    </span>
+                  )}
+                </div>
+
+                <div className="form-field-group">
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1E293B', marginBottom: 6, display: 'block' }}>
+                    Specialization / Title *
+                  </label>
                   <input
                     type="text"
                     className="form-input"
                     value={editCreatorForm.specialization}
                     onChange={(e) => setEditCreatorForm({ ...editCreatorForm, specialization: e.target.value })}
+                    placeholder="e.g. Lead AI Researcher"
                     required
-                  />
-                </div>
-
-                <div className="form-field-group">
-                  <label className="form-label">Organization / Headline</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={editCreatorForm.headline}
-                    onChange={(e) => setEditCreatorForm({ ...editCreatorForm, headline: e.target.value })}
-                    placeholder="e.g. Apex AI Research Labs"
+                    style={{ height: 40, fontSize: '0.875rem' }}
                   />
                 </div>
               </div>
 
+              {/* Row 3: Organization / Headline */}
               <div className="form-field-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">Profile Photo URL</label>
+                <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1E293B', marginBottom: 6, display: 'block' }}>
+                  Organization / Headline
+                </label>
                 <input
-                  type="url"
+                  type="text"
                   className="form-input"
-                  value={editCreatorForm.avatar}
-                  onChange={(e) => setEditCreatorForm({ ...editCreatorForm, avatar: e.target.value })}
-                  placeholder="https://..."
+                  value={editCreatorForm.headline}
+                  onChange={(e) => setEditCreatorForm({ ...editCreatorForm, headline: e.target.value })}
+                  placeholder="e.g. Apex AI Research Labs • Stanford Visiting Fellow"
+                  style={{ height: 40, fontSize: '0.875rem' }}
                 />
               </div>
 
+              {/* Row 4: Modern Profile Photo Component (Upload + URL Option) */}
+              <div className="form-field-group" style={{ marginBottom: 16 }}>
+                <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1E293B', marginBottom: 6, display: 'block' }}>
+                  Profile Photo
+                </label>
+                
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 16,
+                    padding: '16px',
+                    background: '#F8FAFC',
+                    borderRadius: 12,
+                    border: '1px solid #E2E8F0'
+                  }}
+                >
+                  {/* Left: Avatar Preview */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 6,
+                      flexShrink: 0
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 68,
+                        height: 68,
+                        borderRadius: '50%',
+                        background: '#EFF6FF',
+                        color: '#2563EB',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.35rem',
+                        fontWeight: 800,
+                        border: '2px solid #DBEAFE',
+                        boxShadow: '0 2px 6px rgba(15, 23, 42, 0.06)',
+                        overflow: 'hidden',
+                        position: 'relative'
+                      }}
+                    >
+                      {editCreatorForm.avatar ? (
+                        <img
+                          src={editCreatorForm.avatar}
+                          alt={editCreatorForm.name || 'Creator'}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        getCreatorInitials(editCreatorForm.name) || <UserIcon size={24} style={{ color: '#64748B' }} />
+                      )}
+                    </div>
+                    <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748B' }}>
+                      {editCreatorForm.avatar ? 'Custom Photo' : 'Initials Avatar'}
+                    </span>
+                  </div>
+
+                  {/* Right: Upload Photo & Direct Image URL Controls */}
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {/* Action Buttons Row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <label
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          background: '#FFFFFF',
+                          color: '#2563EB',
+                          border: '1px solid #CBD5E1',
+                          borderRadius: 8,
+                          padding: '7px 14px',
+                          fontSize: '0.8125rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#EFF6FF'
+                          e.currentTarget.style.borderColor = '#93C5FD'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#FFFFFF'
+                          e.currentTarget.style.borderColor = '#CBD5E1'
+                        }}
+                      >
+                        <Upload size={14} />
+                        <span>{editCreatorForm.avatar ? 'Replace Photo' : 'Upload Photo'}</span>
+                        <input
+                          type="file"
+                          accept="image/png, image/jpeg, image/webp, image/gif"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (!file) return
+                            if (!file.type.startsWith('image/')) {
+                              showToast('Please select a valid image file (PNG, JPG, WebP)', 'error')
+                              return
+                            }
+                            if (file.size > 2 * 1024 * 1024) {
+                              showToast('Profile image must be less than 2MB', 'error')
+                              return
+                            }
+                            const reader = new FileReader()
+                            reader.onload = (loadEvt) => {
+                              setEditCreatorForm((prev) => ({ ...prev, avatar: loadEvt.target?.result || '' }))
+                              showToast('Profile photo updated', 'info')
+                            }
+                            reader.readAsDataURL(file)
+                          }}
+                        />
+                      </label>
+
+                      {editCreatorForm.avatar && (
+                        <button
+                          type="button"
+                          onClick={() => setEditCreatorForm({ ...editCreatorForm, avatar: '' })}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            background: '#FFFFFF',
+                            color: '#DC2626',
+                            border: '1px solid #FECACA',
+                            borderRadius: 8,
+                            padding: '7px 12px',
+                            fontSize: '0.8125rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#FEF2F2'
+                            e.currentTarget.style.borderColor = '#FCA5A5'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#FFFFFF'
+                            e.currentTarget.style.borderColor = '#FECACA'
+                          }}
+                        >
+                          <Trash2 size={13} />
+                          <span>Remove</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Image URL Option Input */}
+                    <div style={{ position: 'relative' }}>
+                      <Link2
+                        size={14}
+                        style={{
+                          position: 'absolute',
+                          left: 10,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          color: '#94A3B8',
+                          pointerEvents: 'none'
+                        }}
+                      />
+                      <input
+                        type="url"
+                        placeholder="Or enter image URL (e.g. https://...)"
+                        value={editCreatorForm.avatar?.startsWith('data:') ? '' : editCreatorForm.avatar}
+                        onChange={(e) => setEditCreatorForm({ ...editCreatorForm, avatar: e.target.value.trim() })}
+                        style={{
+                          width: '100%',
+                          height: 36,
+                          paddingLeft: 32,
+                          paddingRight: 10,
+                          borderRadius: 8,
+                          border: '1px solid #CBD5E1',
+                          background: '#FFFFFF',
+                          fontSize: '0.8125rem',
+                          color: '#0F172A',
+                          boxSizing: 'border-box',
+                          outline: 'none',
+                          transition: 'border-color 0.15s ease, box-shadow 0.15s ease'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = '#2563EB'
+                          e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)'
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = '#CBD5E1'
+                          e.target.style.boxShadow = 'none'
+                        }}
+                      />
+                    </div>
+
+                    {/* Format and Size Hint */}
+                    <div style={{ fontSize: '0.73rem', color: '#64748B', lineHeight: 1.4 }}>
+                      Supported formats: JPG, PNG, WebP (Max 2MB) or direct HTTPS image URL. If none provided, a neutral initials avatar is used.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 5: Biography */}
               <div className="form-field-group" style={{ marginBottom: 14 }}>
-                <label className="form-label">Biography</label>
+                <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1E293B', marginBottom: 6, display: 'block' }}>
+                  Biography & Background
+                </label>
                 <textarea
                   rows={3}
                   className="form-input"
                   value={editCreatorForm.bio}
                   onChange={(e) => setEditCreatorForm({ ...editCreatorForm, bio: e.target.value })}
-                  style={{ width: '100%', resize: 'vertical' }}
+                  placeholder="Summarize faculty tenure, academic research, or pedagogical background..."
+                  style={{ width: '100%', resize: 'vertical', fontSize: '0.875rem' }}
                 />
               </div>
 
-              <div className="form-field-group" style={{ marginBottom: 20 }}>
-                <label className="form-label">Account Status</label>
-                <select
+              {/* Row 6: Account Status */}
+              <div className="form-field-group" style={{ marginBottom: 22 }}>
+                <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1E293B', marginBottom: 6, display: 'block' }}>
+                  Account Status
+                </label>
+                <CustomSelect
+                  options={EDIT_CREATOR_STATUS_OPTIONS}
                   value={editCreatorForm.status}
-                  onChange={(e) => setEditCreatorForm({ ...editCreatorForm, status: e.target.value })}
-                  className="form-input"
-                  style={{ height: 42 }}
-                >
-                  <option value="ACTIVE">ACTIVE (Authorized to log in & publish)</option>
-                  <option value="INACTIVE">INACTIVE (Restricted access)</option>
-                  <option value="SUSPENDED">SUSPENDED (Access revoked)</option>
-                </select>
+                  onChange={(e) => {
+                    const nextVal = (e?.target?.value !== undefined ? e.target.value : e) || 'ACTIVE'
+                    setEditCreatorForm((prev) => ({ ...prev, status: nextVal }))
+                  }}
+                  buttonStyle={{ height: 42, borderRadius: 8, border: '1px solid #CBD5E1' }}
+                />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              {/* Footer Actions */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 14, borderTop: '1px solid #F1F5F9' }}>
                 <button
                   type="button"
                   className="btn btn-outline"
                   onClick={() => setSelectedEditCreator(null)}
+                  style={{ height: 38, padding: '0 18px', fontWeight: 600, borderRadius: 8 }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={isSavingEditCreator}
+                  disabled={isSavingEditCreator || !!phoneError}
+                  style={{ height: 38, padding: '0 20px', fontWeight: 700, borderRadius: 8 }}
                 >
                   <span>{isSavingEditCreator ? 'Saving...' : 'Save Profile Changes'}</span>
                 </button>
@@ -4298,6 +5021,394 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 5B: CHANGE CREATOR PASSWORD MODAL */}
+      {/* ========================================================================= */}
+      {changePasswordModal.open && changePasswordModal.creator && (
+        <div className="razorpay-modal-overlay" onClick={() => !changePasswordModal.isSubmitting && setChangePasswordModal({ ...changePasswordModal, open: false })}>
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 480, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #E2E8F0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: '#FEF3C7', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Key size={18} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                    Change Password
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                    Update security credentials for {changePasswordModal.creator.name}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => setChangePasswordModal({ ...changePasswordModal, open: false })}
+                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <form onSubmit={handleSaveChangePassword} style={{ padding: '20px' }}>
+              {changePasswordModal.error && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    background: '#FEF2F2',
+                    border: '1px solid #FECACA',
+                    color: '#DC2626',
+                    fontSize: '0.8125rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    marginBottom: 16
+                  }}
+                >
+                  <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                  <span>{changePasswordModal.error}</span>
+                </div>
+              )}
+
+              {/* Creator Info Snippet */}
+              <div
+                style={{
+                  background: '#F8FAFC',
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  border: '1px solid #E2E8F0',
+                  marginBottom: 16,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 10
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.84rem', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {changePasswordModal.creator.name}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {changePasswordModal.creator.email}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGenerateChangePassword}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    background: '#EFF6FF',
+                    border: '1px solid #BFDBFE',
+                    borderRadius: 6,
+                    padding: '6px 10px',
+                    color: '#2563EB',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#DBEAFE'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#EFF6FF'
+                  }}
+                >
+                  <Sparkles size={13} />
+                  <span>Generate Password</span>
+                </button>
+              </div>
+
+              {/* New Password */}
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1E293B', margin: 0 }}>
+                    New Password *
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: changePasswordModal.newPassword.length >= 32 ? '#DC2626' : '#64748B', fontWeight: 500 }}>
+                    {changePasswordModal.newPassword.length}/32
+                  </span>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={changePasswordModal.showNewPassword ? 'text' : 'password'}
+                    value={changePasswordModal.newPassword}
+                    maxLength={32}
+                    onChange={(e) => {
+                      const val = e.target.value.slice(0, 32)
+                      setChangePasswordModal((prev) => ({ ...prev, newPassword: val, error: '' }))
+                    }}
+                    placeholder="Enter 8–32 characters..."
+                    required
+                    style={{
+                      width: '100%',
+                      height: 40,
+                      padding: '0 38px 0 12px',
+                      borderRadius: 8,
+                      border: `1px solid ${
+                        changePasswordModal.newPassword && !passwordCriteria.isValid
+                          ? '#EF4444'
+                          : changePasswordModal.newPassword && passwordCriteria.isValid
+                          ? '#10B981'
+                          : '#CBD5E1'
+                      }`,
+                      fontSize: '0.875rem',
+                      color: '#0F172A',
+                      boxSizing: 'border-box',
+                      overflow: 'hidden'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setChangePasswordModal((prev) => ({ ...prev, showNewPassword: !prev.showNewPassword }))
+                    }
+                    style={{
+                      position: 'absolute',
+                      right: 8,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: '#64748B',
+                      cursor: 'pointer',
+                      padding: 4
+                    }}
+                    aria-label="Toggle password visibility"
+                  >
+                    {changePasswordModal.showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+
+                {/* Validation message if below 8 characters */}
+                {changePasswordModal.newPassword.length > 0 && changePasswordModal.newPassword.length < 8 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, color: '#DC2626', fontSize: '0.75rem', fontWeight: 600 }}>
+                    <AlertCircle size={13} style={{ flexShrink: 0 }} />
+                    <span>Password must be at least 8 characters long (currently {changePasswordModal.newPassword.length}/32).</span>
+                  </div>
+                )}
+
+                {/* Password Strength Meter */}
+                {changePasswordModal.newPassword && (
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', marginBottom: 4 }}>
+                      <span style={{ color: '#64748B' }}>Password Strength:</span>
+                      <span style={{ fontWeight: 700, color: changePasswordStrength.color }}>
+                        {changePasswordStrength.label}
+                      </span>
+                    </div>
+                    <div style={{ width: '100%', height: 4, background: '#E2E8F0', borderRadius: 2, overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          width: `${changePasswordStrength.score}%`,
+                          height: '100%',
+                          background: changePasswordStrength.color,
+                          transition: 'width 0.25s ease'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Helpful Validation Text & Requirements Checklist */}
+                <div style={{ marginTop: 10, padding: '10px 12px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Shield size={13} style={{ color: '#2563EB', flexShrink: 0 }} />
+                    <span>Password must be 8–32 characters and include uppercase, lowercase, number, and special character.</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '5px 12px', fontSize: '0.72rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: passwordCriteria.hasMinLen && passwordCriteria.hasMaxLen ? '#16A34A' : (changePasswordModal.newPassword.length > 0 ? '#DC2626' : '#64748B'), fontWeight: passwordCriteria.hasMinLen ? 600 : 400 }}>
+                      <Check size={12} style={{ strokeWidth: passwordCriteria.hasMinLen ? 3 : 2, opacity: passwordCriteria.hasMinLen ? 1 : 0.4, flexShrink: 0 }} />
+                      <span>8–32 characters</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: passwordCriteria.hasUpper ? '#16A34A' : '#64748B', fontWeight: passwordCriteria.hasUpper ? 600 : 400 }}>
+                      <Check size={12} style={{ strokeWidth: passwordCriteria.hasUpper ? 3 : 2, opacity: passwordCriteria.hasUpper ? 1 : 0.4, flexShrink: 0 }} />
+                      <span>1 uppercase (A–Z)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: passwordCriteria.hasLower ? '#16A34A' : '#64748B', fontWeight: passwordCriteria.hasLower ? 600 : 400 }}>
+                      <Check size={12} style={{ strokeWidth: passwordCriteria.hasLower ? 3 : 2, opacity: passwordCriteria.hasLower ? 1 : 0.4, flexShrink: 0 }} />
+                      <span>1 lowercase (a–z)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: passwordCriteria.hasNumber ? '#16A34A' : '#64748B', fontWeight: passwordCriteria.hasNumber ? 600 : 400 }}>
+                      <Check size={12} style={{ strokeWidth: passwordCriteria.hasNumber ? 3 : 2, opacity: passwordCriteria.hasNumber ? 1 : 0.4, flexShrink: 0 }} />
+                      <span>1 number (0–9)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: passwordCriteria.hasSpecial ? '#16A34A' : '#64748B', fontWeight: passwordCriteria.hasSpecial ? 600 : 400, gridColumn: 'span 2' }}>
+                      <Check size={12} style={{ strokeWidth: passwordCriteria.hasSpecial ? 3 : 2, opacity: passwordCriteria.hasSpecial ? 1 : 0.4, flexShrink: 0 }} />
+                      <span>1 special character (e.g. !@#$%^&*)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1E293B', margin: 0 }}>
+                    Confirm Password *
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: changePasswordModal.confirmPassword.length >= 32 ? '#DC2626' : '#64748B', fontWeight: 500 }}>
+                    {changePasswordModal.confirmPassword.length}/32
+                  </span>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={changePasswordModal.showConfirmPassword ? 'text' : 'password'}
+                    value={changePasswordModal.confirmPassword}
+                    maxLength={32}
+                    onChange={(e) => {
+                      const val = e.target.value.slice(0, 32)
+                      setChangePasswordModal((prev) => ({ ...prev, confirmPassword: val, error: '' }))
+                    }}
+                    placeholder="Re-enter password to confirm..."
+                    required
+                    style={{
+                      width: '100%',
+                      height: 40,
+                      padding: '0 38px 0 12px',
+                      borderRadius: 8,
+                      border: `1px solid ${
+                        changePasswordModal.confirmPassword &&
+                        changePasswordModal.newPassword !== changePasswordModal.confirmPassword
+                          ? '#EF4444'
+                          : changePasswordModal.confirmPassword &&
+                            changePasswordModal.newPassword === changePasswordModal.confirmPassword
+                          ? '#10B981'
+                          : '#CBD5E1'
+                      }`,
+                      fontSize: '0.875rem',
+                      color: '#0F172A',
+                      boxSizing: 'border-box',
+                      overflow: 'hidden'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setChangePasswordModal((prev) => ({ ...prev, showConfirmPassword: !prev.showConfirmPassword }))
+                    }
+                    style={{
+                      position: 'absolute',
+                      right: 8,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: '#64748B',
+                      cursor: 'pointer',
+                      padding: 4
+                    }}
+                    aria-label="Toggle confirm password visibility"
+                  >
+                    {changePasswordModal.showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {changePasswordModal.confirmPassword &&
+                  changePasswordModal.newPassword !== changePasswordModal.confirmPassword && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, color: '#EF4444', fontSize: '0.75rem', fontWeight: 600 }}>
+                      <AlertCircle size={13} style={{ flexShrink: 0 }} />
+                      <span>Passwords do not match.</span>
+                    </div>
+                  )}
+                {changePasswordModal.confirmPassword &&
+                  changePasswordModal.newPassword === changePasswordModal.confirmPassword &&
+                  passwordCriteria.isValid && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, color: '#16A34A', fontSize: '0.75rem', fontWeight: 600 }}>
+                      <Check size={13} style={{ strokeWidth: 3, flexShrink: 0 }} />
+                      <span>Passwords match.</span>
+                    </div>
+                  )}
+              </div>
+
+              {/* Send to registered email option */}
+              <div style={{ marginBottom: 20 }}>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    fontSize: '0.8125rem',
+                    color: '#334155'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={changePasswordModal.sendEmail}
+                    onChange={(e) =>
+                      setChangePasswordModal((prev) => ({ ...prev, sendEmail: e.target.checked }))
+                    }
+                    style={{
+                      width: 16,
+                      height: 16,
+                      accentColor: '#2563EB',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  <span>Send new password to creator's registered email ({changePasswordModal.creator.email})</span>
+                </label>
+              </div>
+
+              {/* Modal Action Buttons */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setChangePasswordModal({ ...changePasswordModal, open: false })}
+                  disabled={changePasswordModal.isSubmitting}
+                  style={{ height: 38, padding: '0 16px', fontWeight: 600, borderRadius: 8 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={
+                    changePasswordModal.isSubmitting ||
+                    !passwordCriteria.isValid ||
+                    !changePasswordModal.confirmPassword ||
+                    changePasswordModal.newPassword !== changePasswordModal.confirmPassword
+                  }
+                  style={{
+                    height: 38,
+                    padding: '0 18px',
+                    fontWeight: 700,
+                    borderRadius: 8,
+                    opacity: (
+                      changePasswordModal.isSubmitting ||
+                      !passwordCriteria.isValid ||
+                      !changePasswordModal.confirmPassword ||
+                      changePasswordModal.newPassword !== changePasswordModal.confirmPassword
+                    ) ? 0.5 : 1,
+                    cursor: (
+                      changePasswordModal.isSubmitting ||
+                      !passwordCriteria.isValid ||
+                      !changePasswordModal.confirmPassword ||
+                      changePasswordModal.newPassword !== changePasswordModal.confirmPassword
+                    ) ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  <span>{changePasswordModal.isSubmitting ? 'Updating...' : 'Save Password'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

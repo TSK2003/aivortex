@@ -216,7 +216,9 @@ export async function createCreator(req, res, next) {
     const salt = await bcrypt.genSalt(10)
     const passwordHash = await bcrypt.hash(tempPassword, salt)
 
-    const finalStatus = ['ACTIVE', 'INACTIVE'].includes(status) ? status : 'ACTIVE'
+    const finalStatus = (status && ['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(String(status).trim().toUpperCase()))
+      ? String(status).trim().toUpperCase()
+      : 'ACTIVE'
 
     const createData = {
       ...(chosenId ? { id: chosenId } : {}),
@@ -319,8 +321,11 @@ export async function updateCreator(req, res, next) {
     if (phone !== undefined) updateData.phone = phone ? phone.trim() : null
     if (avatar !== undefined) updateData.avatar = avatar ? avatar.trim() : null
     if (bio !== undefined) updateData.bio = bio ? bio.trim() : null
-    if (status !== undefined && ['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(status)) {
-      updateData.status = status
+    if (status !== undefined && status !== null) {
+      const normalizedStatus = String(status).trim().toUpperCase()
+      if (['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(normalizedStatus)) {
+        updateData.status = normalizedStatus
+      }
     }
 
     if (email && email.trim().toLowerCase() !== existing.email) {
@@ -357,8 +362,28 @@ export async function updateCreator(req, res, next) {
           }
         }
       },
-      include: { creatorProfile: true }
+      include: {
+        creatorProfile: true,
+        sessions: {
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        },
+        assignedCourses: {
+          include: {
+            course: {
+              select: { id: true, title: true, slug: true, status: true }
+            }
+          }
+        },
+        uploadedLessons: {
+          select: { id: true, status: true }
+        }
+      }
     })
+
+    if (updateData.status === 'SUSPENDED' || updateData.status === 'INACTIVE') {
+      await prisma.session.deleteMany({ where: { userId: id } })
+    }
 
     await prisma.auditLog.create({
       data: {
@@ -366,7 +391,7 @@ export async function updateCreator(req, res, next) {
         action: 'CREATOR_UPDATED',
         entityType: 'User',
         entityId: id,
-        details: `Admin ${req.user.email} updated profile for creator ${updated.email}`,
+        details: `Admin ${req.user.email} updated profile for creator ${updated.email} (Status: ${updated.status})`,
         ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
       }
     })
@@ -388,6 +413,28 @@ export async function resetCreatorPassword(req, res, next) {
 
     if (!creator) {
       throw new NotFoundError('Creator not found')
+    }
+
+    if (newPassword !== undefined && newPassword !== null && String(newPassword).trim() !== '') {
+      const pwd = String(newPassword).trim()
+      if (pwd.length < 8) {
+        throw new BadRequestError('Password must be at least 8 characters long.')
+      }
+      if (pwd.length > 32) {
+        throw new BadRequestError('Password cannot exceed 32 characters.')
+      }
+      if (!/[A-Z]/.test(pwd)) {
+        throw new BadRequestError('Password must contain at least one uppercase letter.')
+      }
+      if (!/[a-z]/.test(pwd)) {
+        throw new BadRequestError('Password must contain at least one lowercase letter.')
+      }
+      if (!/[0-9]/.test(pwd)) {
+        throw new BadRequestError('Password must contain at least one number.')
+      }
+      if (!/[^A-Za-z0-9]/.test(pwd)) {
+        throw new BadRequestError('Password must contain at least one special character.')
+      }
     }
 
     const tempPassword = newPassword && newPassword.trim()
@@ -582,14 +629,37 @@ export async function updateCreatorStatus(req, res, next) {
     const { id } = req.params
     const { status } = req.body
 
-    if (!['ACTIVE', 'SUSPENDED', 'INACTIVE'].includes(status)) {
+    const normalizedStatus = String(status || '').toUpperCase()
+
+    if (!['ACTIVE', 'SUSPENDED', 'INACTIVE'].includes(normalizedStatus)) {
       throw new BadRequestError('Invalid user status')
     }
 
     const updated = await prisma.user.update({
       where: { id, role: 'CREATOR' },
-      data: { status }
+      data: { status: normalizedStatus },
+      include: {
+        creatorProfile: true,
+        sessions: {
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        },
+        assignedCourses: {
+          include: {
+            course: {
+              select: { id: true, title: true, slug: true, status: true }
+            }
+          }
+        },
+        uploadedLessons: {
+          select: { id: true, status: true }
+        }
+      }
     })
+
+    if (normalizedStatus === 'SUSPENDED' || normalizedStatus === 'INACTIVE') {
+      await prisma.session.deleteMany({ where: { userId: id } })
+    }
 
     await prisma.auditLog.create({
       data: {
@@ -597,12 +667,12 @@ export async function updateCreatorStatus(req, res, next) {
         action: 'CREATOR_STATUS_CHANGED',
         entityType: 'User',
         entityId: id,
-        details: `Creator ${updated.email} status changed to ${status}`,
+        details: `Creator ${updated.email} status changed to ${normalizedStatus}`,
         ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
       }
     })
 
-    return successResponse(res, { creator: updated }, `Creator status updated to ${status}`)
+    return successResponse(res, { creator: updated }, `Creator status updated to ${normalizedStatus}`)
   } catch (err) {
     next(err)
   }
@@ -761,6 +831,21 @@ export async function createCourse(req, res, next) {
       throw new BadRequestError('Title and short description are required')
     }
 
+    if (thumbnail && thumbnail.trim()) {
+      const trimmedThumb = thumbnail.trim()
+      if (!/^https:\/\//i.test(trimmedThumb)) {
+        throw new BadRequestError('Please enter a valid HTTPS image URL.')
+      }
+      try {
+        const parsed = new URL(trimmedThumb)
+        if (parsed.protocol !== 'https:' || !parsed.hostname || !parsed.hostname.includes('.')) {
+          throw new BadRequestError('Please enter a valid HTTPS image URL.')
+        }
+      } catch {
+        throw new BadRequestError('Please enter a valid HTTPS image URL.')
+      }
+    }
+
     const courseSlug = (slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
 
     const existing = await prisma.course.findUnique({ where: { slug: courseSlug } })
@@ -778,7 +863,7 @@ export async function createCourse(req, res, next) {
         level,
         duration,
         language,
-        thumbnail: thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80',
+        thumbnail: (thumbnail && thumbnail.trim()) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80',
         price: Number(price),
         originalPrice: Number(originalPrice || price),
         discountPercent: Number(discountPercent),
@@ -827,9 +912,30 @@ export async function updateCourse(req, res, next) {
     }
 
     const updatePayload = {}
+
+    if (data.thumbnail !== undefined && data.thumbnail !== null) {
+      const trimmedThumb = String(data.thumbnail).trim()
+      if (trimmedThumb) {
+        if (!/^https:\/\//i.test(trimmedThumb)) {
+          throw new BadRequestError('Please enter a valid HTTPS image URL.')
+        }
+        try {
+          const parsed = new URL(trimmedThumb)
+          if (parsed.protocol !== 'https:' || !parsed.hostname || !parsed.hostname.includes('.')) {
+            throw new BadRequestError('Please enter a valid HTTPS image URL.')
+          }
+        } catch {
+          throw new BadRequestError('Please enter a valid HTTPS image URL.')
+        }
+        updatePayload.thumbnail = trimmedThumb
+      } else {
+        updatePayload.thumbnail = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80'
+      }
+    }
+
     const fields = [
       'title', 'shortDescription', 'fullDescription', 'category', 'level',
-      'duration', 'language', 'thumbnail', 'price', 'originalPrice',
+      'duration', 'language', 'price', 'originalPrice',
       'discountPercent', 'isFree', 'isFeatured', 'badge', 'status',
       'enrollmentOpen', 'demoLessonId', 'certificateEnabled', 'accessDurationDays'
     ]
