@@ -52,7 +52,7 @@ const ADMIN_NAV_SECTIONS = [
   {
     title: 'CONTENT / PLATFORM',
     items: [
-      { path: '/admin/public-page', label: 'Public Page Management', icon: Globe },
+      { path: '/admin/public-page', label: 'Public Pages & Footer CMS', icon: Globe },
       { path: '/admin/notifications', label: 'Notifications', icon: Bell },
     ]
   },
@@ -155,7 +155,7 @@ export default function DashboardLayout({ role = 'student' }) {
           <button
             className="btn-ghost sidebar-close-mobile"
             onClick={() => setSidebarOpen(false)}
-            style={{ display: 'none' }}
+            aria-label="Close Sidebar"
           >
             <X size={20} />
           </button>
@@ -375,25 +375,6 @@ export default function DashboardLayout({ role = 'student' }) {
 
       {/* Main content area */}
       <div className="dashboard-main">
-        {/* Topbar */}
-        <header className="dashboard-topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <button
-              className="btn-ghost mobile-sidebar-toggle"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu size={20} />
-            </button>
-            <h1 className="topbar-title" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)', margin: 0 }}>
-              {roleLabel}
-            </h1>
-          </div>
-          <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <NotificationDropdown />
-            <div style={{ width: 1, height: 22, background: '#E2E8F0' }} />
-            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
-          </div>
-        </header>
         {/* Topbar: Use AdminHeader for Admin role; default topbar for student & creator */}
         {role === 'admin' ? (
           <AdminHeader
@@ -410,6 +391,7 @@ export default function DashboardLayout({ role = 'student' }) {
               <button
                 className="btn-ghost mobile-sidebar-toggle"
                 onClick={() => setSidebarOpen(true)}
+                aria-label="Open Sidebar"
               >
                 <Menu size={20} />
               </button>
@@ -417,8 +399,10 @@ export default function DashboardLayout({ role = 'student' }) {
                 {roleLabel}
               </h1>
             </div>
-            <div className="topbar-actions">
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
+            <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <NotificationDropdown />
+              <div style={{ width: 1, height: 22, background: '#E2E8F0' }} />
+              <span className="topbar-session-badge" style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
             </div>
           </header>
         )}

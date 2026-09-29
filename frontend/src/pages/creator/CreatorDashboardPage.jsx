@@ -376,7 +376,7 @@ export default function CreatorDashboardPage() {
       {activeTab === 'courses' && (
         <>
           {assignedCourses.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 20 }}>
               {assignedCourses.map((c) => (
                 <div
                   key={c.id}

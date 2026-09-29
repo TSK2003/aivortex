@@ -185,7 +185,7 @@ export default function ProjectsPage() {
       <div className="container">
         {/* Header */}
         <div style={{ textAlign: 'center', maxWidth: 780, margin: '0 auto 28px auto' }}>
-          <h1 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '-0.02em', marginBottom: 10 }}>
+          <h1 style={{ fontSize: 'clamp(1.6rem, 5.5vw, 2.25rem)', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '-0.02em', marginBottom: 10 }}>
             Domain-Specific Production Projects
           </h1>
           <p style={{ fontSize: '1rem', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
@@ -208,7 +208,7 @@ export default function ProjectsPage() {
         </div>
 
         {/* Projects Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: 24 }}>
           {filteredProjects.map((project) => (
             <div
               key={project.id}
@@ -222,7 +222,7 @@ export default function ProjectsPage() {
                 transition: 'all 0.2s ease',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                 <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>
                   {project.categoryLabel || project.category || 'AI Engineering'}
                 </span>

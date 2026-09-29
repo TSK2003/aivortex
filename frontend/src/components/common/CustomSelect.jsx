@@ -154,7 +154,7 @@ export default function CustomSelect({
             right: 0,
             minWidth: '100%',
             width: 'max-content',
-            maxWidth: '340px',
+            maxWidth: 'min(340px, calc(100vw - 32px))',
             background: '#FFFFFF',
             border: '1px solid #E2E8F0',
             borderRadius: 12,

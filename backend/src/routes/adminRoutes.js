@@ -34,7 +34,11 @@ import {
   updateOffer,
   deleteOffer,
   getAdminProfile,
-  updateAdminProfile
+  updateAdminProfile,
+  getAdminAboutContent,
+  updateAdminAboutContent,
+  getAdminFooterContent,
+  updateAdminFooterContent
 } from '../controllers/adminController.js'
 import { requireAuth, requireRole } from '../middleware/authMiddleware.js'
 
@@ -106,5 +110,11 @@ router.get('/audit-logs', getAuditLogs)
 // Platform Security & Sessions
 router.get('/security/sessions', getActiveSessions)
 router.delete('/security/sessions/:sessionId', revokeSession)
+
+// Public Page, About & Footer Management
+router.get('/about', getAdminAboutContent)
+router.put('/about', updateAdminAboutContent)
+router.get('/footer', getAdminFooterContent)
+router.put('/footer', updateAdminFooterContent)
 
 export default router

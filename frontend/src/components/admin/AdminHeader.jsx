@@ -38,7 +38,7 @@ export default function AdminHeader({
     if (path.includes('/admin/courses')) return 'Course Management'
     if (path.includes('/admin/playlists')) return 'Playlist & Video Management'
     if (path.includes('/admin/payments')) return 'Payments & Enrollments'
-    if (path.includes('/admin/public-page')) return 'Public Page Management'
+    if (path.includes('/admin/public-page') || path.includes('/admin/public-controls')) return 'Public Pages & Footer CMS'
     if (path.includes('/admin/notifications')) return 'Broadcast Notifications'
     if (path.includes('/admin/reports')) return 'Reports & Analytics'
     if (path.includes('/admin/requests')) return 'Creator Requests'
@@ -78,6 +78,7 @@ export default function AdminHeader({
 
   return (
     <header
+      className="admin-header-bar"
       style={{
         height: '64px',
         background: '#FFFFFF',
@@ -93,7 +94,7 @@ export default function AdminHeader({
       }}
     >
       {/* Left side: Hamburger button + Title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div className="admin-header-left" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <button
           type="button"
           onClick={onToggleSidebar}
@@ -123,8 +124,9 @@ export default function AdminHeader({
           <Menu size={19} />
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="admin-header-title-wrap" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span
+            className="admin-header-main-title"
             style={{
               fontSize: '1.0625rem',
               fontWeight: 800,
@@ -136,7 +138,7 @@ export default function AdminHeader({
           </span>
 
           {getPageTitle() !== 'Admin Portal' && (
-            <>
+            <span className="admin-header-breadcrumb" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: '#CBD5E1', fontSize: '0.875rem' }}>/</span>
               <span
                 style={{
@@ -147,10 +149,11 @@ export default function AdminHeader({
               >
                 {getPageTitle()}
               </span>
-            </>
+            </span>
           )}
 
           <span
+            className="admin-header-live-badge"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -248,7 +251,7 @@ export default function AdminHeader({
               )}
             </div>
 
-            <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
+            <div className="admin-user-meta" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
               <span
                 style={{
                   fontSize: '0.8125rem',

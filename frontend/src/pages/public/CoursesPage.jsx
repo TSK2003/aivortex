@@ -220,7 +220,7 @@ export default function CoursesPage() {
 
         {/* Page Header */}
         <div className="section-header text-center" style={{ marginBottom: 32, maxWidth: 760, margin: '0 auto 32px auto' }}>
-          <h1 className="section-title" style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 10 }}>
+          <h1 className="section-title" style={{ fontSize: 'clamp(1.6rem, 5.5vw, 2.25rem)', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 10 }}>
             EXPLORE ALL <span className="highlight-blue" style={{ color: '#2563EB' }}>COURSES</span>
           </h1>
           <p className="section-subtitle" style={{ fontSize: '1rem', color: '#64748B', lineHeight: 1.6 }}>
@@ -234,14 +234,14 @@ export default function CoursesPage() {
             background: '#FFFFFF',
             border: '1px solid var(--color-border)',
             borderRadius: 'var(--radius-lg)',
-            padding: 20,
+            padding: 'clamp(14px, 3.5vw, 20px)',
             marginBottom: 28,
             boxShadow: '0 2px 8px -2px rgba(15, 23, 42, 0.04)'
           }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 14 }}>
             {/* Search Input */}
-            <div style={{ position: 'relative', gridColumn: 'span 2' }}>
+            <div style={{ position: 'relative', gridColumn: '1 / -1' }}>
               <Search
                 style={{
                   position: 'absolute',

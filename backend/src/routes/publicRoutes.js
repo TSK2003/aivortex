@@ -7,11 +7,17 @@ import {
   getLiveSessions,
   submitContactEnquiry,
   getActiveOffers,
-  validateOfferCode
+  validateOfferCode,
+  getAboutContent,
+  getFooterContent
 } from '../controllers/publicController.js'
 import { generalLimiter } from '../middleware/rateLimiter.js'
 
 const router = Router()
+
+// Public About Page & Footer Details
+router.get('/about', getAboutContent)
+router.get('/footer', getFooterContent)
 
 // Public Catalog & Details
 router.get('/courses', getCourses)
