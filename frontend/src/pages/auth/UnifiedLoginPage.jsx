@@ -30,7 +30,7 @@ export default function UnifiedLoginPage() {
   const [resetSuccess, setResetSuccess] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
 
-  const { login } = useAuth()
+  const { login, demoLogin, user: existingUser, isAuthenticated } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
 
@@ -39,6 +39,20 @@ export default function UnifiedLoginPage() {
       setMode('reset')
     }
   }, [resetTokenParam])
+
+  // If already authenticated, redirect to appropriate role dashboard
+  useEffect(() => {
+    if (isAuthenticated && existingUser && mode === 'login') {
+      const role = (existingUser?.role || '').toLowerCase()
+      if (role === 'creator') {
+        navigate('/creator/dashboard', { replace: true })
+      } else if (role === 'admin') {
+        navigate('/admin/dashboard', { replace: true })
+      } else {
+        navigate('/student/dashboard', { replace: true })
+      }
+    }
+  }, [isAuthenticated, existingUser, mode, navigate])
 
   const handleLoginSuccess = (user) => {
     const role = (user?.role || '').toLowerCase()
@@ -54,6 +68,15 @@ export default function UnifiedLoginPage() {
         navigate(redirectParam + (enrollParam ? '?enroll=true' : ''))
       } else {
         navigate('/student/dashboard')
+      }
+    }
+  }
+
+  const handleQuickDemo = (role) => {
+    if (demoLogin) {
+      const res = demoLogin(role)
+      if (res?.success && res?.user) {
+        handleLoginSuccess(res.user)
       }
     }
   }
@@ -185,6 +208,63 @@ export default function UnifiedLoginPage() {
                   Please sign in to proceed with your course enrollment.
                 </div>
               )}
+            </div>
+
+            {/* Quick Demo Access Bar */}
+            <div
+              style={{
+                marginBottom: 20,
+                padding: '12px 14px',
+                background: '#F8FAFC',
+                borderRadius: 12,
+                border: '1px solid #E2E8F0'
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 8,
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: '#475569',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                <span>Instant Demo Access</span>
+                <span style={{ fontSize: '0.7rem', color: '#2563EB', fontWeight: 600 }}>1-Click Login</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                <button
+                  type="button"
+                  id="btn-demo-student"
+                  onClick={() => handleQuickDemo('student')}
+                  className="btn btn-outline btn-sm"
+                  style={{ fontSize: '0.78rem', padding: '6px 4px', textAlign: 'center', fontWeight: 600, background: '#FFFFFF' }}
+                >
+                  🎓 Student
+                </button>
+                <button
+                  type="button"
+                  id="btn-demo-creator"
+                  onClick={() => handleQuickDemo('creator')}
+                  className="btn btn-outline btn-sm"
+                  style={{ fontSize: '0.78rem', padding: '6px 4px', textAlign: 'center', fontWeight: 600, background: '#FFFFFF' }}
+                >
+                  🎬 Creator
+                </button>
+                <button
+                  type="button"
+                  id="btn-demo-admin"
+                  onClick={() => handleQuickDemo('admin')}
+                  className="btn btn-outline btn-sm"
+                  style={{ fontSize: '0.78rem', padding: '6px 4px', textAlign: 'center', fontWeight: 600, background: '#FFFFFF' }}
+                >
+                  ⚡ Admin
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleLoginSubmit}>

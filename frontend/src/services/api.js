@@ -17,21 +17,36 @@ async function request(endpoint, options = {}) {
 
   try {
     const response = await fetch(`${API_BASE}${endpoint}`, config)
-    const json = await response.json()
+
+    let json = null
+    const contentType = response.headers.get('content-type') || ''
+    if (contentType.includes('application/json')) {
+      json = await response.json().catch(() => null)
+    }
 
     if (!response.ok) {
-      const errorMessage = json.error?.message || json.message || `Request failed with status ${response.status}`
+      const errorMessage =
+        json?.error?.message ||
+        json?.message ||
+        (response.status === 502 || response.status === 504
+          ? 'Unable to connect to aivortex API backend. Please ensure the backend server is running on port 3001.'
+          : `Request failed with status ${response.status}`)
       const error = new Error(errorMessage)
       error.status = response.status
-      error.code = json.error?.code
-      error.details = json.error?.details
+      error.code = json?.error?.code
+      error.details = json?.error?.details
       throw error
     }
 
-    return json
+    return json || {}
   } catch (err) {
-    if (err.name === 'TypeError' && err.message.includes('fetch')) {
-      throw new Error('Unable to connect to aivortex API backend. Please ensure the server is running on port 5000.')
+    if (
+      (err.name === 'TypeError' && err.message.includes('fetch')) ||
+      err.name === 'SyntaxError' ||
+      err.status === 502 ||
+      err.status === 504
+    ) {
+      throw new Error('Unable to connect to aivortex API backend. Please ensure the backend server is running on port 3001.')
     }
     throw err
   }
