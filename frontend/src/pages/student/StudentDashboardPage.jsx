@@ -26,6 +26,7 @@ import { useToast } from '../../contexts/ToastContext'
 import CustomSelect from '../../components/common/CustomSelect'
 import api from '../../services/api'
 import { initialProjects, initialLiveSessions } from '../../data/initialData'
+import CertificateModal from '../../components/modals/CertificateModal'
 
 export default function StudentDashboardPage() {
   const location = useLocation()
@@ -59,6 +60,7 @@ export default function StudentDashboardPage() {
   const [supportTickets, setSupportTickets] = useState([])
   const [notifications, setNotifications] = useState([])
   const [notifFilter, setNotifFilter] = useState('all')
+  const [selectedCertForModal, setSelectedCertForModal] = useState(null)
 
   // Profile form state
   const [profileName, setProfileName] = useState(currentStudent?.name || '')
@@ -242,7 +244,7 @@ export default function StudentDashboardPage() {
       {activeTab === 'overview' && (
         <div>
           {/* Quick Metrics */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, marginBottom: 28 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 20, marginBottom: 28 }}>
             <div style={{ background: '#FFFFFF', padding: 20, borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Enrolled Programs</span>
@@ -277,7 +279,7 @@ export default function StudentDashboardPage() {
           {/* Enrolled Courses Progress Grid */}
           <h3 style={{ fontSize: '1.25rem', marginBottom: 16, color: 'var(--color-primary)' }}>Active Enrolled Courses</h3>
           {enrolledCourses.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 20 }}>
               {enrolledCourses.map((c) => (
                 <div
                   key={c.id}
@@ -337,7 +339,7 @@ export default function StudentDashboardPage() {
       {activeTab === 'courses' && (
         <>
           {enrolledCourses.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 20 }}>
               {enrolledCourses.map((course) => (
                 <div
                   key={course.id}
@@ -384,7 +386,7 @@ export default function StudentDashboardPage() {
 
       {/* Tab 3: Assigned Projects */}
       {activeTab === 'projects' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 20 }}>
           {initialProjects.map((p) => (
             <div
               key={p.id}
@@ -488,7 +490,7 @@ export default function StudentDashboardPage() {
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <Link
                       to={`/certificates?code=${cert.certificateCode || cert.id}`}
                       className="btn btn-outline btn-sm"
@@ -498,9 +500,10 @@ export default function StudentDashboardPage() {
                     </Link>
                     <button
                       className="btn btn-primary btn-sm"
-                      onClick={() => window.print()}
+                      onClick={() => setSelectedCertForModal(cert)}
                     >
-                      <span>Download Credential</span>
+                      <Award size={14} style={{ marginRight: 4 }} />
+                      <span>View &amp; Print Credential</span>
                     </button>
                   </div>
                 </div>
@@ -515,6 +518,14 @@ export default function StudentDashboardPage() {
               </p>
             </div>
           )}
+
+          {/* Certificate Modal Preview */}
+          <CertificateModal
+            isOpen={Boolean(selectedCertForModal)}
+            onClose={() => setSelectedCertForModal(null)}
+            certificate={selectedCertForModal}
+            studentName={selectedCertForModal?.studentName || currentStudent?.name}
+          />
         </div>
       )}
 
@@ -568,7 +579,7 @@ export default function StudentDashboardPage() {
 
       {/* Tab 7: Support & Inquiries */}
       {activeTab === 'support' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 24 }}>
           {/* Create Ticket Form */}
           <div style={{ background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', padding: 28, boxShadow: 'var(--shadow-sm)' }}>
             <h3 style={{ fontSize: '1.25rem', marginBottom: 12, color: 'var(--color-primary)' }}>Raise Support / Content Query</h3>

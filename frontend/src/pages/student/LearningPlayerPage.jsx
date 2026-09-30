@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import api from '../../services/api'
+import CertificateModal from '../../components/modals/CertificateModal'
 
 export default function LearningPlayerPage() {
   const { courseId } = useParams()
@@ -58,6 +59,7 @@ export default function LearningPlayerPage() {
   // Certificate Issuance State
   const [isIssuingCert, setIsIssuingCert] = useState(false)
   const [issuedCertificate, setIssuedCertificate] = useState(null)
+  const [showCertModal, setShowCertModal] = useState(false)
 
   // 1. Initial Course & Curriculum Fetch
   useEffect(() => {
@@ -342,11 +344,16 @@ export default function LearningPlayerPage() {
 
   // 9. Issue Certificate
   const handleClaimCertificate = async () => {
+    if (issuedCertificate) {
+      setShowCertModal(true)
+      return
+    }
     setIsIssuingCert(true)
     try {
       const res = await api.student.issueCertificate(courseId)
       if (res.data?.certificate) {
         setIssuedCertificate(res.data.certificate)
+        setShowCertModal(true)
         showToast(`Official Certificate Issued: ${res.data.certificate.certificateCode}`, 'success')
       }
     } catch (err) {
@@ -400,7 +407,7 @@ export default function LearningPlayerPage() {
                 disabled={isIssuingCert}
                 style={{ width: '100%', marginTop: 8, fontSize: '0.75rem', height: 32 }}
               >
-                {isIssuingCert ? 'Generating...' : (issuedCertificate ? 'Certificate Issued' : 'Claim Certificate')}
+                {isIssuingCert ? 'Generating...' : (issuedCertificate ? 'View & Print Credential' : 'Claim Certificate')}
               </button>
             </div>
           )}
@@ -730,6 +737,14 @@ export default function LearningPlayerPage() {
           )}
         </div>
       </main>
+
+      <CertificateModal
+        isOpen={showCertModal}
+        onClose={() => setShowCertModal(false)}
+        certificate={issuedCertificate}
+        studentName={student?.name || user?.name}
+        courseTitle={course?.title}
+      />
     </div>
   )
 }

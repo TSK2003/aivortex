@@ -397,3 +397,48 @@ export async function validateOfferCode(req, res, next) {
   }
 }
 
+import defaultAboutData from '../data/defaultAboutData.js'
+import { defaultFooterData } from '../data/defaultFooterData.js'
+
+export async function getAboutContent(req, res, next) {
+  try {
+    const setting = await prisma.platformSetting.findUnique({
+      where: { key: 'about_page_content' }
+    })
+
+    let content = defaultAboutData
+    if (setting?.value) {
+      try {
+        content = JSON.parse(setting.value)
+      } catch (e) {
+        content = defaultAboutData
+      }
+    }
+
+    return successResponse(res, { about: content }, 'About page content retrieved successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getFooterContent(req, res, next) {
+  try {
+    const setting = await prisma.platformSetting.findUnique({
+      where: { key: 'footer_content' }
+    })
+
+    let content = defaultFooterData
+    if (setting?.value) {
+      try {
+        content = JSON.parse(setting.value)
+      } catch (e) {
+        content = defaultFooterData
+      }
+    }
+
+    return successResponse(res, { footer: content }, 'Footer content retrieved successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+

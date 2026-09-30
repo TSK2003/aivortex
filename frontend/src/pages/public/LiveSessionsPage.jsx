@@ -131,7 +131,7 @@ export default function LiveSessionsPage() {
       <div className="container">
         {/* Header */}
         <div style={{ textAlign: 'center', maxWidth: 780, margin: '0 auto 28px auto' }}>
-          <h1 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '-0.02em', marginBottom: 10 }}>
+          <h1 style={{ fontSize: 'clamp(1.6rem, 5.5vw, 2.25rem)', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '-0.02em', marginBottom: 10 }}>
             Live Architectural Deep Dives
           </h1>
           <p style={{ fontSize: '1rem', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
@@ -160,7 +160,7 @@ export default function LiveSessionsPage() {
         )}
 
         {/* Sessions Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 28 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: 28 }}>
           {sessions.map((session) => (
             <div
               key={session.id}
@@ -173,7 +173,7 @@ export default function LiveSessionsPage() {
                 flexDirection: 'column',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
                 <span className="badge badge-secondary">
                   {session.date || 'Upcoming Weekend'}
                 </span>

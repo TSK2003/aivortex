@@ -802,6 +802,20 @@ async function main() {
     }
   })
 
+  // Official Sample Reference Certificate matching client format
+  await prisma.certificate.create({
+    data: {
+      certificateCode: 'AVT-2025-001',
+      studentId: student.id,
+      courseId: coursePyds.id,
+      issueDate: new Date('2025-09-26'),
+      studentName: 'You',
+      courseTitle: 'AI & Emerging Technologies Program',
+      status: 'VALID',
+      verificationUrl: '/certificates?code=AVT-2025-001'
+    }
+  })
+
   // 8. Seed Verified Order
   await prisma.order.create({
     data: {
@@ -990,6 +1004,18 @@ async function main() {
         createdAt: new Date(Date.now() - 86400000 * 3)
       }
     ]
+  })
+
+  // 17. Seed Public About Page Content & Leadership
+  const { defaultAboutData } = await import('../src/data/defaultAboutData.js')
+  await prisma.platformSetting.upsert({
+    where: { key: 'about_page_content' },
+    update: { value: JSON.stringify(defaultAboutData) },
+    create: {
+      key: 'about_page_content',
+      value: JSON.stringify(defaultAboutData),
+      description: 'Public About Page & Leadership details'
+    }
   })
 
   console.log('✅ Seed completed successfully with full relational integrity!')

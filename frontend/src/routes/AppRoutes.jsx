@@ -17,6 +17,7 @@ import FaqPage from '../pages/public/FaqPage'
 import TermsPage from '../pages/public/TermsPage'
 import PrivacyPage from '../pages/public/PrivacyPage'
 import UnifiedLoginPage from '../pages/auth/UnifiedLoginPage'
+import LogoAnimationPreviewPage from '../pages/public/LogoAnimationPreviewPage'
 
 // Auth & Role Pages
 import StudentSignupPage from '../pages/student/StudentSignupPage'
@@ -45,6 +46,7 @@ export default function AppRoutes() {
         <Route path="/faq" element={<FaqPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/logo-intro" element={<LogoAnimationPreviewPage />} />
       </Route>
 
       {/* Fullscreen Video Learning Player (Student Only) */}

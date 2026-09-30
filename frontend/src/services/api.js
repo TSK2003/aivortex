@@ -109,7 +109,9 @@ export const api = {
       request('/public/contact', {
         method: 'POST',
         body: JSON.stringify(data)
-      })
+      }),
+    getAbout: () => request('/public/about'),
+    getFooter: () => request('/public/footer')
   },
 
   // Payments & Checkout (Backend is Authoritative)
@@ -353,6 +355,18 @@ export const api = {
       request('/admin/profile', {
         method: 'PATCH',
         body: JSON.stringify(profileData)
+      }),
+    getAbout: () => request('/admin/about'),
+    updateAbout: (aboutData) =>
+      request('/admin/about', {
+        method: 'PUT',
+        body: JSON.stringify(aboutData)
+      }),
+    getFooter: () => request('/admin/footer'),
+    updateFooter: (footerData) =>
+      request('/admin/footer', {
+        method: 'PUT',
+        body: JSON.stringify(footerData)
       })
   }
 }

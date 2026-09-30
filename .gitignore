@@ -35,6 +35,8 @@ temp/
 *.tmp
 *.temp
 *.bak
+audit_*.png
+mobile_*.png
 __pycache__/
 *.pyc
 

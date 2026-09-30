@@ -1,0 +1,197 @@
+/* ========================================================================= */
+/* BrandLogo Component Styles & Opening Animation                            */
+/* ========================================================================= */
+
+.brand-logo-component {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  line-height: 1;
+  user-select: none;
+  max-width: 100%;
+}
+
+/* Icon Wrap */
+.brand-logo-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  will-change: transform, opacity;
+  transform-origin: center center;
+}
+
+/* Text / Wordmark Wrap */
+.brand-logo-text-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  overflow: visible;
+  will-change: clip-path, transform, opacity;
+}
+
+.brand-logo-text-svg {
+  display: block;
+  overflow: visible;
+}
+
+/* SVG Letter & Tagline positioning tokens */
+.brand-letter,
+.brand-tagline {
+  transform-box: fill-box;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+/* ------------------------------------------------------------------------- */
+/* WAITING STATE (While Fullscreen Intro Overlay is Active)                  */
+/* ------------------------------------------------------------------------- */
+.brand-logo-waiting .brand-logo-icon-wrap,
+.brand-logo-waiting .brand-logo-text-wrap {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* ------------------------------------------------------------------------- */
+/* ANIMATED OPENING SEQUENCE FOR NAVBAR / HEADER                             */
+/* ------------------------------------------------------------------------- */
+
+/* Phase 1: Standalone A Symbol appears smoothly */
+.brand-logo-animated .brand-logo-icon-wrap {
+  opacity: 0;
+  animation: brandLogoIconIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes brandLogoIconIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Phase 2: Wordmark emerges horizontally from the right edge of the A symbol */
+.brand-logo-animated .brand-logo-text-wrap {
+  clip-path: inset(0 100% 0 0);
+  animation: brandLogoTextUnmask 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards;
+}
+
+@keyframes brandLogoTextUnmask {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    transform: translate3d(-14px, 0, 0);
+  }
+  100% {
+    clip-path: inset(0 0% 0 0);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Letter progressive staggered flow: i -> v -> o -> r -> t -> e -> x */
+.brand-logo-animated .brand-letter {
+  opacity: 0;
+  transform: translate3d(-10px, 0, 0);
+  animation: brandLetterIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes brandLetterIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(-10px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.brand-logo-animated .brand-letter-i { animation-delay: 0.28s; }
+.brand-logo-animated .brand-letter-v { animation-delay: 0.34s; }
+.brand-logo-animated .brand-letter-o { animation-delay: 0.40s; }
+.brand-logo-animated .brand-letter-r { animation-delay: 0.46s; }
+.brand-logo-animated .brand-letter-t { animation-delay: 0.52s; }
+.brand-logo-animated .brand-letter-e { animation-delay: 0.58s; }
+.brand-logo-animated .brand-letter-x { animation-delay: 0.64s; }
+
+/* Phase 3: LEARN. GROW. INNOVATE. reveals at the down */
+.brand-logo-animated .brand-tagline {
+  opacity: 0;
+  transform: translate3d(0, 7px, 0);
+  animation: brandTaglineIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.70s forwards;
+}
+
+@keyframes brandTaglineIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 7px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* ------------------------------------------------------------------------- */
+/* SETTLED / DONE / STATIC STATE                                             */
+/* ------------------------------------------------------------------------- */
+.brand-logo-component:not(.brand-logo-animated):not(.brand-logo-waiting) .brand-logo-icon-wrap,
+.brand-logo-component:not(.brand-logo-animated):not(.brand-logo-waiting) .brand-logo-text-wrap,
+.brand-logo-component:not(.brand-logo-animated):not(.brand-logo-waiting) .brand-letter,
+.brand-logo-component:not(.brand-logo-animated):not(.brand-logo-waiting) .brand-tagline {
+  opacity: 1 !important;
+  visibility: visible !important;
+  clip-path: none !important;
+  transform: none !important;
+}
+
+/* Micro-interaction on hover */
+.brand-logo-component:hover .brand-logo-icon-wrap {
+  transform: scale(1.04);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ------------------------------------------------------------------------- */
+/* RESPONSIVE SCALING FOR MOBILE & SMALL VIEWPORTS                           */
+/* ------------------------------------------------------------------------- */
+.brand-logo-component {
+  --logo-scale: 1;
+}
+
+@media (max-width: 640px) {
+  .brand-logo-component {
+    --logo-scale: 0.82;
+  }
+}
+
+@media (max-width: 400px) {
+  .brand-logo-component {
+    --logo-scale: 0.72;
+  }
+}
+
+@media (max-width: 340px) {
+  .brand-logo-component {
+    --logo-scale: 0.65;
+  }
+}
+
+/* ------------------------------------------------------------------------- */
+/* ACCESSIBILITY: REDUCED MOTION                                             */
+/* ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .brand-logo-animated .brand-logo-icon-wrap,
+  .brand-logo-animated .brand-logo-text-wrap,
+  .brand-logo-animated .brand-letter,
+  .brand-logo-animated .brand-tagline {
+    animation: none !important;
+    clip-path: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+}

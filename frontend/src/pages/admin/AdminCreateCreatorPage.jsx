@@ -588,7 +588,7 @@ export default function AdminCreateCreatorPage() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) 360px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
           gap: 28,
           alignItems: 'start'
         }}

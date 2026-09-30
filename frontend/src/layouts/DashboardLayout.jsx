@@ -55,7 +55,7 @@ const ADMIN_NAV_SECTIONS = [
   {
     title: 'CONTENT / PLATFORM',
     items: [
-      { path: '/admin/public-page', label: 'Public Page Management', icon: Globe },
+      { path: '/admin/public-page', label: 'Public Pages & Footer CMS', icon: Globe },
       { path: '/admin/notifications', label: 'Notifications', icon: Bell },
     ]
   },
@@ -180,7 +180,7 @@ export default function DashboardLayout({ role = 'student' }) {
           <button
             className="btn-ghost sidebar-close-mobile"
             onClick={() => setSidebarOpen(false)}
-            style={{ display: 'none' }}
+            aria-label="Close Sidebar"
           >
             <X size={20} />
           </button>
@@ -427,6 +427,7 @@ export default function DashboardLayout({ role = 'student' }) {
 
       {/* Main content area */}
       <div className="dashboard-main">
+        {/* Topbar: Use AdminHeader for Admin role; default topbar for student & creator */}
         {/* Single Topbar: Admin uses specialized AdminHeader; Student and Creator use dashboard-topbar */}
         {role === 'admin' ? (
           <AdminHeader
@@ -442,6 +443,7 @@ export default function DashboardLayout({ role = 'student' }) {
                 type="button"
                 className="btn-ghost mobile-sidebar-toggle"
                 onClick={() => setSidebarOpen(true)}
+                aria-label="Open Sidebar"
                 aria-label="Toggle Navigation Sidebar"
               >
                 <Menu size={20} />
@@ -453,6 +455,7 @@ export default function DashboardLayout({ role = 'student' }) {
             <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <NotificationDropdown />
               <div style={{ width: 1, height: 22, background: '#E2E8F0' }} />
+              <span className="topbar-session-badge" style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
               <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
             </div>
           </header>

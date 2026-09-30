@@ -2140,4 +2140,127 @@ export async function updateAdminProfile(req, res, next) {
   }
 }
 
+import defaultAboutData from '../data/defaultAboutData.js'
+import { defaultFooterData } from '../data/defaultFooterData.js'
+
+export async function getAdminAboutContent(req, res, next) {
+  try {
+    const setting = await prisma.platformSetting.findUnique({
+      where: { key: 'about_page_content' }
+    })
+
+    let content = defaultAboutData
+    if (setting?.value) {
+      try {
+        content = JSON.parse(setting.value)
+      } catch (e) {
+        content = defaultAboutData
+      }
+    }
+
+    return successResponse(res, { about: content }, 'About content retrieved successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updateAdminAboutContent(req, res, next) {
+  try {
+    const aboutData = req.body
+    if (!aboutData || typeof aboutData !== 'object') {
+      throw new BadRequestError('Invalid about content data format')
+    }
+
+    const jsonValue = JSON.stringify(aboutData)
+
+    const setting = await prisma.platformSetting.upsert({
+      where: { key: 'about_page_content' },
+      update: {
+        value: jsonValue,
+        description: 'Public About Page & Leadership details'
+      },
+      create: {
+        key: 'about_page_content',
+        value: jsonValue,
+        description: 'Public About Page & Leadership details'
+      }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'ABOUT_PAGE_UPDATED',
+        entityType: 'PlatformSetting',
+        entityId: setting.id,
+        details: `Admin ${req.user.email} updated public About page and leadership configurations`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    })
+
+    return successResponse(res, { about: aboutData }, 'About page content updated successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getAdminFooterContent(req, res, next) {
+  try {
+    const setting = await prisma.platformSetting.findUnique({
+      where: { key: 'footer_content' }
+    })
+
+    let content = defaultFooterData
+    if (setting?.value) {
+      try {
+        content = JSON.parse(setting.value)
+      } catch (e) {
+        content = defaultFooterData
+      }
+    }
+
+    return successResponse(res, { footer: content }, 'Footer content retrieved successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updateAdminFooterContent(req, res, next) {
+  try {
+    const footerData = req.body
+    if (!footerData || typeof footerData !== 'object') {
+      throw new BadRequestError('Invalid footer content data format')
+    }
+
+    const jsonValue = JSON.stringify(footerData)
+
+    const setting = await prisma.platformSetting.upsert({
+      where: { key: 'footer_content' },
+      update: {
+        value: jsonValue,
+        description: 'Public Footer Navigation & Brand Details'
+      },
+      create: {
+        key: 'footer_content',
+        value: jsonValue,
+        description: 'Public Footer Navigation & Brand Details'
+      }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'FOOTER_CONTENT_UPDATED',
+        entityType: 'PlatformSetting',
+        entityId: setting.id,
+        details: `Admin ${req.user.email} updated public Footer navigation and links`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    })
+
+    return successResponse(res, { footer: footerData }, 'Footer content updated successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+
 

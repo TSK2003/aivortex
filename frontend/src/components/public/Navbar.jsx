@@ -99,7 +99,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Navigation Links */}
-        <nav style={{ flexGrow: 1, display: 'flex', justifyContent: 'center', margin: '0 16px' }}>
+        <nav className="desktop-nav-wrap" style={{ flexGrow: 1, display: 'flex', justifyContent: 'center', margin: '0 16px' }}>
           <ul className="nav-menu" style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px, 1.3vw, 22px)', margin: 0, padding: 0 }}>
             {navLinks.map((link) => (
               <li key={link.to}>
@@ -269,7 +269,7 @@ export default function Navbar() {
               </div>
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="header-guest-actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <Link to="/login" className="btn btn-outline-blue btn-sm" id="header-btn-login" style={{ padding: '7px 18px', fontWeight: 600 }} onClick={handleNavClick}>
                 Login
               </Link>

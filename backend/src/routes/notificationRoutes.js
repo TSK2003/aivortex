@@ -11,7 +11,7 @@ import { requireAuth } from '../middleware/authMiddleware.js'
 
 const router = Router()
 
-router.use(requireAuth)
+router.use(['/notifications', '/tickets'], requireAuth)
 
 router.get('/notifications', getNotifications)
 router.patch('/notifications/mark-all-read', markAllNotificationsAsRead)
