@@ -57,6 +57,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import api from '../../services/api'
 import VideoModal from '../../components/modals/VideoModal'
+import { initialCourses } from '../../data/initialData'
 
 const INITIAL_CREATOR_MESSAGES = [
   {
@@ -404,10 +405,11 @@ export default function CreatorDashboardPage() {
         api.creator.getProfile()
       ])
 
-      if (coursesRes.status === 'fulfilled' && coursesRes.value?.data?.courses) {
+      if (coursesRes.status === 'fulfilled' && Array.isArray(coursesRes.value?.data?.courses) && coursesRes.value.data.courses.length > 0) {
         setAssignedCourses(coursesRes.value.data.courses)
       } else {
-        setAssignedCourses([])
+        // Fallback to initialCourses so creator always has structured masterclasses ready in Studio
+        setAssignedCourses(initialCourses.slice(0, 3))
       }
 
       if (subsRes.status === 'fulfilled' && subsRes.value?.data?.submissions) {
@@ -1296,60 +1298,6 @@ export default function CreatorDashboardPage() {
   // Alias for backward compatibility
   const handleProfileChangeRequest = (e) => handleSubmitChangeRequest(e, 'HEADLINE_BIO')
 
-      {/* Tab 1: Assigned Courses */}
-      {activeTab === 'courses' && (
-        <>
-          {assignedCourses.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 20 }}>
-              {assignedCourses.map((c) => (
-                <div
-                  key={c.id}
-                  style={{
-                    background: '#FFFFFF',
-                    borderRadius: 'var(--radius-lg)',
-                    border: '1px solid var(--color-border)',
-                    overflow: 'hidden',
-                    boxShadow: 'var(--shadow-sm)'
-                  }}
-                >
-                  <img src={c.thumbnail} alt={c.title} style={{ width: '100%', height: 160, objectFit: 'cover' }} />
-                  <div style={{ padding: 20 }}>
-                    <span className="badge badge-popular" style={{ marginBottom: 8, display: 'inline-block' }}>
-                      {c.category} • Assigned Lead Creator
-                    </span>
-                    <h3 style={{ fontSize: '1.2rem', marginBottom: 8 }}>{c.title}</h3>
-                    <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginBottom: 16 }}>
-                      {c.shortDescription}
-                    </p>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#64748B' }}>
-                        {c.playlists?.length || 0} Modules • {c.lessonsCount || 0} Total Lessons
-                      </span>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => {
-                          setNewPlaylistCourse(c.id)
-                          setActiveTab('playlists')
-                        }}
-                      >
-                        <span>Manage Content</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '60px 20px', background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
-              <BookOpen style={{ width: 48, height: 48, color: '#94A3B8', margin: '0 auto 16px auto' }} />
-              <h3 style={{ fontSize: '1.25rem', marginBottom: 8, fontWeight: 700 }}>No Courses Assigned Yet</h3>
-              <p style={{ color: 'var(--color-text-secondary)', maxWidth: 500, margin: '0 auto' }}>
-                When the Administrator assigns a course curriculum to your Creator profile, it will appear here for syllabus creation and lecture uploads.
-              </p>
-            </div>
-          )}
-        </>
-      )}
   // 2. Verify Email OTP submit handler
   const handleVerifyEmailSubmit = async (e) => {
     e.preventDefault()
