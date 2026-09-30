@@ -91,7 +91,7 @@ export default function PaymentModal({ course, isOpen, onClose, onSuccess }) {
           key: keyId,
           amount: Math.round(amount * 100),
           currency: 'INR',
-          name: 'ApexLearn Institute',
+          name: 'aivortex',
           description: course.title,
           order_id: razorpayOrderId,
           handler: async function (response) {
@@ -163,9 +163,10 @@ export default function PaymentModal({ course, isOpen, onClose, onSuccess }) {
       <div className="razorpay-frame" onClick={(e) => e.stopPropagation()}>
         {/* Razorpay Header */}
         <div className="razorpay-header">
-          <div className="razorpay-brand">
-            <ShieldCheck style={{ color: '#38BDF8', width: 22, height: 22 }} />
-            <span>ApexLearn Checkout</span>
+          <div className="razorpay-brand" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <img src="/company-logo-transparent.png" alt="aivortex" style={{ height: 20, width: 'auto', filter: 'brightness(0) invert(1)' }} />
+            <img src="/company-name-white.png" alt="aivortex" style={{ height: 16, width: 'auto' }} />
+            <span style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 600 }}>Checkout</span>
           </div>
           <button
             id="btn-close-razorpay"

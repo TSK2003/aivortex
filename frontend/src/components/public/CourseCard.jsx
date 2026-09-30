@@ -67,6 +67,12 @@ export default function CourseCard({ course, onViewDetails, onSelectCourse, onEn
 
           <div className="course-card-meta">
             <span className="meta-text">{levelText}</span>
+            {course.language && (
+              <>
+                <span className="meta-dot">•</span>
+                <span className="meta-text">{course.language}</span>
+              </>
+            )}
             <span className="meta-dot">•</span>
             <span className="meta-text">{durationText}</span>
             <span className="meta-dot">•</span>

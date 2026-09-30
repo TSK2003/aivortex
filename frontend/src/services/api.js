@@ -31,7 +31,7 @@ async function request(endpoint, options = {}) {
     return json
   } catch (err) {
     if (err.name === 'TypeError' && err.message.includes('fetch')) {
-      throw new Error('Unable to connect to ApexLearn API backend. Please ensure the server is running on port 5000.')
+      throw new Error('Unable to connect to aivortex API backend. Please ensure the server is running on port 5000.')
     }
     throw err
   }
@@ -109,7 +109,9 @@ export const api = {
       request('/public/contact', {
         method: 'POST',
         body: JSON.stringify(data)
-      })
+      }),
+    getAbout: () => request('/public/about'),
+    getFooter: () => request('/public/footer')
   },
 
   // Payments & Checkout (Backend is Authoritative)
@@ -167,21 +169,41 @@ export const api = {
       }),
     getNotifications: () => request('/student/notifications'),
     markNotificationRead: (id) =>
-      request(`/student/notifications/${id}/read`, { method: 'PATCH' })
+      request(`/student/notifications/${id}/read`, { method: 'PATCH' }),
+    markAllNotificationsRead: () =>
+      request('/student/notifications/mark-all-read', { method: 'PATCH' })
   },
 
   // Creator Workshop
   creator: {
     getCourses: () => request('/creator/courses'),
-    createPlaylist: (courseId, title, description) =>
+    createPlaylist: (courseId, title, description, orderIndex = 1) =>
       request('/creator/playlists', {
         method: 'POST',
-        body: JSON.stringify({ courseId, title, description })
+        body: JSON.stringify({ courseId, title, description, orderIndex })
+      }),
+    updatePlaylist: (playlistId, data) =>
+      request(`/creator/playlists/${playlistId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      }),
+    deletePlaylist: (playlistId) =>
+      request(`/creator/playlists/${playlistId}`, {
+        method: 'DELETE'
       }),
     uploadVideo: (videoData) =>
       request('/creator/videos', {
         method: 'POST',
         body: JSON.stringify(videoData)
+      }),
+    updateLesson: (lessonId, data) =>
+      request(`/creator/videos/${lessonId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      }),
+    deleteLesson: (lessonId) =>
+      request(`/creator/videos/${lessonId}`, {
+        method: 'DELETE'
       }),
     submitVideoForReview: (lessonId) =>
       request(`/creator/videos/${lessonId}/submit`, { method: 'POST' }),
@@ -191,12 +213,24 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data)
       }),
+    getProfile: () => request('/creator/profile'),
+    getRequests: () => request('/creator/requests'),
     requestProfileChange: (profileData) =>
       request('/creator/profile-request', {
         method: 'POST',
         body: JSON.stringify(profileData)
       }),
-    getProfileRequests: () => request('/creator/profile-requests')
+    verifyEmailChange: (data) =>
+      request('/creator/verify-email-change', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    completePasswordChange: (data) =>
+      request('/creator/complete-password-change', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    getProfileRequests: () => request('/creator/profile')
   },
 
   // Admin Governance
@@ -205,6 +239,10 @@ export const api = {
     getCreators: (params = {}) => {
       const query = new URLSearchParams(params).toString()
       return request(`/admin/creators${query ? `?${query}` : ''}`)
+    },
+    getNextCreatorUserId: (name = '') => {
+      const query = name && name.trim() ? `?name=${encodeURIComponent(name.trim())}` : ''
+      return request(`/admin/creators/next-user-id${query}`)
     },
     getCreator: (id) => request(`/admin/creators/${id}`),
     createCreator: (creatorData) =>
@@ -276,7 +314,8 @@ export const api = {
       }),
     deleteOffer: (id) =>
       request(`/admin/offers/${id}`, { method: 'DELETE' }),
-    getVideoVerificationQueue: () => request('/admin/video-verification'),
+    getVideoVerificationQueue: (status) =>
+      request(status ? `/admin/video-verification?status=${encodeURIComponent(status)}` : '/admin/video-verification'),
     reviewVideo: (lessonId, action, feedbackNote) =>
       request(`/admin/video-verification/${lessonId}/review`, {
         method: 'POST',
@@ -295,7 +334,7 @@ export const api = {
     reviewRequest: (requestId, action, reason) =>
       request(`/admin/requests/${requestId}/review`, {
         method: 'POST',
-        body: JSON.stringify({ action, reason })
+        body: JSON.stringify({ action, reason, adminNote: reason })
       }),
     broadcastAnnouncement: (title, message, targetRole) =>
       request('/admin/announcements', {
@@ -316,6 +355,18 @@ export const api = {
       request('/admin/profile', {
         method: 'PATCH',
         body: JSON.stringify(profileData)
+      }),
+    getAbout: () => request('/admin/about'),
+    updateAbout: (aboutData) =>
+      request('/admin/about', {
+        method: 'PUT',
+        body: JSON.stringify(aboutData)
+      }),
+    getFooter: () => request('/admin/footer'),
+    updateFooter: (footerData) =>
+      request('/admin/footer', {
+        method: 'PUT',
+        body: JSON.stringify(footerData)
       })
   }
 }

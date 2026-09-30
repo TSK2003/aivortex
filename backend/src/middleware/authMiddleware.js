@@ -15,6 +15,11 @@ export function requireAuth(req, res, next) {
       token = req.headers.authorization.split(' ')[1]
     }
 
+    // 3. Check query param token (useful for streaming uploads / media downloads)
+    if (!token && req.query && req.query.token) {
+      token = req.query.token
+    }
+
     if (!token) {
       throw new UnauthorizedError('Authentication required. Please sign in.')
     }

@@ -2,8 +2,11 @@
  * Application Constants
  */
 
-export const APP_NAME = 'ApexLearn'
-export const APP_SUBTITLE = 'INSTITUTE OF TECH & AI'
+export const APP_NAME = 'aivortex'
+export const APP_SUBTITLE = 'LEARN. GROW. INNOVATE.'
+export const APP_FAVICON = '/favicon.png'
+export const APP_LOGO = '/company-logo.png'
+export const APP_NAME_IMG = '/company-name.png'
 
 export const ROLES = {
   ADMIN: 'admin',

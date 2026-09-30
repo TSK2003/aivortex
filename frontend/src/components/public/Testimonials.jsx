@@ -5,15 +5,15 @@ export default function Testimonials({ testimonials = initialTestimonials }) {
     <section className="section section-alt" id="testimonials" style={{ padding: '44px 0 52px 0' }}>
       <div className="container">
         <div className="section-header text-center" style={{ maxWidth: 760, margin: '0 auto 28px auto' }}>
-          <h2 className="section-title" style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 12 }}>
+          <h2 className="section-title" style={{ fontSize: 'clamp(1.5rem, 5vw, 2.25rem)', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 12 }}>
             REAL STORIES FROM <span className="highlight-blue" style={{ color: '#2563EB' }}>OUR LEARNERS</span>
           </h2>
           <p className="section-subtitle" style={{ fontSize: '1.05rem', color: '#64748B', lineHeight: 1.6 }}>
-            Hear directly from data scientists, machine learning engineers, and developers who advanced their engineering careers with ApexLearn.
+            Hear directly from data scientists, machine learning engineers, and developers who advanced their engineering careers with aivortex.
           </p>
         </div>
 
-        <div className="testimonials-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 28 }}>
+        <div className="testimonials-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 28 }}>
           {testimonials.map((item) => (
             <div
               key={item.id}

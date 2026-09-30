@@ -1,67 +1,122 @@
-import { Link } from 'react-router-dom'
-import { GraduationCap, ShieldCheck } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import BrandLogo from '../common/BrandLogo'
+import api from '../../services/api'
+import defaultFooterData from '../../data/defaultFooterData'
 
 export default function Footer() {
+  const location = useLocation()
+  const [footer, setFooter] = useState(defaultFooterData)
+
+  useEffect(() => {
+    let isMounted = true
+    async function fetchFooter() {
+      try {
+        const res = await api.public.getFooter()
+        if (isMounted && res.data?.footer) {
+          setFooter(res.data.footer)
+        }
+      } catch (err) {
+        console.warn('Using default footer data:', err.message)
+      }
+    }
+    fetchFooter()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const handleHomeClick = (e) => {
+    if (location.pathname === '/') {
+      e.preventDefault()
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+      document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+      if (document.body) document.body.scrollTop = 0
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+      document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+      if (document.body) document.body.scrollTop = 0
+    }
+  }
+
+  const handleLinkClick = (path) => (e) => {
+    if (location.pathname === path) {
+      e.preventDefault()
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+      document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+      if (document.body) document.body.scrollTop = 0
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+      document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+      if (document.body) document.body.scrollTop = 0
+    }
+  }
+
   return (
     <footer className="site-footer">
       <div className="container">
         <div className="footer-grid">
           {/* Col 1: Brand & Bio */}
           <div className="footer-brand">
-            <Link to="/" className="brand-logo footer-logo">
-              <div className="brand-icon">
-                <GraduationCap style={{ width: 20, height: 20 }} />
-              </div>
-              <div>
-                ApexLearn
-                <span className="brand-name-sub">INSTITUTE OF TECH & AI</span>
-              </div>
+            <Link to="/" onClick={handleHomeClick} style={{ textDecoration: 'none', display: 'inline-block', marginBottom: 12 }}>
+              <BrandLogo size="md" animated={false} />
             </Link>
             <p className="footer-desc">
-              A premier technical education platform empowering aspiring data scientists, AI engineers, and software developers through hands-on domain projects, live weekend cohorts, and verified certifications.
+              {footer.brandDesc || defaultFooterData.brandDesc}
             </p>
-            <div className="footer-cert-badge">
-              <ShieldCheck style={{ width: 16, height: 16, color: 'var(--color-success)' }} />
-              <span>ISO 9001:2015 Certified Educational Provider</span>
-            </div>
           </div>
 
           {/* Col 2: Quick Links */}
           <div>
-            <h4 className="footer-heading">Quick Links</h4>
+            <h4 className="footer-heading">{footer.quickLinksTitle || 'Quick Links'}</h4>
             <ul className="footer-links">
-              <li><Link to="/" className="footer-link">Home</Link></li>
-              <li><Link to="/courses" className="footer-link">Courses Catalog</Link></li>
-              <li><Link to="/projects" className="footer-link">Domain Projects</Link></li>
-              <li><Link to="/live-sessions" className="footer-link">Live Weekend Cohorts</Link></li>
-              <li><Link to="/about" className="footer-link">About ApexLearn</Link></li>
-              <li><Link to="/certificates" className="footer-link">Certificates & Verification</Link></li>
+              {(footer.quickLinks || defaultFooterData.quickLinks).map((link, idx) => (
+                <li key={idx}>
+                  <Link
+                    to={link.path}
+                    className="footer-link"
+                    onClick={link.path === '/' ? handleHomeClick : handleLinkClick(link.path)}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Col 3: Learning Paths */}
+          {/* Col 3: Our Courses */}
           <div>
-            <h4 className="footer-heading">Technology Paths</h4>
+            <h4 className="footer-heading">{footer.coursesTitle || 'Our Courses'}</h4>
             <ul className="footer-links">
-              <li><Link to="/courses" className="footer-link">Python for Data Science</Link></li>
-              <li><Link to="/courses" className="footer-link">Artificial Intelligence & LLMs</Link></li>
-              <li><Link to="/courses" className="footer-link">Applied Machine Learning</Link></li>
-              <li><Link to="/courses" className="footer-link">Web & Full-Stack Development</Link></li>
-              <li><Link to="/courses" className="footer-link">Cloud & MLOps Infrastructure</Link></li>
-              <li><Link to="/courses" className="footer-link">Algorithmic Quant Trading</Link></li>
+              {(footer.coursesLinks || defaultFooterData.coursesLinks).map((link, idx) => (
+                <li key={idx}>
+                  <Link
+                    to={link.path}
+                    className="footer-link"
+                    onClick={handleLinkClick(link.path)}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Col 4: Support & Security */}
+          {/* Col 4: Contact Us */}
           <div>
-            <h4 className="footer-heading">Support & Legal</h4>
+            <h4 className="footer-heading">{footer.contactTitle || 'Contact Us'}</h4>
             <ul className="footer-links">
-              <li><Link to="/login" className="footer-link">Portal Login</Link></li>
-              <li><Link to="/student/signup" className="footer-link">Student Registration</Link></li>
-              <li><Link to="/about" className="footer-link">About Us</Link></li>
-              <li><Link to="/contact" className="footer-link">Contact Support</Link></li>
-              <li><Link to="/privacy" className="footer-link">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="footer-link">Terms & Conditions</Link></li>
+              {(footer.contactLinks || defaultFooterData.contactLinks).map((link, idx) => (
+                <li key={idx}>
+                  <Link
+                    to={link.path}
+                    className="footer-link"
+                    onClick={handleLinkClick(link.path)}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
@@ -69,7 +124,7 @@ export default function Footer() {
         {/* Footer Bottom Bar */}
         <div className="footer-bottom-bar">
           <p className="copyright-text">
-            © 2026 ApexLearn Institute of Technology & AI. All rights reserved.
+            {footer.copyrightText || `© ${new Date().getFullYear()} Aivortex. All rights reserved. • Learn. Grow. Innovate.`}
           </p>
         </div>
       </div>

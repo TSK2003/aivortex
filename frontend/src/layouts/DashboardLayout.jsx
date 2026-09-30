@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
+import NotificationDropdown from '../components/common/NotificationDropdown'
+import BrandLogo from '../components/common/BrandLogo'
 import api from '../services/api'
 import AdminHeader from '../components/admin/AdminHeader'
+import SidebarAccountControl from '../components/common/SidebarAccountControl'
 import {
   LayoutDashboard,
   Users,
@@ -19,6 +23,11 @@ import {
   LogOut,
   Menu,
   X,
+  FolderGit2,
+  Video,
+  Award,
+  Sparkles,
+  Settings
 } from 'lucide-react'
 
 /**
@@ -39,14 +48,14 @@ const ADMIN_NAV_SECTIONS = [
       { path: '/admin/creators', label: 'Creator Management', icon: Users },
       { path: '/admin/students', label: 'Student Management', icon: GraduationCap },
       { path: '/admin/courses', label: 'Course Management', icon: BookOpen },
-      { path: '/admin/playlists', label: 'Playlist & Video Management', icon: ListVideo, badgeKey: 'pendingVideos' },
+      { path: '/admin/playlists', label: 'Content Review', icon: ListVideo, badgeKey: 'pendingVideos' },
       { path: '/admin/payments', label: 'Payments & Enrollments', icon: CreditCard },
     ]
   },
   {
     title: 'CONTENT / PLATFORM',
     items: [
-      { path: '/admin/public-page', label: 'Public Page Management', icon: Globe },
+      { path: '/admin/public-page', label: 'Public Pages & Footer CMS', icon: Globe },
       { path: '/admin/notifications', label: 'Notifications', icon: Bell },
     ]
   },
@@ -66,23 +75,35 @@ const ADMIN_NAV_SECTIONS = [
   }
 ]
 
-const CREATOR_NAV = [
-  { path: '/creator/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/creator/upload', label: 'Upload Section', icon: ListVideo },
-  { path: '/creator/profile', label: 'Profile', icon: Users },
+const CREATOR_NAV_SECTIONS = [
+  {
+    title: '',
+    items: [
+      { path: '/creator/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/creator/courses', label: 'My Courses', icon: BookOpen },
+      { path: '/creator/analytics', label: 'Analytics', icon: BarChart3 },
+      { path: '/creator/earnings', label: 'Earnings', icon: CreditCard },
+      { path: '/creator/messages', label: 'Messages', icon: MessageSquare, badgeKey: 'feedbackCount' },
+      { path: '/creator/profile', label: 'Settings', icon: Settings },
+    ]
+  }
 ]
 
 const STUDENT_NAV = [
   { path: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/student/courses', label: 'My Courses', icon: BookOpen },
+  { path: '/student/projects', label: 'Capstone Projects', icon: FolderGit2 },
+  { path: '/student/live-sessions', label: 'Live Sessions', icon: Video },
   { path: '/student/certificates', label: 'Certificates', icon: GraduationCap },
-  { path: '/student/payments', label: 'Payments', icon: CreditCard },
-  { path: '/student/support', label: 'Help & Support', icon: MessageSquare },
-  { path: '/student/profile', label: 'My Profile', icon: Users },
+  { path: '/student/payments', label: 'Invoices & Billing', icon: CreditCard },
+  { path: '/student/notifications', label: 'Notifications', icon: Bell },
+  { path: '/student/support', label: 'Support & Queries', icon: MessageSquare },
+  { path: '/student/profile', label: 'Account Profile', icon: Users },
 ]
 
 export default function DashboardLayout({ role = 'student' }) {
   const { user, logout } = useAuth()
+  const { isDark } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -93,6 +114,11 @@ export default function DashboardLayout({ role = 'student' }) {
     pendingVideos: 0,
     pendingRequests: 0,
     recentOrders: 0
+  })
+
+  // Live creator metrics for feedback/changes requested badge
+  const [creatorMetrics, setCreatorMetrics] = useState({
+    feedbackCount: 0
   })
 
   useEffect(() => {
@@ -107,7 +133,15 @@ export default function DashboardLayout({ role = 'student' }) {
             })
           }
         })
-        .catch(() => {})
+        .catch(() => { })
+    } else if (role === 'creator') {
+      api.creator.getSubmissions()
+        .then((res) => {
+          const subs = res?.data?.submissions || []
+          const changesReq = subs.filter((s) => s.status === 'RETURNED_FOR_EDIT').length
+          setCreatorMetrics({ feedbackCount: changesReq })
+        })
+        .catch(() => { })
     }
   }, [role, location.pathname])
 
@@ -140,23 +174,20 @@ export default function DashboardLayout({ role = 'student' }) {
       {/* Sidebar */}
       <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-header">
-          <a href="/" className="brand-logo" style={{ textDecoration: 'none' }}>
-            <div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>ApexLearn</div>
-              <span className="brand-name-sub" style={{ fontSize: '0.65rem', color: 'var(--color-secondary)', fontWeight: 700, letterSpacing: '0.08em' }}>INSTITUTE OF TECH & AI</span>
-            </div>
+          <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <BrandLogo size="sm" theme={isDark ? 'dark' : 'light'} />
           </a>
           <button
             className="btn-ghost sidebar-close-mobile"
             onClick={() => setSidebarOpen(false)}
-            style={{ display: 'none' }}
+            aria-label="Close Sidebar"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* User card (displayed only for student/creator, admin profile is exclusively in the top-right header) */}
-        {role !== 'admin' && (
+        {/* User card (displayed only for student, admin and creator profiles are placed at the sidebar bottom) */}
+        {role === 'student' && (
           <div className="sidebar-user-card">
             <div
               className="sidebar-user-avatar"
@@ -196,21 +227,38 @@ export default function DashboardLayout({ role = 'student' }) {
         {/* Navigation */}
         <nav
           className="sidebar-nav"
-          style={role === 'admin' ? { paddingTop: '16px', paddingBottom: '20px' } : undefined}
+          style={role === 'admin' || role === 'creator' ? { paddingTop: '16px', paddingBottom: '20px' } : undefined}
         >
-          {role === 'admin' ? (
-            // Admin Organised Sections: MAIN, MANAGEMENT, CONTENT, ANALYTICS, SYSTEM
-            ADMIN_NAV_SECTIONS.map((section, sIndex) => (
-              <div key={section.title} style={{ marginBottom: 8 }}>
-                <div
-                  className="sidebar-section-header"
-                  style={sIndex === 0 ? { paddingTop: '4px' } : undefined}
-                >
-                  {section.title}
-                </div>
+          {role === 'admin' || role === 'creator' ? (
+            // Admin & Creator Organised Sections
+            (role === 'admin' ? ADMIN_NAV_SECTIONS : CREATOR_NAV_SECTIONS).map((section, sIndex) => (
+              <div
+                key={section.title || `sec-${sIndex}`}
+                style={{
+                  marginBottom: 6,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2
+                }}
+              >
+                {section.title ? (
+                  <div
+                    className="sidebar-section-header"
+                    style={{
+                      paddingTop: sIndex === 0 ? '4px' : '10px',
+                      paddingBottom: '4px',
+                      paddingLeft: '14px',
+                      paddingRight: '14px'
+                    }}
+                  >
+                    {section.title}
+                  </div>
+                ) : null}
                 {section.items.map((item) => {
                   const Icon = item.icon
-                  const badgeValue = item.badgeKey ? adminMetrics[item.badgeKey] : 0
+                  const badgeValue = item.badgeKey
+                    ? (role === 'admin' ? adminMetrics[item.badgeKey] : creatorMetrics[item.badgeKey])
+                    : 0
 
                   return (
                     <NavLink
@@ -225,7 +273,7 @@ export default function DashboardLayout({ role = 'student' }) {
                       {Icon && <Icon size={18} className="sidebar-nav-icon" style={{ flexShrink: 0 }} />}
                       <span>{item.label}</span>
                       {badgeValue > 0 && (
-                        <span className={`sidebar-badge ${item.badgeKey === 'pendingVideos' ? 'badge-amber' : ''}`}>
+                        <span className="sidebar-badge badge-amber">
                           {badgeValue}
                         </span>
                       )}
@@ -235,8 +283,8 @@ export default function DashboardLayout({ role = 'student' }) {
               </div>
             ))
           ) : (
-            // Student & Creator Nav
-            (role === 'creator' ? CREATOR_NAV : STUDENT_NAV).map((item) => {
+            // Student Nav
+            STUDENT_NAV.map((item) => {
               const Icon = item.icon
               return (
                 <NavLink
@@ -255,67 +303,135 @@ export default function DashboardLayout({ role = 'student' }) {
           )}
         </nav>
 
-        {/* Logout */}
-        <div style={{ marginTop: 'auto', padding: '14px', borderTop: '1px solid var(--color-border, #E2E8F0)' }}>
-          <button
-            type="button"
-            onClick={handleLogout}
+        {/* Student Academic Standing & Quick Support Card */}
+        {role === 'student' && (
+          <div
             style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 14px',
-              background: '#FEF2F2',
-              border: '1px solid #FECACA',
-              borderRadius: '10px',
-              color: '#DC2626',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: '0.875rem',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 1px 2px rgba(220, 38, 38, 0.05)',
-              boxSizing: 'border-box'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#FEE2E2'
-              e.currentTarget.style.borderColor = '#F87171'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#FEF2F2'
-              e.currentTarget.style.borderColor = '#FECACA'
+              margin: '12px 14px 10px 14px',
+              padding: '14px',
+              background: 'linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%)',
+              borderRadius: '12px',
+              border: '1px solid #DBEAFE',
+              boxShadow: '0 2px 4px rgba(37, 99, 235, 0.04)',
+              flexShrink: 0
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <div
                 style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 6,
-                  background: '#FEE2E2',
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  background: '#DBEAFE',
+                  color: '#2563EB',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#DC2626',
                   flexShrink: 0
                 }}
               >
-                <LogOut size={15} />
+                <Award size={16} />
               </div>
-              <span className="sidebar-logout-text" style={{ letterSpacing: '0.01em' }}>Log Out</span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#1E293B', lineHeight: 1.2 }}>
+                  Verified Scholar
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600 }}>
+                  Institute of Tech & AI
+                </div>
+              </div>
             </div>
-          </button>
-        </div>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingTop: 8,
+                borderTop: '1px solid #E2E8F0',
+                fontSize: '0.72rem',
+                color: '#64748B'
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981' }} />
+                Academic Track
+              </span>
+              <span style={{ fontWeight: 700, color: '#2563EB' }}>Active</span>
+            </div>
+          </div>
+        )}
+
+        {/* Sidebar Bottom Account Control (Admin & Creator use unified compact account row + upward popover; Student uses standard logout) */}
+        {role === 'admin' || role === 'creator' ? (
+          <SidebarAccountControl
+            user={user}
+            role={role}
+            collapsed={sidebarCollapsed}
+            onLogout={handleLogout}
+          />
+        ) : (
+          <div style={{ marginTop: 'auto', padding: '14px', borderTop: '1px solid var(--color-border, #E2E8F0)' }}>
+            <button
+              type="button"
+              onClick={handleLogout}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                background: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
+                border: `1px solid ${isDark ? 'rgba(239, 68, 68, 0.25)' : '#FECACA'}`,
+                borderRadius: '10px',
+                color: isDark ? '#F87171' : '#DC2626',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                transition: 'background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease',
+                boxShadow: '0 1px 2px rgba(220, 38, 38, 0.05)',
+                boxSizing: 'border-box'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2'
+                e.currentTarget.style.borderColor = isDark ? 'rgba(239, 68, 68, 0.4)' : '#F87171'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2'
+                e.currentTarget.style.borderColor = isDark ? 'rgba(239, 68, 68, 0.25)' : '#FECACA'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: isDark ? '#F87171' : '#DC2626',
+                    flexShrink: 0,
+                    transition: 'background-color 0.3s ease, color 0.3s ease'
+                  }}
+                >
+                  <LogOut size={15} />
+                </div>
+                <span className="sidebar-logout-text" style={{ letterSpacing: '0.01em' }}>Log Out</span>
+              </div>
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Main content area */}
       <div className="dashboard-main">
         {/* Topbar: Use AdminHeader for Admin role; default topbar for student & creator */}
+        {/* Single Topbar: Admin uses specialized AdminHeader; Student and Creator use dashboard-topbar */}
         {role === 'admin' ? (
           <AdminHeader
             onToggleSidebar={handleToggleSidebar}
-            user={user}
-            onLogout={handleLogout}
             pendingVideosCount={adminMetrics.pendingVideos}
             pendingRequestsCount={adminMetrics.pendingRequests}
             recentOrdersCount={adminMetrics.recentOrders}
@@ -324,8 +440,10 @@ export default function DashboardLayout({ role = 'student' }) {
           <header className="dashboard-topbar">
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <button
+                type="button"
                 className="btn-ghost mobile-sidebar-toggle"
                 onClick={() => setSidebarOpen(true)}
+                aria-label="Toggle Navigation Sidebar"
               >
                 <Menu size={20} />
               </button>
@@ -333,14 +451,23 @@ export default function DashboardLayout({ role = 'student' }) {
                 {roleLabel}
               </h1>
             </div>
-            <div className="topbar-actions">
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
+            <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <NotificationDropdown />
+              <div style={{ width: 1, height: 22, background: '#E2E8F0' }} />
+              <span className="topbar-session-badge" style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
             </div>
           </header>
         )}
 
         {/* Page content */}
-        <div className="dashboard-content" style={role === 'admin' ? { padding: '28px 32px', maxWidth: '1600px', width: '100%', boxSizing: 'border-box' } : undefined}>
+        <div
+          className="dashboard-content"
+          style={
+            role === 'admin' || role === 'creator'
+              ? { padding: '24px 28px', maxWidth: '1680px', width: '100%', boxSizing: 'border-box' }
+              : undefined
+          }
+        >
           <Outlet />
         </div>
       </div>

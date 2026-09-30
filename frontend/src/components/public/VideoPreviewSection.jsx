@@ -14,7 +14,7 @@ export default function VideoPreviewSection({ previews = initialVideoPreviews, o
           </p>
         </div>
 
-        <div className="video-preview-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
+        <div className="video-preview-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 24 }}>
           {previews.map((vid) => (
             <div
               key={vid.id}

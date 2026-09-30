@@ -46,21 +46,21 @@ export default function ContactPage() {
             <Mail size={14} style={{ marginRight: 6 }} />
             24/7 Academic & Technical Support
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 16 }}>
+          <h1 style={{ fontSize: 'clamp(1.6rem, 5.5vw, 2.5rem)', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 16 }}>
             Connect with Our Academic Counselors
           </h1>
-          <p style={{ fontSize: '1.1rem', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
+          <p style={{ fontSize: '1.05rem', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
             Have questions about syllabus depth, corporate enrollment, creator partnerships, or system access? Our engineering advisory team is here to assist.
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 40 }}>
+        <div className="contact-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 32 }}>
           {/* Contact Details Card */}
           <div
             className="card"
             style={{
               borderRadius: 16,
-              padding: 36,
+              padding: 'clamp(20px, 4vw, 36px)',
               background: '#FFFFFF',
               border: '1px solid var(--color-border)',
               display: 'flex',
@@ -128,7 +128,7 @@ export default function ContactPage() {
             className="card"
             style={{
               borderRadius: 16,
-              padding: 36,
+              padding: 'clamp(20px, 4vw, 36px)',
               background: '#FFFFFF',
               border: '1px solid var(--color-border)',
             }}

@@ -566,11 +566,38 @@
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 992px) {
   .student-auth-layout {
     grid-template-columns: 1fr;
   }
   .auth-visual-side {
     display: none;
+  }
+  .portal-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-form-side {
+    padding: 32px 16px;
+  }
+  .portal-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .portal-main-heading {
+    font-size: 1.85rem;
+  }
+  .portal-card {
+    padding: 24px 20px;
+  }
+  .admin-login-box {
+    padding: 28px 20px;
+    max-width: 100%;
+  }
+  .student-auth-card {
+    padding: 24px 18px;
   }
 }

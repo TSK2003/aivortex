@@ -9,7 +9,7 @@ export default function TermsPage() {
             <FileText size={14} style={{ marginRight: 6 }} />
             Legal Agreement
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 12 }}>
+          <h1 style={{ fontSize: 'clamp(1.6rem, 5.5vw, 2.5rem)', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 12 }}>
             Terms of Service
           </h1>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
@@ -20,7 +20,7 @@ export default function TermsPage() {
         <div className="card" style={{ padding: 40, borderRadius: 16, border: '1px solid var(--color-border)', lineHeight: 1.8, color: 'var(--color-text-secondary)' }}>
           <h2 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', fontWeight: 700, marginBottom: 12 }}>1. Acceptance of Terms</h2>
           <p style={{ marginBottom: 24 }}>
-            By registering for an account, accessing courses, or utilizing services offered by ApexLearn Institute of Tech & AI, you agree to be bound by these Terms of Service. If you do not agree, do not utilize the platform.
+            By registering for an account, accessing courses, or utilizing services offered by aivortex, you agree to be bound by these Terms of Service. If you do not agree, do not utilize the platform.
           </p>
 
           <h2 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', fontWeight: 700, marginBottom: 12 }}>2. Account Security & Single Session Policy</h2>
@@ -30,7 +30,7 @@ export default function TermsPage() {
 
           <h2 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', fontWeight: 700, marginBottom: 12 }}>3. Intellectual Property & Anti-Piracy Watermarking</h2>
           <p style={{ marginBottom: 24 }}>
-            All course videos, source code repositories, quiz question banks, and learning materials are the exclusive proprietary property of ApexLearn and its respective course creators. Streaming content incorporates dynamic student watermarking. Unauthorized scraping, recording, or distribution of course videos will result in immediate account revocation and potential legal remedies.
+            All course videos, source code repositories, quiz question banks, and learning materials are the exclusive proprietary property of aivortex and its respective course creators. Streaming content incorporates dynamic student watermarking. Unauthorized scraping, recording, or distribution of course videos will result in immediate account revocation and potential legal remedies.
           </p>
 
           <h2 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', fontWeight: 700, marginBottom: 12 }}>4. Payments & Refunds</h2>
@@ -40,7 +40,7 @@ export default function TermsPage() {
 
           <h2 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', fontWeight: 700, marginBottom: 12 }}>5. Certification Standards</h2>
           <p>
-            Certificates of Completion are granted solely upon verifiable completion of curriculum requirements and successful passage of mandatory quizzes. ApexLearn reserves the right to withhold certification if academic dishonesty or automated answer submission is detected.
+            Certificates of Completion are granted solely upon verifiable completion of curriculum requirements and successful passage of mandatory quizzes. aivortex reserves the right to withhold certification if academic dishonesty or automated answer submission is detected.
           </p>
         </div>
       </div>

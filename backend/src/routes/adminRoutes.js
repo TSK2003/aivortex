@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   getAnalyticsOverview,
   getCreators,
+  getNextCreatorUserId,
   getCreatorById,
   createCreator,
   updateCreator,
@@ -34,7 +35,11 @@ import {
   updateOffer,
   deleteOffer,
   getAdminProfile,
-  updateAdminProfile
+  updateAdminProfile,
+  getAdminAboutContent,
+  updateAdminAboutContent,
+  getAdminFooterContent,
+  updateAdminFooterContent
 } from '../controllers/adminController.js'
 import { requireAuth, requireRole } from '../middleware/authMiddleware.js'
 
@@ -52,6 +57,7 @@ router.patch('/profile', updateAdminProfile)
 
 // Creators Management & Provisioning
 router.get('/creators', getCreators)
+router.get('/creators/next-user-id', getNextCreatorUserId)
 router.post('/creators', createCreator)
 router.get('/creators/:id', getCreatorById)
 router.put('/creators/:id', updateCreator)
@@ -93,6 +99,8 @@ router.get('/enrollments', getEnrollments)
 // Creator Profile Change Requests
 router.get('/requests', getRequests)
 router.patch('/requests/:id', reviewRequest)
+router.post('/requests/:id/review', reviewRequest)
+router.patch('/requests/:id/review', reviewRequest)
 
 // Broadcast Announcements
 router.post('/announcements', broadcastAnnouncement)
@@ -106,5 +114,11 @@ router.get('/audit-logs', getAuditLogs)
 // Platform Security & Sessions
 router.get('/security/sessions', getActiveSessions)
 router.delete('/security/sessions/:sessionId', revokeSession)
+
+// Public Page, About & Footer Management
+router.get('/about', getAdminAboutContent)
+router.put('/about', updateAdminAboutContent)
+router.get('/footer', getAdminFooterContent)
+router.put('/footer', updateAdminFooterContent)
 
 export default router

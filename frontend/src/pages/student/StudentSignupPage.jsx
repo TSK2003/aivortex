@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { GraduationCap, ArrowLeft, ShieldCheck } from 'lucide-react'
+import BrandLogo from '../../components/common/BrandLogo'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 
@@ -23,7 +24,7 @@ export default function StudentSignupPage() {
     try {
       const res = await signup(name, email, password)
       if (res?.success) {
-        showToast(`Welcome to ApexLearn, ${name}! Your student account is active.`, 'success')
+        showToast(`Welcome to aivortex, ${name}! Your student account is active.`, 'success')
         const searchParams = new URLSearchParams(window.location.search)
         const redirectParam = searchParams.get('redirect')
         const enrollParam = searchParams.get('enroll')
@@ -48,17 +49,8 @@ export default function StudentSignupPage() {
         {/* Visual Brand Side (Left) */}
         <div className="auth-visual-side">
           <div>
-            <Link to="/portal" className="auth-brand-header">
-              <div
-                className="brand-icon"
-                style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)' }}
-              >
-                <GraduationCap style={{ width: 22, height: 22 }} />
-              </div>
-              <div>
-                ApexLearn
-                <span className="brand-name-sub" style={{ color: '#38BDF8' }}>STUDENT PORTAL</span>
-              </div>
+            <Link to="/portal" style={{ textDecoration: 'none', display: 'inline-block' }}>
+              <BrandLogo theme="dark" size="md" />
             </Link>
           </div>
 
@@ -67,7 +59,7 @@ export default function StudentSignupPage() {
               VERIFIED STUDENT REVIEW
             </div>
             <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: '#F8FAFC', marginBottom: 16, fontStyle: 'italic' }}>
-              &ldquo;ApexLearn gave me the exact hands-on experience and verifiable credentials to transition into a full-time Machine Learning Engineer.&rdquo;
+              &ldquo;aivortex gave me the exact hands-on experience and verifiable credentials to transition into a full-time Machine Learning Engineer.&rdquo;
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <img
@@ -92,7 +84,7 @@ export default function StudentSignupPage() {
               paddingTop: 20
             }}
           >
-            <span>© 2026 ApexLearn Institute</span>
+            <span>© 2026 aivortex. All rights reserved.</span>
             <Link to="/" style={{ color: '#CBD5E1' }}>Back to Home</Link>
           </div>
         </div>

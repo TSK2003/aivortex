@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom'
-
 const benefits = [
   {
     title: 'Learn from Structured Courses',
@@ -38,7 +36,7 @@ export default function WhyLearnSection() {
               Engineering-First Technical Education
             </h3>
             <p style={{ color: '#CBD5E1', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 28 }}>
-              Most platforms teach syntax that gets forgotten within weeks. ApexLearn builds engineering muscle through continuous hands-on implementation, weekend live mentorship, and enterprise-grade portfolio projects.
+              Most platforms teach syntax that gets forgotten within weeks. aivortex builds engineering muscle through continuous hands-on implementation, weekend live mentorship, and enterprise-grade portfolio projects.
             </p>
 
             <div className="why-learn-stat-grid">
@@ -63,14 +61,14 @@ export default function WhyLearnSection() {
 
           {/* Right Content & Benefits */}
           <div>
-            <h2 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 14 }}>
+            <h2 style={{ fontSize: 'clamp(1.5rem, 5vw, 2.25rem)', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 14 }}>
               Learning That Goes Beyond Watching Videos
             </h2>
             <p style={{ color: '#64748B', marginBottom: 28, fontSize: '1.05rem', lineHeight: 1.6 }}>
               We eliminate passive video consumption with an active engineering loop designed to transform knowledge into instinct.
             </p>
 
-            <div className="benefits-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, marginBottom: 32 }}>
+            <div className="benefits-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 20, marginBottom: 0 }}>
               {benefits.map((b, i) => (
                 <div key={i} className="benefit-item" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, padding: '18px 20px' }}>
                   <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#2563EB', marginBottom: 6 }}>
@@ -85,10 +83,6 @@ export default function WhyLearnSection() {
                 </div>
               ))}
             </div>
-
-            <Link to="/courses" className="btn btn-primary btn-lg" style={{ fontWeight: 700 }}>
-              Start Your Learning Journey
-            </Link>
           </div>
         </div>
       </div>

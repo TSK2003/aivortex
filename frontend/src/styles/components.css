@@ -25,36 +25,73 @@
   height: 76px;
 }
 
-/* Brand Logo */
+/* Brand Logo & Typography */
 .brand-logo {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: var(--font-family-heading);
+  font-family: var(--font-family-brand);
   font-weight: 800;
-  font-size: 1.35rem;
   color: var(--color-primary);
   text-decoration: none;
+}
+
+.brand-logo-component {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  line-height: 1;
+}
+
+.logo-text {
+  font-family: "Good Timing W00 SemiBold", "Good Timing SemiBold", "Good Timing", sans-serif;
+  font-weight: 600;
+  font-size: 64px;
+  letter-spacing: 0px;
+  transform: scaleX(1.08);
+  transform-origin: left center;
+  display: inline-block;
+  line-height: 1;
+}
+
+.brand-name-text {
+  font-family: var(--font-family-brand);
+  font-weight: var(--font-weight-brand, 600);
+  letter-spacing: var(--letter-spacing-brand, 0px);
+  transform: scaleX(1.08);
+  transform-origin: left center;
+  display: inline-block;
+  text-transform: lowercase;
+  line-height: 1;
+}
+
+.brand-tagline-text {
+  font-family: var(--font-family-brand);
+  font-weight: var(--font-weight-brand, 500);
+  letter-spacing: 1.2px;
+  transform: scaleX(1.04);
+  transform-origin: left center;
+  display: inline-block;
+  text-transform: uppercase;
+  line-height: 1;
 }
 
 .brand-icon {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #FFFFFF;
-  box-shadow: 0 4px 10px rgba(23, 59, 122, 0.25);
 }
 
 .brand-name-sub {
-  font-weight: 500;
+  font-family: var(--font-family-brand);
+  font-weight: 600;
   color: var(--color-secondary);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   display: block;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.14em;
 }
 
 /* Nav Links */
@@ -113,33 +150,43 @@
 .mobile-drawer {
   position: fixed;
   top: 0;
-  right: -100%;
-  width: 300px;
+  right: 0;
+  transform: translateX(105%);
+  visibility: hidden;
+  pointer-events: none;
+  width: min(320px, 86vw);
+  max-width: 100%;
   height: 100vh;
   background: #FFFFFF;
   z-index: 1100;
   box-shadow: var(--shadow-xl);
-  padding: 24px;
+  padding: 24px 20px;
   display: flex;
   flex-direction: column;
-  transition: right var(--transition-normal);
+  transition: transform var(--transition-normal), visibility var(--transition-normal);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .mobile-drawer.open {
-  right: 0;
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .mobile-drawer-overlay {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
   z-index: 1050;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition-normal);
 }
 
-.mobile-drawer-overlay.open {
+.mobile-drawer-overlay.open,
+.mobile-drawer-overlay.active {
   opacity: 1;
   pointer-events: auto;
 }
@@ -404,8 +451,8 @@
 ================================================== */
 .course-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 28px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 24px;
 }
 
 .course-card {
@@ -505,7 +552,8 @@
 .course-rating-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
   font-size: 0.825rem;
   color: #64748B;
   margin-bottom: 14px;
@@ -536,7 +584,8 @@
 .course-card-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
   padding: 10px 0;
   border-top: 1px solid #E2E8F0;
   border-bottom: 1px solid #E2E8F0;
@@ -555,6 +604,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
   padding-top: 4px;
 }
@@ -733,7 +783,7 @@
 
 .project-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: var(--spacing-xl);
 }
 
@@ -1679,9 +1729,28 @@
 }
 
 /* ==================================================
-   RESPONSIVE BREAKPOINTS
+   RESPONSIVE BREAKPOINTS (ALL SCREENS: MOBILE, LAPTOP, DESKTOP)
 ================================================== */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
+  .trust-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .category-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .nav-menu,
+  .desktop-nav-wrap {
+    display: none !important;
+  }
+  .header-container {
+    height: 68px;
+  }
+  .mobile-menu-btn {
+    display: block !important;
+  }
   .trust-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1697,49 +1766,135 @@
   .video-preview-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .why-learn-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
   .workflow-row {
     flex-wrap: wrap;
   }
   .footer-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 36px;
+  }
+  .hero-image-bleed {
+    width: 60%;
+    opacity: 0.22;
+  }
+  .modal-content-grid {
+    grid-template-columns: 1fr;
+    padding: 24px 20px;
+    gap: 24px;
   }
 }
 
 @media (max-width: 768px) {
-  .nav-menu, .header-actions .btn-outline-blue {
-    display: none;
-  }
-  .mobile-menu-btn {
-    display: block;
-  }
   .hero-image-bleed {
     display: none;
   }
   .hero-section {
     min-height: auto;
+    padding: 36px 0 44px 0;
   }
   .hero-grid {
     grid-template-columns: 1fr;
   }
   .trust-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
   .category-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .course-grid {
-    grid-template-columns: 1fr;
-  }
-  .why-learn-grid {
-    grid-template-columns: 1fr;
-  }
   .benefits-list {
     grid-template-columns: 1fr;
   }
-  .project-grid {
+  .live-sessions-container {
     grid-template-columns: 1fr;
   }
-  .live-sessions-container {
+  .how-it-works-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .testimonials-grid {
+    grid-template-columns: 1fr;
+  }
+  .certificate-showcase-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .header-container {
+    height: 60px;
+  }
+  #header-btn-get-started {
+    display: none !important;
+  }
+  .why-learn-visual {
+    padding: 20px 16px !important;
+  }
+  .why-learn-stat-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .header-actions {
+    gap: 8px !important;
+  }
+  #header-btn-login {
+    padding: 6px 14px !important;
+    font-size: 0.8125rem !important;
+  }
+  #header-btn-dashboard span {
+    display: none !important;
+  }
+  #header-btn-dashboard {
+    padding: 7px 10px !important;
+  }
+  #header-btn-dashboard svg {
+    margin-right: 0 !important;
+  }
+  .hero-title {
+    font-size: clamp(1.6rem, 6.5vw, 2.3rem);
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  .hero-description {
+    font-size: 0.925rem;
+    line-height: 1.55;
+  }
+  .hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+  .hero-cta-group .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .trust-grid {
+    grid-template-columns: 1fr;
+  }
+  .course-grid {
+    grid-template-columns: 1fr;
+  }
+  .course-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .course-price-wrap {
+    width: 100%;
+  }
+  .card-cta-group {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+  .card-cta-group .btn {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+  }
+  .project-grid {
     grid-template-columns: 1fr;
   }
   .video-preview-grid {
@@ -1748,17 +1903,54 @@
   .how-it-works-grid {
     grid-template-columns: 1fr;
   }
-  .testimonials-grid {
-    grid-template-columns: 1fr;
-  }
-  .certificate-showcase-grid {
-    grid-template-columns: 1fr;
-  }
-  .modal-content-grid {
-    grid-template-columns: 1fr;
-  }
   .footer-grid {
     grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .modal-overlay {
+    padding: 10px;
+  }
+  .modal-dialog {
+    max-width: calc(100vw - 20px);
+    border-radius: 14px;
+  }
+  .modal-hero {
+    padding: 20px 16px 16px 16px;
+  }
+  .modal-hero h2 {
+    font-size: 1.35rem;
+    word-break: break-word;
+  }
+  .modal-hero-meta {
+    gap: 8px 12px;
+    font-size: 0.78rem;
+  }
+  .modal-content-grid {
+    padding: 16px 12px;
+    gap: 18px;
+  }
+  .data-table-container,
+  .data-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 380px) {
+  .category-grid {
+    grid-template-columns: 1fr;
+  }
+  .modal-purchase-card {
+    padding: 14px;
+  }
+  .why-stat-box {
+    padding: 12px !important;
+  }
+  .stat-counter-block {
+    padding: 10px 12px !important;
+  }
+  .stat-counter-num {
+    font-size: 2rem !important;
   }
 }
 
@@ -2339,4 +2531,15 @@
   }
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 
+.spinner-spin {
+  animation: spin 1s linear infinite;
+}

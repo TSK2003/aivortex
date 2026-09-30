@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTheme } from '../../contexts/ThemeContext'
 
 /**
  * Modern production-grade StatCard component for Admin Portal.
@@ -15,7 +16,24 @@ export default function StatCard({
   iconColor = '#2563EB',
   onClick
 }) {
+  const { isDark } = useTheme()
+
   const getBadgeStyle = () => {
+    if (isDark) {
+      switch (badgeType) {
+        case 'success':
+          return { background: 'rgba(16, 185, 129, 0.15)', color: '#34D399', border: '1px solid rgba(16, 185, 129, 0.3)' }
+        case 'warning':
+          return { background: 'rgba(245, 158, 11, 0.15)', color: '#FBBF24', border: '1px solid rgba(245, 158, 11, 0.3)' }
+        case 'danger':
+          return { background: 'rgba(239, 68, 68, 0.15)', color: '#F87171', border: '1px solid rgba(239, 68, 68, 0.3)' }
+        case 'info':
+          return { background: 'rgba(59, 130, 246, 0.15)', color: '#60A5FA', border: '1px solid rgba(59, 130, 246, 0.3)' }
+        default:
+          return { background: '#162032', color: '#94A3B8', border: '1px solid #1E293B' }
+      }
+    }
+
     switch (badgeType) {
       case 'success':
         return { background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }
@@ -33,28 +51,29 @@ export default function StatCard({
   return (
     <div
       onClick={onClick}
+      className="stat-card"
       style={{
-        background: '#FFFFFF',
+        background: 'var(--color-bg-card, #FFFFFF)',
         borderRadius: '16px',
-        border: '1px solid #E2E8F0',
+        border: '1px solid var(--color-border, #E2E8F0)',
         padding: '22px 24px',
-        boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.03)',
+        boxShadow: 'var(--shadow-sm, 0 1px 3px 0 rgba(15, 23, 42, 0.04))',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        transition: 'all 0.2s ease',
+        transition: 'background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease',
         cursor: onClick ? 'pointer' : 'default',
         position: 'relative',
         overflow: 'hidden'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = '#CBD5E1'
-        e.currentTarget.style.boxShadow = '0 6px 16px -2px rgba(15, 23, 42, 0.08)'
+        e.currentTarget.style.borderColor = 'var(--color-border-hover, #CBD5E1)'
+        e.currentTarget.style.boxShadow = 'var(--shadow-md, 0 6px 16px -2px rgba(15, 23, 42, 0.08))'
         if (onClick) e.currentTarget.style.transform = 'translateY(-2px)'
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = '#E2E8F0'
-        e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(15, 23, 42, 0.04)'
+        e.currentTarget.style.borderColor = 'var(--color-border, #E2E8F0)'
+        e.currentTarget.style.boxShadow = 'var(--shadow-sm, 0 1px 3px 0 rgba(15, 23, 42, 0.04))'
         if (onClick) e.currentTarget.style.transform = 'none'
       }}
     >
@@ -63,9 +82,10 @@ export default function StatCard({
           style={{
             fontSize: '0.8125rem',
             fontWeight: 700,
-            color: '#64748B',
+            color: 'var(--color-text-tertiary, #64748B)',
             letterSpacing: '0.04em',
-            textTransform: 'uppercase'
+            textTransform: 'uppercase',
+            transition: 'color 0.3s ease'
           }}
         >
           {title}
@@ -76,12 +96,13 @@ export default function StatCard({
               width: 42,
               height: 42,
               borderRadius: '12px',
-              background: iconBg,
-              color: iconColor,
+              background: isDark ? 'rgba(59, 130, 246, 0.15)' : iconBg,
+              color: isDark ? '#60A5FA' : iconColor,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              flexShrink: 0
+              flexShrink: 0,
+              transition: 'background-color 0.3s ease, color 0.3s ease'
             }}
           >
             <Icon size={20} strokeWidth={2.2} />
@@ -94,10 +115,11 @@ export default function StatCard({
           style={{
             fontSize: '1.875rem',
             fontWeight: 800,
-            color: '#0F172A',
+            color: 'var(--color-text, #0F172A)',
             letterSpacing: '-0.03em',
             lineHeight: 1.1,
-            marginBottom: 8
+            marginBottom: 8,
+            transition: 'color 0.3s ease'
           }}
         >
           {value ?? '—'}
@@ -113,6 +135,7 @@ export default function StatCard({
                 borderRadius: '6px',
                 display: 'inline-flex',
                 alignItems: 'center',
+                transition: 'background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease',
                 ...getBadgeStyle()
               }}
             >
@@ -123,8 +146,9 @@ export default function StatCard({
             <span
               style={{
                 fontSize: '0.8125rem',
-                color: '#64748B',
-                fontWeight: 500
+                color: 'var(--color-text-secondary, #64748B)',
+                fontWeight: 500,
+                transition: 'color 0.3s ease'
               }}
             >
               {subtext}

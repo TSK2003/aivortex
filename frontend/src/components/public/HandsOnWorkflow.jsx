@@ -24,16 +24,16 @@ export default function HandsOnWorkflow() {
     <section className="section section-alt" id="learning-journey" style={{ padding: '44px 0 52px 0' }}>
       <div className="container">
         <div className="section-header text-center" style={{ maxWidth: 760, margin: '0 auto 28px auto' }}>
-          <h2 className="section-title" style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 12 }}>
+          <h2 className="section-title" style={{ fontSize: 'clamp(1.35rem, 5.5vw, 2.25rem)', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 12 }}>
             LEARN <span className="accent-arrow" style={{ color: '#2563EB' }}>→</span> BUILD <span className="accent-arrow" style={{ color: '#2563EB' }}>→</span>{' '}
             <span className="highlight-blue" style={{ color: '#2563EB' }}>MASTER</span>
           </h2>
           <p className="section-subtitle" style={{ fontSize: '1.05rem', color: '#64748B', lineHeight: 1.6 }}>
-            A battle-tested 3-stage engineering roadmap designed to bridge the gap between theoretical syntax and high-performance software execution.
+            A 3-stage engineering roadmap designed to bridge the gap between theoretical syntax and high-performance software execution.
           </p>
         </div>
 
-        <div className="journey-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 28 }}>
+        <div className="journey-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 28 }}>
           {steps.map((step) => (
             <div
               key={step.num}
@@ -41,7 +41,7 @@ export default function HandsOnWorkflow() {
               style={{
                 background: '#FFFFFF',
                 borderRadius: 16,
-                padding: '32px 28px',
+                padding: 'clamp(20px, 4vw, 32px) clamp(16px, 3.5vw, 28px)',
                 border: '1px solid #E2E8F0',
                 boxShadow: '0 2px 8px -2px rgba(15, 23, 42, 0.05)',
                 display: 'flex',
@@ -50,7 +50,7 @@ export default function HandsOnWorkflow() {
               }}
             >
               <div>
-                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#2563EB', lineHeight: 1, marginBottom: 16 }}>
+                <div style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', fontWeight: 900, color: '#2563EB', lineHeight: 1, marginBottom: 16 }}>
                   {step.num}
                 </div>
                 <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0F172A', marginBottom: 10 }}>
