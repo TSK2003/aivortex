@@ -586,7 +586,7 @@ export const initialTestimonials = [
     course: 'Python for Data Science',
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
     rating: 5,
-    text: 'The domain projects and weekend live sessions set ApexLearn miles apart from ordinary video courses. Learning how to clean real, messy datasets and build end-to-end pipelines helped me crack my role at PhonePe within 4 months.'
+    text: 'The domain projects and weekend live sessions set aivortex miles apart from ordinary video courses. Learning how to clean real, messy datasets and build end-to-end pipelines helped me crack my role at PhonePe within 4 months.'
   },
   {
     id: 'test-2',

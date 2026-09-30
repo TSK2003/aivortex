@@ -4,15 +4,17 @@ import {
   getMyTickets,
   replyToTicket,
   getNotifications,
-  markNotificationAsRead
+  markNotificationAsRead,
+  markAllNotificationsAsRead
 } from '../controllers/supportNotificationController.js'
 import { requireAuth } from '../middleware/authMiddleware.js'
 
 const router = Router()
 
-router.use(requireAuth)
+router.use(['/notifications', '/tickets'], requireAuth)
 
 router.get('/notifications', getNotifications)
+router.patch('/notifications/mark-all-read', markAllNotificationsAsRead)
 router.patch('/notifications/:id/read', markNotificationAsRead)
 router.post('/tickets', createTicket)
 router.get('/tickets', getMyTickets)

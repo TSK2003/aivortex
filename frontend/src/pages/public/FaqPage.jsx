@@ -83,7 +83,7 @@ export default function FaqPage() {
             <HelpCircle size={14} style={{ marginRight: 6 }} />
             Knowledge Base
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 16 }}>
+          <h1 style={{ fontSize: 'clamp(1.6rem, 5.5vw, 2.5rem)', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 16 }}>
             Frequently Asked Questions
           </h1>
           <p style={{ fontSize: '1.1rem', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>

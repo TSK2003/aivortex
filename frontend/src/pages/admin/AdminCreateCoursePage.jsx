@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   BookOpen,
   IndianRupee,
@@ -16,14 +16,69 @@ import {
   Award,
   ShieldCheck,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react'
 import { useToast } from '../../contexts/ToastContext'
 import api from '../../services/api'
+import CustomSelect from '../../components/common/CustomSelect'
+
+export const COURSE_LANGUAGE_OPTIONS = [
+  {
+    value: 'English',
+    label: 'English',
+    sublabel: 'Course is taught in English.'
+  },
+  {
+    value: 'Tamil',
+    label: 'Tamil',
+    sublabel: 'Course is taught in Tamil.'
+  },
+  {
+    value: 'Thanglish',
+    label: 'Thanglish',
+    sublabel: 'Course is taught using Tamil written in English/Tamil-English mixed style.'
+  },
+  {
+    value: 'Hindi',
+    label: 'Hindi',
+    sublabel: 'Course is taught in Hindi.'
+  },
+  {
+    value: 'Bilingual (English/Tamil)',
+    label: 'Bilingual (English/Tamil)',
+    sublabel: 'Course uses both English and Tamil.'
+  },
+  {
+    value: 'Bilingual (English/Hindi)',
+    label: 'Bilingual (English/Hindi)',
+    sublabel: 'Course uses both English and Hindi.'
+  },
+  {
+    value: 'Bilingual (Tamil/Thanglish)',
+    label: 'Bilingual (Tamil/Thanglish)',
+    sublabel: 'Course uses both Tamil and Thanglish.'
+  },
+  {
+    value: 'Multilingual',
+    label: 'Multilingual',
+    sublabel: 'Course uses more than two supported languages.'
+  }
+]
+
+export const COURSE_LANGUAGE_MAP = COURSE_LANGUAGE_OPTIONS.reduce((acc, item) => {
+  acc[item.value] = item.sublabel
+  return acc
+}, {})
 
 export default function AdminCreateCoursePage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const { courseId: routeCourseId } = useParams()
+  const [searchParams] = useSearchParams()
+  const editCourseId = routeCourseId || searchParams.get('id') || searchParams.get('edit')
+  const isEditMode = Boolean(editCourseId)
+  const [isLoadingCourse, setIsLoadingCourse] = useState(false)
 
   // Form State
   const [title, setTitle] = useState('')
@@ -51,6 +106,8 @@ export default function AdminCreateCoursePage() {
   const [thumbnail, setThumbnail] = useState(
     'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80'
   )
+  const [thumbnailStatus, setThumbnailStatus] = useState('loading') // 'idle' | 'loading' | 'loaded' | 'error'
+  const [thumbnailError, setThumbnailError] = useState(null)
   const [badge, setBadge] = useState('Bestseller')
   const [isFeatured, setIsFeatured] = useState(false)
 
@@ -82,6 +139,48 @@ export default function AdminCreateCoursePage() {
     }
   }, [])
 
+  // Load existing course data if editing
+  useEffect(() => {
+    if (!editCourseId) return
+    let isMounted = true
+    const loadCourseData = async () => {
+      try {
+        setIsLoadingCourse(true)
+        const res = await api.admin.getCourses()
+        const found = res.data?.courses?.find((c) => c.id === editCourseId || c.slug === editCourseId)
+        if (found && isMounted) {
+          setTitle(found.title || '')
+          setSlug(found.slug || '')
+          setCategory(found.category || 'Data Science')
+          setLevel(found.level || 'Beginner to Intermediate')
+          setDuration(found.duration || '30 Hours')
+          setLanguage(found.language || 'English')
+          setShortDescription(found.shortDescription || '')
+          setFullDescription(found.fullDescription || '')
+          setPrice(found.price ?? 4999)
+          setOriginalPrice(found.originalPrice ?? 9999)
+          setIsFree(Boolean(found.isFree))
+          setAccessDurationDays(found.accessDurationDays || 365)
+          setCertificateEnabled(found.certificateEnabled !== false)
+          setThumbnail(found.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80')
+          setBadge(found.badge || 'Bestseller')
+          setIsFeatured(Boolean(found.isFeatured))
+          if (found.creators && found.creators.length > 0) {
+            setCreatorId(found.creators[0].creatorId || found.creators[0].creator?.id || '')
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load course for editing:', err.message)
+      } finally {
+        if (isMounted) setIsLoadingCourse(false)
+      }
+    }
+    loadCourseData()
+    return () => {
+      isMounted = false
+    }
+  }, [editCourseId])
+
   // Auto-generate URL slug when title changes (if slug not manually edited)
   const handleTitleChange = (e) => {
     const val = e.target.value
@@ -112,6 +211,69 @@ export default function AdminCreateCoursePage() {
     return creators.find((c) => c.id === creatorId) || null
   }, [creators, creatorId])
 
+  // Helper to validate thumbnail URL format
+  const validateThumbnailUrl = (url) => {
+    if (!url || !url.trim()) return null
+    const trimmed = url.trim()
+    if (!/^https:\/\//i.test(trimmed)) {
+      return 'Please enter a valid HTTPS image URL.'
+    }
+    try {
+      const parsed = new URL(trimmed)
+      if (parsed.protocol !== 'https:' || !parsed.hostname || !parsed.hostname.includes('.')) {
+        return 'Please enter a valid HTTPS image URL.'
+      }
+      return null
+    } catch {
+      return 'Please enter a valid HTTPS image URL.'
+    }
+  }
+
+  // Pre-load and verify thumbnail image URL
+  useEffect(() => {
+    const trimmed = thumbnail?.trim()
+    if (!trimmed) {
+      setThumbnailStatus('idle')
+      setThumbnailError(null)
+      return
+    }
+
+    const formatErr = validateThumbnailUrl(trimmed)
+    if (formatErr) {
+      setThumbnailStatus('error')
+      setThumbnailError(formatErr)
+      return
+    }
+
+    setThumbnailStatus('loading')
+    setThumbnailError(null)
+
+    let isMounted = true
+    const img = new Image()
+
+    img.onload = () => {
+      if (isMounted) {
+        setThumbnailStatus('loaded')
+        setThumbnailError(null)
+      }
+    }
+
+    img.onerror = () => {
+      if (isMounted) {
+        setThumbnailStatus('error')
+        setThumbnailError('Unable to load this image. Please check the URL or use another image.')
+      }
+    }
+
+    img.src = trimmed
+
+    return () => {
+      isMounted = false
+      img.onload = null
+      img.onerror = null
+    }
+  }, [thumbnail])
+
   // Form Validation
   const validateForm = () => {
     const errs = {}
@@ -133,6 +295,13 @@ export default function AdminCreateCoursePage() {
       }
       if (originalPrice !== '' && Number(originalPrice) < Number(price)) {
         errs.originalPrice = 'Original price cannot be lower than the offer price'
+      }
+    }
+
+    if (thumbnail && thumbnail.trim()) {
+      const thumbErr = validateThumbnailUrl(thumbnail)
+      if (thumbErr) {
+        errs.thumbnail = thumbErr
       }
     }
 
@@ -174,18 +343,23 @@ export default function AdminCreateCoursePage() {
         creatorIds: creatorId ? [creatorId] : []
       }
 
-      const res = await api.admin.createCourse(payload)
-      const createdTitle = res.data?.course?.title || title.trim()
-
-      if (targetStatus === 'PUBLISHED') {
-        showToast(`Course "${createdTitle}" created and published successfully!`, 'success')
+      if (isEditMode) {
+        await api.admin.updateCourse(editCourseId, payload)
+        showToast(`Course "${payload.title}" updated successfully!`, 'success')
       } else {
-        showToast(`Course "${createdTitle}" saved as DRAFT successfully!`, 'success')
+        const res = await api.admin.createCourse(payload)
+        const createdTitle = res.data?.course?.title || title.trim()
+
+        if (targetStatus === 'PUBLISHED') {
+          showToast(`Course "${createdTitle}" created and published successfully!`, 'success')
+        } else {
+          showToast(`Course "${createdTitle}" saved as DRAFT successfully!`, 'success')
+        }
       }
 
       navigate('/admin/courses')
     } catch (err) {
-      showToast(err.message || 'Failed to create course. Please review the inputs.', 'error')
+      showToast(err.message || 'Failed to save course. Please review the inputs.', 'error')
     } finally {
       setIsSubmitting(false)
       setSubmittingAction(null)
@@ -247,7 +421,9 @@ export default function AdminCreateCoursePage() {
             <span>Course Management</span>
           </Link>
           <ChevronRight size={14} style={{ color: '#CBD5E1' }} />
-          <span style={{ color: '#0F172A', fontWeight: 700 }}>Create Course</span>
+          <span style={{ color: '#0F172A', fontWeight: 700 }}>
+            {isEditMode ? 'Edit Course' : 'Create Course'}
+          </span>
         </nav>
 
         {/* Header Title */}
@@ -266,10 +442,12 @@ export default function AdminCreateCoursePage() {
               margin: '0 0 6px 0'
             }}
           >
-            Create New Course
+            {isEditMode ? 'Edit Academic Course' : 'Create New Course'}
           </h1>
           <p style={{ color: '#64748B', fontSize: '0.9375rem', margin: 0 }}>
-            Create and configure a new academic course for the platform curriculum.
+            {isEditMode
+              ? 'Update curriculum parameters, instruction language, pricing tiers, and assigned faculty instructors.'
+              : 'Create and configure a new academic course for the platform curriculum.'}
           </p>
         </div>
       </div>
@@ -280,7 +458,7 @@ export default function AdminCreateCoursePage() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) 360px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
           gap: 28,
           alignItems: 'start'
         }}
@@ -445,19 +623,39 @@ export default function AdminCreateCoursePage() {
                 </div>
 
                 <div className="form-field-group">
-                  <label htmlFor="select-course-language" className="form-label" style={{ fontWeight: 700 }}>
+                  <label htmlFor="select-course-language" className="form-label" style={{ fontWeight: 700, display: 'block', marginBottom: 6 }}>
                     Instruction Language
                   </label>
-                  <select
+                  <CustomSelect
                     id="select-course-language"
-                    className="form-input"
+                    options={COURSE_LANGUAGE_OPTIONS}
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                  >
-                    <option value="English">English</option>
-                    <option value="Hindi">Hindi</option>
-                    <option value="Bilingual (English/Hindi)">Bilingual (English/Hindi)</option>
-                  </select>
+                    buttonStyle={{
+                      height: 42,
+                      borderRadius: 8,
+                      borderColor: '#CBD5E1',
+                      fontSize: '0.875rem'
+                    }}
+                    menuStyle={{
+                      minWidth: '100%',
+                      width: '100%',
+                      maxWidth: '380px'
+                    }}
+                  />
+                  {COURSE_LANGUAGE_MAP[language] && (
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: '0.75rem',
+                        color: '#64748B',
+                        marginTop: 5,
+                        lineHeight: 1.35
+                      }}
+                    >
+                      {COURSE_LANGUAGE_MAP[language]}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-field-group">
@@ -1060,33 +1258,182 @@ export default function AdminCreateCoursePage() {
 
             {/* Thumbnail URL input & quick presets */}
             <div className="form-field-group" style={{ marginBottom: 20 }}>
-              <label htmlFor="input-thumbnail-url" className="form-label" style={{ fontWeight: 700 }}>
+              <label htmlFor="input-thumbnail-url" className="form-label" style={{ fontWeight: 700, marginBottom: 4, display: 'block' }}>
                 Course Thumbnail Asset URL
               </label>
+              <div style={{ fontSize: '0.8125rem', color: '#64748B', marginBottom: 8, lineHeight: 1.4 }}>
+                Use a direct HTTPS image URL from a supported image host or CDN.
+              </div>
               <input
                 id="input-thumbnail-url"
                 type="url"
-                className="form-input"
-                placeholder="https://images.unsplash.com/..."
+                className={`form-input ${(thumbnailError || errors.thumbnail) ? 'border-red-500' : ''}`}
+                placeholder="https://images.unsplash.com/... or any HTTPS image URL"
                 value={thumbnail}
-                onChange={(e) => setThumbnail(e.target.value)}
-                style={{ marginBottom: 8 }}
+                onChange={(e) => {
+                  setThumbnail(e.target.value)
+                  if (errors.thumbnail) {
+                    setErrors((prev) => ({ ...prev, thumbnail: undefined }))
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  borderColor: (thumbnailError || errors.thumbnail) ? '#EF4444' : undefined,
+                  marginBottom: 6
+                }}
               />
 
+              {/* Inline Validation / Error Message */}
+              {(thumbnailError || errors.thumbnail) && (
+                <div
+                  id="thumbnail-validation-error"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: '0.8125rem',
+                    color: '#EF4444',
+                    marginBottom: 8,
+                    fontWeight: 600
+                  }}
+                >
+                  <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                  <span>{thumbnailError || errors.thumbnail}</span>
+                </div>
+              )}
+
               {/* Quick Presets */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
                 <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>Quick presets:</span>
-                {thumbnailPresets.map((p) => (
-                  <button
-                    key={p.label}
-                    type="button"
-                    className="btn btn-outline btn-sm"
-                    style={{ padding: '2px 10px', fontSize: '0.75rem' }}
-                    onClick={() => setThumbnail(p.url)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
+                {thumbnailPresets.map((p) => {
+                  const isSelected = thumbnail === p.url
+                  return (
+                    <button
+                      key={p.label}
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      style={{
+                        padding: '3px 10px',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        borderRadius: 6,
+                        borderColor: isSelected ? '#2563EB' : undefined,
+                        backgroundColor: isSelected ? '#EFF6FF' : undefined,
+                        color: isSelected ? '#1D4ED8' : undefined,
+                        fontWeight: isSelected ? 700 : 500,
+                        transition: 'all 0.15s ease'
+                      }}
+                      onClick={() => {
+                        setThumbnail(p.url)
+                        if (errors.thumbnail) {
+                          setErrors((prev) => ({ ...prev, thumbnail: undefined }))
+                        }
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Live Thumbnail Preview Box inside Section 5 */}
+              <div
+                style={{
+                  marginTop: 16,
+                  padding: 16,
+                  background: '#F8FAFC',
+                  borderRadius: 12,
+                  border: '1px solid #E2E8F0'
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: '#475569',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    marginBottom: 10,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 8
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ImageIcon size={15} /> Live Image Preview
+                  </span>
+                  {thumbnailStatus === 'loading' && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#2563EB', fontSize: '0.75rem', fontWeight: 600 }}>
+                      <Loader2 size={13} className="spinner-spin" /> Verifying & Loading...
+                    </span>
+                  )}
+                  {thumbnailStatus === 'loaded' && thumbnail && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#16A34A', fontSize: '0.75rem', fontWeight: 600 }}>
+                      <CheckCircle2 size={14} /> Ready & Verified
+                    </span>
+                  )}
+                  {thumbnailStatus === 'error' && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#DC2626', fontSize: '0.75rem', fontWeight: 600 }}>
+                      <AlertCircle size={14} /> Load Error
+                    </span>
+                  )}
+                  {thumbnailStatus === 'idle' && (
+                    <span style={{ color: '#64748B', fontSize: '0.75rem', fontWeight: 500 }}>
+                      Optional
+                    </span>
+                  )}
+                </div>
+
+                {/* Preview display */}
+                <div
+                  style={{
+                    width: '100%',
+                    maxWidth: 480,
+                    height: 200,
+                    borderRadius: 8,
+                    overflow: 'hidden',
+                    position: 'relative',
+                    background: '#0F172A',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid #CBD5E1'
+                  }}
+                >
+                  {thumbnailStatus === 'loading' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: '#94A3B8' }}>
+                      <Loader2 size={30} className="spinner-spin" style={{ color: '#38BDF8' }} />
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Loading image preview...</span>
+                    </div>
+                  )}
+
+                  {thumbnailStatus === 'loaded' && thumbnail && (
+                    <img
+                      src={thumbnail}
+                      alt="Course Thumbnail Asset Preview"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                  )}
+
+                  {thumbnailStatus === 'error' && (
+                    <div style={{ padding: '0 20px', textAlign: 'center', color: '#F87171' }}>
+                      <AlertCircle size={32} style={{ margin: '0 auto 8px', color: '#EF4444' }} />
+                      <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, lineHeight: 1.4 }}>
+                        {thumbnailError || 'Unable to load this image. Please check the URL or use another image.'}
+                      </p>
+                    </div>
+                  )}
+
+                  {thumbnailStatus === 'idle' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: '#64748B' }}>
+                      <ImageIcon size={32} />
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 500 }}>Enter a valid HTTPS image URL to see live preview</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1189,15 +1536,34 @@ export default function AdminCreateCoursePage() {
 
             {/* Thumbnail Box */}
             <div style={{ position: 'relative', width: '100%', height: 160, background: '#1E293B', overflow: 'hidden' }}>
-              <img
-                src={thumbnail}
-                alt="Course Preview"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                onError={(e) => {
-                  e.currentTarget.src =
-                    'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80'
-                }}
-              />
+              {thumbnailStatus === 'loading' && (
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0F172A', color: '#94A3B8' }}>
+                  <Loader2 size={24} className="spinner-spin" style={{ color: '#38BDF8', marginBottom: 6 }} />
+                  <span style={{ fontSize: '0.6875rem', fontWeight: 600 }}>Loading preview...</span>
+                </div>
+              )}
+
+              {thumbnailStatus === 'loaded' && thumbnail && (
+                <img
+                  src={thumbnail}
+                  alt={title || 'Course Preview'}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+              )}
+
+              {thumbnailStatus === 'error' && (
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0F172A', color: '#94A3B8', padding: 12, textAlign: 'center' }}>
+                  <AlertCircle size={24} style={{ color: '#EF4444', marginBottom: 6 }} />
+                  <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#F87171' }}>Image unavailable</span>
+                </div>
+              )}
+
+              {thumbnailStatus === 'idle' && (
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#1E293B', color: '#94A3B8' }}>
+                  <ImageIcon size={26} style={{ color: '#64748B', marginBottom: 4 }} />
+                  <span style={{ fontSize: '0.6875rem' }}>No thumbnail provided</span>
+                </div>
+              )}
               {badge && (
                 <div
                   style={{
@@ -1237,7 +1603,7 @@ export default function AdminCreateCoursePage() {
 
             {/* Content Details */}
             <div style={{ padding: '18px 20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
                 <span
                   style={{
                     fontSize: '0.6875rem',
@@ -1249,6 +1615,19 @@ export default function AdminCreateCoursePage() {
                   }}
                 >
                   {category}
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 600,
+                    color: '#0D9488',
+                    background: '#F0FDFA',
+                    border: '1px solid #CCFBF1',
+                    padding: '2px 8px',
+                    borderRadius: 6
+                  }}
+                >
+                  {language || 'English'}
                 </span>
                 <span style={{ fontSize: '0.6875rem', color: '#64748B' }}>• {level}</span>
               </div>
@@ -1404,7 +1783,7 @@ export default function AdminCreateCoursePage() {
             }}
           />
           <span style={{ fontSize: '0.8125rem', color: '#475569', fontWeight: 600 }}>
-            Creating Academic Course in {submittingAction === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT'} mode
+            {isEditMode ? 'Editing' : 'Creating'} Academic Course in {submittingAction === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT'} mode
           </span>
         </div>
 
@@ -1450,7 +1829,11 @@ export default function AdminCreateCoursePage() {
               boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
             }}
           >
-            <span>{submittingAction === 'PUBLISHED' ? 'Creating Course...' : 'Create Course'}</span>
+            <span>
+              {submittingAction === 'PUBLISHED'
+                ? (isEditMode ? 'Updating Course...' : 'Creating Course...')
+                : (isEditMode ? 'Save & Update' : 'Create Course')}
+            </span>
           </button>
         </div>
       </div>

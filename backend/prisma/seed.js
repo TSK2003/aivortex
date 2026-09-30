@@ -291,15 +291,181 @@ async function main() {
     }
   })
 
-  console.log('✅ 5 Courses seeded across Data Science, ML, AI, and Trading')
+  // Course 6: Modern Web & Full-Stack Development
+  const courseWeb = await prisma.course.create({
+    data: {
+      id: 'course-web-dev',
+      slug: 'web-fullstack-development',
+      title: 'Web & Full-Stack Development',
+      shortDescription: 'Master React, Node.js, Express, PostgreSQL, REST APIs, and modern frontend-backend architectures from scratch.',
+      fullDescription: 'A complete professional engineering track for modern full-stack development. Build production-ready web applications with React 19, Node.js, Prisma ORM, PostgreSQL, authentication, and state management.',
+      category: 'Web Development',
+      level: 'Beginner to Advanced',
+      duration: '42 Hours',
+      durationHours: 42,
+      language: 'English',
+      thumbnail: 'https://images.unsplash.com/photo-1547658719-da2b51169166?auto=format&fit=crop&w=800&q=80',
+      originalPrice: 6999,
+      price: 3499,
+      discountPercent: 50,
+      isFree: false,
+      isFeatured: true,
+      badge: 'FULL-STACK',
+      status: 'PUBLISHED',
+      enrollmentOpen: true,
+      certificateEnabled: true,
+      studentsCount: 5200,
+      averageRating: 4.9,
+      reviewsCount: 740,
+      requirements: {
+        create: [
+          { text: 'A computer with code editor (VS Code recommended)', orderIndex: 1 },
+          { text: 'Basic understanding of HTML and JavaScript basics', orderIndex: 2 }
+        ]
+      },
+      learningOutcomes: {
+        create: [
+          { text: 'Build modular, performant single-page applications with React', orderIndex: 1 },
+          { text: 'Design scalable RESTful APIs with Node.js and Express', orderIndex: 2 },
+          { text: 'Model relational schemas with PostgreSQL and Prisma ORM', orderIndex: 3 },
+          { text: 'Implement JWT authentication and secure session management', orderIndex: 4 }
+        ]
+      }
+    }
+  })
+
+  // Course 7: Cloud & MLOps Infrastructure
+  const courseCloud = await prisma.course.create({
+    data: {
+      id: 'course-cloud-devops',
+      slug: 'cloud-mlops-infrastructure',
+      title: 'Cloud & MLOps Infrastructure',
+      shortDescription: 'Containerization with Docker, Kubernetes orchestration, CI/CD pipelines, Terraform, and scalable cloud deployments on AWS.',
+      fullDescription: 'Master modern DevOps and MLOps infrastructure. Learn to containerize microservices, deploy distributed clusters on Kubernetes, automate continuous integration, and manage cloud resources as code.',
+      category: 'Cloud Computing',
+      level: 'Intermediate to Advanced',
+      duration: '46 Hours',
+      durationHours: 46,
+      language: 'English',
+      thumbnail: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
+      originalPrice: 7999,
+      price: 3999,
+      discountPercent: 50,
+      isFree: false,
+      isFeatured: false,
+      badge: 'DEVOPS & CLOUD',
+      status: 'PUBLISHED',
+      enrollmentOpen: true,
+      certificateEnabled: true,
+      studentsCount: 4100,
+      averageRating: 4.87,
+      reviewsCount: 620,
+      requirements: {
+        create: [
+          { text: 'Basic Linux terminal navigation and shell commands', orderIndex: 1 },
+          { text: 'Familiarity with Git and source control workflows', orderIndex: 2 }
+        ]
+      },
+      learningOutcomes: {
+        create: [
+          { text: 'Build multi-stage Docker containers for microservices', orderIndex: 1 },
+          { text: 'Deploy and scale Kubernetes pods, services, and ingress', orderIndex: 2 },
+          { text: 'Automate build, test, and release with GitHub Actions CI/CD', orderIndex: 3 },
+          { text: 'Provision AWS infrastructure declaratively using Terraform', orderIndex: 4 }
+        ]
+      }
+    }
+  })
+
+  console.log('✅ 7 Courses seeded across Data Science, ML, AI, Web, Cloud, and Trading')
 
   // 3. Assign Creator to Courses
   await prisma.courseCreator.createMany({
     data: [
       { courseId: coursePyds.id, creatorId: creator.id },
       { courseId: coursePyml.id, creatorId: creator.id },
-      { courseId: courseAlgo.id, creatorId: creator.id }
+      { courseId: courseAlgo.id, creatorId: creator.id },
+      { courseId: courseWeb.id, creatorId: creator.id },
+      { courseId: courseCloud.id, creatorId: creator.id }
     ]
+  })
+
+  // Playlists for Web Course
+  await prisma.playlist.create({
+    data: {
+      id: 'playlist-web-1',
+      courseId: courseWeb.id,
+      creatorId: creator.id,
+      title: 'Module 1: Modern React & Full-Stack Architecture',
+      description: 'Components, hooks, REST APIs, and database modeling.',
+      orderIndex: 1,
+      status: 'PUBLISHED',
+      lessons: {
+        create: [
+          {
+            id: 'lesson-web-1',
+            title: '01 Full-Stack Architecture Overview',
+            description: 'Client-server protocols, modern web stacks, and API communication.',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            duration: '18:40',
+            durationSeconds: 1120,
+            orderIndex: 1,
+            status: 'PUBLISHED',
+            isPreview: true
+          },
+          {
+            id: 'lesson-web-2',
+            title: '02 React 19 State, Hooks & Context',
+            description: 'Managing deterministic application state across components.',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+            duration: '22:15',
+            durationSeconds: 1335,
+            orderIndex: 2,
+            status: 'PUBLISHED',
+            isPreview: false
+          }
+        ]
+      }
+    }
+  })
+
+  // Playlists for Cloud Course
+  await prisma.playlist.create({
+    data: {
+      id: 'playlist-cloud-1',
+      courseId: courseCloud.id,
+      creatorId: creator.id,
+      title: 'Module 1: Docker Containerization Essentials',
+      description: 'Images, layers, volumes, networks, and Docker Compose.',
+      orderIndex: 1,
+      status: 'PUBLISHED',
+      lessons: {
+        create: [
+          {
+            id: 'lesson-cloud-1',
+            title: '01 Container Architecture & Docker Fundamentals',
+            description: 'Containers vs Virtual Machines, Docker daemon, and image caching.',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+            duration: '20:10',
+            durationSeconds: 1210,
+            orderIndex: 1,
+            status: 'PUBLISHED',
+            isPreview: true
+          },
+          {
+            id: 'lesson-cloud-2',
+            title: '02 Kubernetes Pods, Deployments & Services',
+            description: 'Orchestrating microservices at scale with declarative YAML manifests.',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+            duration: '25:40',
+            durationSeconds: 1540,
+            orderIndex: 2,
+            status: 'PUBLISHED',
+            isPreview: false
+          }
+        ]
+      }
+    }
   })
 
   // 4. Seed Playlists and Lessons for course-pyds
@@ -636,6 +802,20 @@ async function main() {
     }
   })
 
+  // Official Sample Reference Certificate matching client format
+  await prisma.certificate.create({
+    data: {
+      certificateCode: 'AVT-2025-001',
+      studentId: student.id,
+      courseId: coursePyds.id,
+      issueDate: new Date('2025-09-26'),
+      studentName: 'You',
+      courseTitle: 'AI & Emerging Technologies Program',
+      status: 'VALID',
+      verificationUrl: '/certificates?code=AVT-2025-001'
+    }
+  })
+
   // 8. Seed Verified Order
   await prisma.order.create({
     data: {
@@ -784,16 +964,58 @@ async function main() {
         entityId: 'lesson-pyml-2',
         details: 'Creator Dr. Alex Rivera submitted lesson 02 for admin review.',
         ipAddress: '127.0.0.1'
-      },
-      {
-        userId: admin.id,
-        action: 'VIDEO_RETURNED',
-        entityType: 'Lesson',
-        entityId: 'lesson-pyml-3',
-        details: 'Admin returned lesson 03 with audio noise feedback.',
-        ipAddress: '127.0.0.1'
       }
     ]
+  })
+
+  // 14. Seed Notifications for Student
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: student.id,
+        title: '🎉 Welcome to ApexLearn!',
+        message: 'Your student account is active. Explore your enrolled courses and commence Module 1.',
+        linkUrl: '/student/courses',
+        isRead: false,
+        createdAt: new Date(Date.now() - 3600000 * 2)
+      },
+      {
+        userId: student.id,
+        title: '📚 New Module Released',
+        message: 'Module 2: Pandas Data Wrangling & Pipelines is now live for Python for Data Science.',
+        linkUrl: '/student/courses',
+        isRead: false,
+        createdAt: new Date(Date.now() - 3600000 * 18)
+      },
+      {
+        userId: student.id,
+        title: '🏆 Verified Certificate Ready',
+        message: 'Congratulations! Your certificate CERT-PYDS-2026-9042 has been verified and issued.',
+        linkUrl: '/student/certificates',
+        isRead: false,
+        createdAt: new Date(Date.now() - 86400000 * 2)
+      },
+      {
+        userId: student.id,
+        title: '🗓️ Upcoming Live Weekend Cohort',
+        message: 'Join Dr. Vikram Sen this Saturday for Live Debugging: Asynchronous WebSockets.',
+        linkUrl: '/live-sessions',
+        isRead: true,
+        createdAt: new Date(Date.now() - 86400000 * 3)
+      }
+    ]
+  })
+
+  // 17. Seed Public About Page Content & Leadership
+  const { defaultAboutData } = await import('../src/data/defaultAboutData.js')
+  await prisma.platformSetting.upsert({
+    where: { key: 'about_page_content' },
+    update: { value: JSON.stringify(defaultAboutData) },
+    create: {
+      key: 'about_page_content',
+      value: JSON.stringify(defaultAboutData),
+      description: 'Public About Page & Leadership details'
+    }
   })
 
   console.log('✅ Seed completed successfully with full relational integrity!')

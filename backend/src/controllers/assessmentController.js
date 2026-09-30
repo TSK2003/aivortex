@@ -201,8 +201,9 @@ export async function issueCertificateIfEligible(req, res, next) {
 
     // 6. Generate Unique Serial & Issue Certificate
     const student = await prisma.user.findUnique({ where: { id: studentId } })
-    const courseCode = course.slug.split('-').slice(0, 3).join('').toUpperCase() || 'COURSE'
-    const certificateCode = `CERT-${courseCode}-2026-${Math.floor(1000 + Math.random() * 9000)}`
+    const year = new Date().getFullYear()
+    const rand = String(Math.floor(100 + Math.random() * 900)).padStart(3, '0')
+    const certificateCode = `AVT-${year}-${rand}`
 
     const certificate = await prisma.$transaction(async (tx) => {
       const c = await tx.certificate.create({

@@ -9,6 +9,9 @@ html {
   scroll-behavior: smooth;
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
 }
 
 body {
@@ -19,6 +22,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
 }
 
 /* Typography Hierarchy */
@@ -28,6 +33,8 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.02em;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 h1 {
@@ -338,6 +345,16 @@ button {
 }
 
 
+/* Root App Shell Safeguards */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  width: 100%;
+  overflow-x: hidden;
+}
+
 /* Toast Container */
 .toast-container {
   position: fixed;
@@ -348,12 +365,14 @@ button {
   flex-direction: column;
   gap: 10px;
   pointer-events: none;
+  max-width: calc(100vw - 32px);
 }
 
 .toast {
   pointer-events: auto;
-  min-width: 320px;
+  min-width: min(320px, calc(100vw - 32px));
   max-width: 420px;
+  width: 100%;
   background: #FFFFFF;
   color: var(--color-text);
   border-radius: var(--radius-md);
@@ -365,6 +384,7 @@ button {
   gap: 12px;
   animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   font-size: var(--font-size-sm);
+  word-break: break-word;
 }
 
 .toast.success {
@@ -410,6 +430,32 @@ button {
   .container {
     padding-left: var(--spacing-md);
     padding-right: var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .section {
+    padding-top: 32px;
+    padding-bottom: 32px;
+  }
+  .container {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .btn-lg {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.925rem;
+  }
+  .toast-container {
+    left: 12px;
+    right: 12px;
+    bottom: 16px;
+    align-items: center;
+  }
+  .toast {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
   }
 }
 

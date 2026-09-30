@@ -27,7 +27,7 @@ export default function ExploreTracksSection() {
     {
       step: '04',
       title: 'Credential Verification',
-      desc: 'Tamper-proof academic verification engine for validating credentials awarded by ApexLearn Institute.',
+      desc: 'Tamper-proof academic verification engine for validating credentials awarded by aivortex.',
       link: '/certificates',
       cta: 'Verify Credentials'
     }
@@ -37,7 +37,7 @@ export default function ExploreTracksSection() {
     <section className="section section-alt" id="explore-pathways" style={{ padding: '44px 0 52px 0' }}>
       <div className="container">
         <div className="section-header text-center" style={{ maxWidth: 760, margin: '0 auto 28px auto' }}>
-          <h2 className="section-title" style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 12 }}>
+          <h2 className="section-title" style={{ fontSize: 'clamp(1.5rem, 5vw, 2.25rem)', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 12 }}>
             CHOOSE YOUR <span className="highlight-blue" style={{ color: '#2563EB' }}>LEARNING PATH</span>
           </h2>
           <p className="section-subtitle" style={{ fontSize: '1.05rem', color: '#64748B', lineHeight: 1.6 }}>
@@ -45,7 +45,7 @@ export default function ExploreTracksSection() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: 24 }}>
           {pathways.map((item) => (
             <div
               key={item.step}

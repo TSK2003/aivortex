@@ -1,7 +1,11 @@
 import { useState } from 'react'
+import AivortexCertificate from '../common/AivortexCertificate'
+import CertificateModal from '../modals/CertificateModal'
+import { Eye, ExternalLink } from 'lucide-react'
 
 export default function CertificateShowcase({ onVerifyCert }) {
-  const [certId, setCertId] = useState('CERT-PYDS-2026-9042')
+  const [certId, setCertId] = useState('AVT-2025-001')
+  const [modalOpen, setModalOpen] = useState(false)
 
   const handleVerify = (e) => {
     e.preventDefault()
@@ -13,44 +17,51 @@ export default function CertificateShowcase({ onVerifyCert }) {
   return (
     <section className="section" id="certificate" style={{ padding: '64px 0 80px 0' }}>
       <div className="container">
-        <div className="certificate-showcase-grid">
+        <div className="certificate-showcase-grid" style={{ alignItems: 'center' }}>
           {/* Left: Certificate Mockup */}
-          <div className="certificate-mockup" style={{ border: '1px solid #E2E8F0', borderRadius: 16, overflow: 'hidden' }}>
-            <div className="certificate-inner-border">
-              <div className="cert-logo">ApexLearn Institute</div>
-              <div className="cert-header">Certificate of Specialization & Excellence</div>
-              <p style={{ fontSize: '0.8rem', color: '#64748B', marginBottom: 8 }}>This is to proudly certify that</p>
-
-              <div className="cert-name">Rahul Sharma</div>
-
-              <p style={{ fontSize: '0.8rem', color: '#64748B', marginBottom: 4 }}>
-                has successfully fulfilled all curriculum requirements for
-              </p>
-              <div className="cert-course">Python for Data Science Specialization</div>
-
-              <div className="cert-seal" style={{ width: 44, height: 44, borderRadius: '50%', background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '14px auto', fontWeight: 800, fontSize: '0.8rem', color: '#2563EB' }}>
-                APEX
-              </div>
-
-              <div className="cert-meta-row">
-                <div>
-                  <div style={{ fontWeight: 700, color: '#0F172A' }}>Dr. Vikram Sen</div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748B' }}>Lead AI Scientist</div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'monospace', fontWeight: 700, color: '#2563EB' }}>
-                    ID: CERT-PYDS-2026-9042
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: '#16A34A', fontWeight: 600 }}>
-                    Digitally Signed & Verified
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 700, color: '#0F172A' }}>March 10, 2026</div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748B' }}>Issued Date</div>
-                </div>
-              </div>
+          <div style={{ position: 'relative' }}>
+            <div
+              className="certificate-interactive-card"
+              style={{
+                borderRadius: 8,
+                overflow: 'hidden',
+                boxShadow: '0 20px 50px -10px rgba(15, 23, 42, 0.25)',
+                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                cursor: 'pointer'
+              }}
+              onClick={() => setModalOpen(true)}
+              title="Click to expand high-resolution certificate"
+            >
+              <AivortexCertificate
+                studentName="You"
+                courseTitle="AI & Emerging Technologies Program"
+                certificateCode="AVT-2025-001"
+                issueDate="2025-09-26"
+              />
             </div>
+
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="btn btn-outline btn-sm"
+              style={{
+                position: 'absolute',
+                bottom: 16,
+                right: 16,
+                background: 'rgba(15, 23, 42, 0.85)',
+                color: '#FFFFFF',
+                backdropFilter: 'blur(8px)',
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: '0.75rem',
+                zIndex: 10
+              }}
+            >
+              <Eye size={13} />
+              <span>Expand & Print</span>
+            </button>
           </div>
 
           {/* Right: Details & Verification Tool */}
@@ -108,6 +119,15 @@ export default function CertificateShowcase({ onVerifyCert }) {
           </div>
         </div>
       </div>
+
+      <CertificateModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        studentName="You"
+        courseTitle="AI & Emerging Technologies Program"
+        certificateCode="AVT-2025-001"
+        issueDate="2025-09-26"
+      />
     </section>
   )
 }

@@ -9,7 +9,7 @@ export default function PrivacyPage() {
             <Lock size={14} style={{ marginRight: 6 }} />
             Data Protection
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 12 }}>
+          <h1 style={{ fontSize: 'clamp(1.6rem, 5.5vw, 2.5rem)', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 12 }}>
             Privacy Policy
           </h1>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>

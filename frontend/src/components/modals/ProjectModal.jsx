@@ -16,7 +16,7 @@ export default function ProjectModal({ project, isOpen, onClose }) {
           <X style={{ width: 20, height: 20 }} />
         </button>
 
-        <div style={{ padding: 32 }}>
+        <div style={{ padding: 'clamp(18px, 4vw, 32px)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <span
               className="project-domain-tag"

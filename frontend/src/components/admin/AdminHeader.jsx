@@ -1,23 +1,9 @@
-import { useState, useRef, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import {
-  Menu,
-  ChevronDown,
-  LayoutDashboard,
-  User,
-  Settings,
-  Shield,
-  FileText,
-  LogOut,
-  Eye,
-  Edit
-} from 'lucide-react'
+import { Menu, Sun, Moon } from 'lucide-react'
 import NotificationMenu from './NotificationMenu'
+import { useTheme } from '../../contexts/ThemeContext'
 
 export default function AdminHeader({
   onToggleSidebar,
-  user,
-  onLogout,
   pendingVideosCount = 0,
   pendingRequestsCount = 0,
   recentOrdersCount = 0,
@@ -38,7 +24,7 @@ export default function AdminHeader({
     if (path.includes('/admin/courses')) return 'Course Management'
     if (path.includes('/admin/playlists')) return 'Playlist & Video Management'
     if (path.includes('/admin/payments')) return 'Payments & Enrollments'
-    if (path.includes('/admin/public-page')) return 'Public Page Management'
+    if (path.includes('/admin/public-page') || path.includes('/admin/public-controls')) return 'Public Pages & Footer CMS'
     if (path.includes('/admin/notifications')) return 'Broadcast Notifications'
     if (path.includes('/admin/reports')) return 'Reports & Analytics'
     if (path.includes('/admin/requests')) return 'Creator Requests'
@@ -78,22 +64,31 @@ export default function AdminHeader({
 
   return (
     <header
+      className="admin-header-bar"
+  const { toggleTheme, isDark } = useTheme()
+
+  return (
+    <header
+      className="dashboard-topbar admin-header"
       style={{
         height: '64px',
-        background: '#FFFFFF',
-        borderBottom: '1px solid #E2E8F0',
+        background: 'var(--color-header-bg, #FFFFFF)',
+        borderBottom: '1px solid var(--color-border, #E2E8F0)',
         padding: '0 28px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         position: 'sticky',
         top: 0,
-        zIndex: 40,
-        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.03)'
+        zIndex: 100,
+        boxShadow: 'var(--shadow-sm)',
+        transition: 'background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease'
       }}
     >
       {/* Left side: Hamburger button + Title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div className="admin-header-left" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      {/* Left side: [Hamburger] [Admin Portal] [LIVE] */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <button
           type="button"
           onClick={onToggleSidebar}
@@ -103,40 +98,44 @@ export default function AdminHeader({
             height: 38,
             borderRadius: '9px',
             background: 'transparent',
-            border: '1px solid #E2E8F0',
+            border: '1px solid var(--color-border, #E2E8F0)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#334155',
+            color: 'var(--color-text, #334155)',
             cursor: 'pointer',
-            transition: 'all 0.15s ease'
+            transition: 'background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.15s ease'
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#F8FAFC'
-            e.currentTarget.style.borderColor = '#CBD5E1'
+            e.currentTarget.style.background = 'var(--color-bg-subtle, #F8FAFC)'
+            e.currentTarget.style.borderColor = 'var(--color-border-hover, #CBD5E1)'
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'transparent'
-            e.currentTarget.style.borderColor = '#E2E8F0'
+            e.currentTarget.style.borderColor = 'var(--color-border, #E2E8F0)'
           }}
         >
           <Menu size={19} />
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="admin-header-title-wrap" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span
+            className="admin-header-main-title"
+            className="topbar-title"
             style={{
-              fontSize: '1.0625rem',
+              fontSize: '1.125rem',
               fontWeight: 800,
-              color: '#0F172A',
-              letterSpacing: '-0.02em'
+              color: 'var(--color-text, #0F172A)',
+              letterSpacing: '-0.02em',
+              lineHeight: 1,
+              transition: 'color 0.3s ease'
             }}
           >
             Admin Portal
           </span>
 
           {getPageTitle() !== 'Admin Portal' && (
-            <>
+            <span className="admin-header-breadcrumb" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: '#CBD5E1', fontSize: '0.875rem' }}>/</span>
               <span
                 style={{
@@ -147,22 +146,24 @@ export default function AdminHeader({
               >
                 {getPageTitle()}
               </span>
-            </>
+            </span>
           )}
 
           <span
+            className="admin-header-live-badge"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: 5,
-              background: '#ECFDF5',
-              color: '#059669',
+              background: 'var(--color-success-bg, #ECFDF5)',
+              color: 'var(--color-success, #059669)',
               fontSize: '0.6875rem',
               fontWeight: 700,
-              padding: '2px 8px',
+              padding: '3px 8px',
               borderRadius: '9999px',
-              border: '1px solid #A7F3D0',
-              marginLeft: 6
+              border: '1px solid var(--color-success, #A7F3D0)',
+              lineHeight: 1,
+              transition: 'background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease'
             }}
           >
             <span
@@ -179,8 +180,23 @@ export default function AdminHeader({
         </div>
       </div>
 
-      {/* Right side: Notifications & Profile */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      {/* Right side: Theme Toggle & Notifications */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Light / Dark Theme Toggle Button with Fluid Morphing Icons */}
+        <button
+          type="button"
+          id="admin-theme-toggle-btn"
+          onClick={toggleTheme}
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          className={`admin-theme-toggle-btn ${isDark ? 'is-dark' : 'is-light'}`}
+        >
+          <div className="theme-toggle-track">
+            <Sun size={19} strokeWidth={2.2} className="theme-icon sun-icon" />
+            <Moon size={19} strokeWidth={2.2} className="theme-icon moon-icon" />
+          </div>
+        </button>
+
         {/* Notification Bell */}
         <NotificationMenu
           pendingVideosCount={pendingVideosCount}
@@ -248,7 +264,7 @@ export default function AdminHeader({
               )}
             </div>
 
-            <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
+            <div className="admin-user-meta" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
               <span
                 style={{
                   fontSize: '0.8125rem',
@@ -470,6 +486,9 @@ export default function AdminHeader({
             </div>
           )}
         </div>
+        {/* Active Session status */}
+        <div style={{ width: 1, height: 22, background: 'var(--color-border, #E2E8F0)' }} />
+        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
       </div>
     </header>
   )

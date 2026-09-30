@@ -31,11 +31,12 @@ export const s3Service = {
    */
   getPresignedUploadUrl: async (key, contentType = 'video/mp4', expiresIn = 3600) => {
     if (!isConfigured || !s3Client) {
-      console.warn('⚠️ S3 not configured with live credentials; returning mock upload URL.')
+      console.warn('⚠️ S3 not configured with live credentials; returning local backend upload endpoint.')
+      const baseUrl = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`
       return {
-        uploadUrl: `https://${BUCKET_NAME}.s3.amazonaws.com/${encodeURIComponent(key)}?mockSignature=true&expires=${Date.now() + expiresIn * 1000}`,
+        uploadUrl: `${baseUrl}/api/creator/videos/upload-local?key=${encodeURIComponent(key)}`,
         key,
-        bucket: BUCKET_NAME
+        bucket: 'local-storage'
       }
     }
 
@@ -54,6 +55,11 @@ export const s3Service = {
    */
   getPresignedDownloadUrl: async (key, expiresIn = 7200) => {
     if (!isConfigured || !s3Client) {
+      if (key && (key.startsWith('uploads/') || key.startsWith('/uploads/'))) {
+        const cleanKey = key.replace(/^[/\\]+/, '')
+        const baseUrl = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`
+        return `${baseUrl}/${cleanKey}`
+      }
       // Return safe sample video streaming URL for development and testing
       return `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4?mockSigned=true&exp=${Date.now() + expiresIn * 1000}`
     }

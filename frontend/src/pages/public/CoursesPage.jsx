@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import { Search, Filter, BookOpen, AlertCircle, RefreshCw, Sparkles, Tag } from 'lucide-react'
 import CourseCard from '../../components/public/CourseCard'
 import CustomSelect from '../../components/common/CustomSelect'
@@ -11,6 +11,8 @@ import api from '../../services/api'
 export default function CoursesPage() {
   const { courseId: routeCourseId } = useParams()
   const [searchParams] = useSearchParams()
+  const location = useLocation()
+  const navigate = useNavigate()
   const enrollParam = searchParams.get('enroll')
 
   const [courses, setCourses] = useState([])
@@ -33,8 +35,17 @@ export default function CoursesPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
   const categories = ['All', 'Data Science', 'Machine Learning', 'Artificial Intelligence', 'Web Development', 'Trading', 'Cloud Computing']
-  const levels = ['All', 'Beginner', 'Intermediate', 'Advanced']
-  const languages = ['All', 'English', 'Hindi', 'Tamil']
+  const languages = [
+    'All',
+    'English',
+    'Tamil',
+    'Thanglish',
+    'Hindi',
+    'Bilingual (English/Tamil)',
+    'Bilingual (English/Hindi)',
+    'Bilingual (Tamil/Thanglish)',
+    'Multilingual'
+  ]
   const priceTypes = ['All', 'Paid Only', 'Free Only']
   const sortOptions = [
     { value: 'popularity', label: 'Most Popular' },
@@ -78,19 +89,40 @@ export default function CoursesPage() {
 
   // Auto-open course details or payment modal if navigated from course link or redirect intent
   useEffect(() => {
-    if (courses.length > 0 && routeCourseId) {
-      const target = courses.find((c) => c.slug === routeCourseId || c.id === routeCourseId)
-      if (target) {
-        if (enrollParam === 'true') {
-          setCourseToEnroll(target)
-          setIsPaymentModalOpen(true)
-        } else {
-          setSelectedCourse(target)
-          setIsCourseModalOpen(true)
+    if (routeCourseId) {
+      if (courses.length > 0) {
+        const target = courses.find((c) => c.slug === routeCourseId || c.id === routeCourseId)
+        if (target) {
+          if (enrollParam === 'true') {
+            setCourseToEnroll(target)
+            setIsPaymentModalOpen(true)
+          } else {
+            setSelectedCourse(target)
+            setIsCourseModalOpen(true)
+          }
+          return
         }
       }
+
+      // If not yet found in local state, fetch from API by slug directly
+      api.public.getCourseBySlug(routeCourseId)
+        .then((res) => {
+          const courseData = res.data?.course
+          if (courseData) {
+            if (enrollParam === 'true') {
+              setCourseToEnroll(courseData)
+              setIsPaymentModalOpen(true)
+            } else {
+              setSelectedCourse(courseData)
+              setIsCourseModalOpen(true)
+            }
+          }
+        })
+        .catch((err) => {
+          console.warn('Direct course slug lookup failed:', err)
+        })
     }
-  }, [courses, routeCourseId, enrollParam])
+  }, [courses, routeCourseId, enrollParam, location.key])
 
   const filteredCourses = useMemo(() => {
     return courses
@@ -197,7 +229,7 @@ export default function CoursesPage() {
 
         {/* Page Header */}
         <div className="section-header text-center" style={{ marginBottom: 32, maxWidth: 760, margin: '0 auto 32px auto' }}>
-          <h1 className="section-title" style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 10 }}>
+          <h1 className="section-title" style={{ fontSize: 'clamp(1.6rem, 5.5vw, 2.25rem)', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 10 }}>
             EXPLORE ALL <span className="highlight-blue" style={{ color: '#2563EB' }}>COURSES</span>
           </h1>
           <p className="section-subtitle" style={{ fontSize: '1rem', color: '#64748B', lineHeight: 1.6 }}>
@@ -211,14 +243,14 @@ export default function CoursesPage() {
             background: '#FFFFFF',
             border: '1px solid var(--color-border)',
             borderRadius: 'var(--radius-lg)',
-            padding: 20,
+            padding: 'clamp(14px, 3.5vw, 20px)',
             marginBottom: 28,
             boxShadow: '0 2px 8px -2px rgba(15, 23, 42, 0.04)'
           }}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 14 }}>
             {/* Search Input */}
-            <div style={{ position: 'relative', gridColumn: 'span 2' }}>
+            <div style={{ position: 'relative', gridColumn: '1 / -1' }}>
               <Search
                 style={{
                   position: 'absolute',
@@ -399,7 +431,12 @@ export default function CoursesPage() {
       <CourseDetailModal
         course={selectedCourse}
         isOpen={isCourseModalOpen}
-        onClose={() => setIsCourseModalOpen(false)}
+        onClose={() => {
+          setIsCourseModalOpen(false)
+          if (routeCourseId) {
+            navigate('/courses', { replace: true })
+          }
+        }}
         onEnroll={handleEnrollCourse}
         onOpenPreview={(lesson) => {
           setPreviewVideo({ videoUrl: lesson.videoUrl, title: lesson.title, course: selectedCourse?.title })
