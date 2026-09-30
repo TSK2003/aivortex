@@ -175,15 +175,33 @@ export const api = {
   // Creator Workshop
   creator: {
     getCourses: () => request('/creator/courses'),
-    createPlaylist: (courseId, title, description) =>
+    createPlaylist: (courseId, title, description, orderIndex = 1) =>
       request('/creator/playlists', {
         method: 'POST',
-        body: JSON.stringify({ courseId, title, description })
+        body: JSON.stringify({ courseId, title, description, orderIndex })
+      }),
+    updatePlaylist: (playlistId, data) =>
+      request(`/creator/playlists/${playlistId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      }),
+    deletePlaylist: (playlistId) =>
+      request(`/creator/playlists/${playlistId}`, {
+        method: 'DELETE'
       }),
     uploadVideo: (videoData) =>
       request('/creator/videos', {
         method: 'POST',
         body: JSON.stringify(videoData)
+      }),
+    updateLesson: (lessonId, data) =>
+      request(`/creator/videos/${lessonId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      }),
+    deleteLesson: (lessonId) =>
+      request(`/creator/videos/${lessonId}`, {
+        method: 'DELETE'
       }),
     submitVideoForReview: (lessonId) =>
       request(`/creator/videos/${lessonId}/submit`, { method: 'POST' }),
@@ -193,12 +211,24 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data)
       }),
+    getProfile: () => request('/creator/profile'),
+    getRequests: () => request('/creator/requests'),
     requestProfileChange: (profileData) =>
       request('/creator/profile-request', {
         method: 'POST',
         body: JSON.stringify(profileData)
       }),
-    getProfileRequests: () => request('/creator/profile-requests')
+    verifyEmailChange: (data) =>
+      request('/creator/verify-email-change', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    completePasswordChange: (data) =>
+      request('/creator/complete-password-change', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    getProfileRequests: () => request('/creator/profile')
   },
 
   // Admin Governance
@@ -207,6 +237,10 @@ export const api = {
     getCreators: (params = {}) => {
       const query = new URLSearchParams(params).toString()
       return request(`/admin/creators${query ? `?${query}` : ''}`)
+    },
+    getNextCreatorUserId: (name = '') => {
+      const query = name && name.trim() ? `?name=${encodeURIComponent(name.trim())}` : ''
+      return request(`/admin/creators/next-user-id${query}`)
     },
     getCreator: (id) => request(`/admin/creators/${id}`),
     createCreator: (creatorData) =>
@@ -278,7 +312,8 @@ export const api = {
       }),
     deleteOffer: (id) =>
       request(`/admin/offers/${id}`, { method: 'DELETE' }),
-    getVideoVerificationQueue: () => request('/admin/video-verification'),
+    getVideoVerificationQueue: (status) =>
+      request(status ? `/admin/video-verification?status=${encodeURIComponent(status)}` : '/admin/video-verification'),
     reviewVideo: (lessonId, action, feedbackNote) =>
       request(`/admin/video-verification/${lessonId}/review`, {
         method: 'POST',
@@ -297,7 +332,7 @@ export const api = {
     reviewRequest: (requestId, action, reason) =>
       request(`/admin/requests/${requestId}/review`, {
         method: 'POST',
-        body: JSON.stringify({ action, reason })
+        body: JSON.stringify({ action, reason, adminNote: reason })
       }),
     broadcastAnnouncement: (title, message, targetRole) =>
       request('/admin/announcements', {
