@@ -2,7 +2,6 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
   Users,
-  ShieldCheck,
   ArrowLeft,
   ChevronRight,
   Eye,
@@ -17,6 +16,7 @@ import {
   Sparkles,
   ExternalLink,
   User,
+  UserCheck,
   Camera,
   Trash2,
   Phone,
@@ -125,10 +125,9 @@ export default function AdminCreateCreatorPage() {
   // Section 2: Credentials State
   const [userId, setUserId] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-
-  // Section 3: Status State
-  const [status, setStatus] = useState('ACTIVE')
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   // Section 4: Delivery State
   const [sendEmail, setSendEmail] = useState(true)
@@ -140,18 +139,35 @@ export default function AdminCreateCreatorPage() {
   const [copiedKey, setCopiedKey] = useState(null)
   const [createdResult, setCreatedResult] = useState(null)
 
-  // Auto-generate unique Creator User ID
-  const handleGenerateUserId = () => {
-    const randomSuffix = Math.floor(100 + Math.random() * 900)
-    const prefix = name.trim()
-      ? name.trim().split(' ')[0].replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase()
-      : 'FAC'
-    const generated = `CR-${prefix}-${randomSuffix}`
-    setUserId(generated)
-    if (errors.userId) setErrors((prev) => ({ ...prev, userId: null }))
+  const [isGeneratingUserId, setIsGeneratingUserId] = useState(false)
+
+  // Auto-generate sequential Creator User ID (e.g. Banu -> CR-BAN-001)
+  const handleGenerateUserId = async () => {
+    try {
+      setIsGeneratingUserId(true)
+      const res = await api.admin.getNextCreatorUserId(name.trim())
+      if (res?.data?.userId) {
+        setUserId(res.data.userId)
+      } else {
+        const prefix = name.trim()
+          ? name.trim().split(/\s+/)[0].replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase()
+          : 'FAC'
+        setUserId(`CR-${prefix || 'FAC'}-001`)
+      }
+      if (errors.userId) setErrors((prev) => ({ ...prev, userId: null }))
+    } catch (err) {
+      console.warn('Failed to fetch sequential User ID from server, using local fallback', err)
+      const prefix = name.trim()
+        ? name.trim().split(/\s+/)[0].replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase()
+        : 'FAC'
+      setUserId(`CR-${prefix || 'FAC'}-001`)
+      if (errors.userId) setErrors((prev) => ({ ...prev, userId: null }))
+    } finally {
+      setIsGeneratingUserId(false)
+    }
   }
 
-  // Auto-generate strong temporary password
+  // Auto-generate strong initial password
   const handleGeneratePassword = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
     let rand = ''
@@ -162,8 +178,10 @@ export default function AdminCreateCreatorPage() {
     const spec = specialChars.charAt(Math.floor(Math.random() * specialChars.length))
     const generated = `Apex${rand}${spec}${Math.floor(10 + Math.random() * 90)}`
     setPassword(generated)
+    setConfirmPassword(generated)
     setShowPassword(true)
-    if (errors.password) setErrors((prev) => ({ ...prev, password: null }))
+    setShowConfirmPassword(true)
+    setErrors((prev) => ({ ...prev, password: null, confirmPassword: null }))
   }
 
   // Password strength calculation
@@ -201,9 +219,22 @@ export default function AdminCreateCreatorPage() {
       const pErr = validateInternationalPhone(phoneCountryCode, nationalPhone)
       if (pErr) errs.phone = pErr
     }
-    if (password && password.length < 8) {
-      errs.password = 'Password must be at least 8 characters'
+    // Proper password length validation
+    if (!password) {
+      errs.password = 'Password is required'
+    } else if (password.length < 8) {
+      errs.password = 'Password must be at least 8 characters long'
+    } else if (password.length > 32) {
+      errs.password = 'Password cannot exceed 32 characters'
     }
+
+    // Confirm password validation
+    if (!confirmPassword) {
+      errs.confirmPassword = 'Confirm password is required'
+    } else if (password && confirmPassword !== password) {
+      errs.confirmPassword = 'Passwords do not match'
+    }
+
     return errs
   }
 
@@ -220,7 +251,7 @@ export default function AdminCreateCreatorPage() {
     setTimeout(() => setCopiedKey(null), 2500)
   }
 
-  // Submit Handler
+  // Submit Handler: Create & Activate Creator
   const handleSubmit = async (e) => {
     if (e) e.preventDefault()
 
@@ -232,6 +263,7 @@ export default function AdminCreateCreatorPage() {
         email: true,
         specialization: true,
         password: true,
+        confirmPassword: true,
         phone: true
       })
       showToast('Please correct the highlighted form errors before proceeding.', 'error')
@@ -254,8 +286,8 @@ export default function AdminCreateCreatorPage() {
         bio: bio ? bio.trim() : null,
         organization: organization ? organization.trim() : null,
         userId: userId ? userId.trim() : null,
-        password: password ? password.trim() : null,
-        status: status || 'ACTIVE',
+        password: password.trim(),
+        status: 'ACTIVE',
         sendEmail
       }
 
@@ -264,13 +296,16 @@ export default function AdminCreateCreatorPage() {
       if (res.data) {
         setCreatedResult({
           creator: res.data.creator,
-          tempPassword: res.data.tempPasswordGenerated || password || 'ApexCreator2026!',
+          password: password.trim() || res.data.tempPasswordGenerated || 'ApexCreator2026!',
           emailStatus: res.data.emailStatus
         })
-        showToast(res.message || 'Creator account provisioned successfully', 'success')
+        showToast('Creator account created successfully.', 'success')
+        if (sendEmail) {
+          showToast("Login credentials have been sent to the creator's registered email.", 'info')
+        }
       }
     } catch (err) {
-      const msg = err.message || 'Unable to provision creator account. Please try again.'
+      const msg = err.message || 'Unable to create creator account. Please try again.'
       showToast(msg, 'error')
       if (msg.toLowerCase().includes('email')) {
         setErrors((prev) => ({ ...prev, email: msg }))
@@ -284,7 +319,7 @@ export default function AdminCreateCreatorPage() {
 
   // If Creator was successfully created, show confirmation summary card
   if (createdResult) {
-    const { creator, tempPassword, emailStatus } = createdResult
+    const { creator, password: initialPassword, emailStatus } = createdResult
     return (
       <div style={{ maxWidth: 840, margin: '20px auto 120px auto', padding: '0 20px' }}>
         <div
@@ -314,11 +349,34 @@ export default function AdminCreateCreatorPage() {
           </div>
 
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>
-            Creator Account Provisioned!
+            Creator Account Created Successfully!
           </h2>
-          <p style={{ color: '#64748B', fontSize: '0.95rem', maxWidth: 560, margin: '0 auto 28px auto' }}>
-            The curriculum faculty account for <strong>{creator.name}</strong> has been initialized and activated on the platform.
+          <p style={{ color: '#64748B', fontSize: '0.9rem', maxWidth: 560, margin: '0 auto 24px auto' }}>
+            The account for <strong>{creator.name}</strong> is now created and ready for portal access.
           </p>
+
+          {/* Credential Email Delivery Notice Banner */}
+          {sendEmail && (
+            <div
+              style={{
+                maxWidth: 640,
+                margin: '0 auto 24px auto',
+                padding: '14px 18px',
+                borderRadius: 12,
+                background: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                textAlign: 'left'
+              }}
+            >
+              <Mail size={20} style={{ color: '#2563EB', flexShrink: 0 }} />
+              <div style={{ fontSize: '0.875rem', color: '#1E40AF', fontWeight: 600 }}>
+                Login credentials have been sent to the creator's registered email (<strong>{creator.email}</strong>).
+              </div>
+            </div>
+          )}
 
           {/* Credentials Display Card */}
           <div
@@ -331,36 +389,13 @@ export default function AdminCreateCreatorPage() {
               marginBottom: 28
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Lock size={18} style={{ color: '#2563EB' }} />
                 <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0F172A' }}>
-                  Onboarding Credentials
+                  Account Credentials
                 </span>
               </div>
-              <span
-                style={{
-                  background: creator.status === 'ACTIVE' ? '#DCFCE7' : (creator.status === 'SUSPENDED' ? '#FEE2E2' : '#F1F5F9'),
-                  color: creator.status === 'ACTIVE' ? '#166534' : (creator.status === 'SUSPENDED' ? '#991B1B' : '#475569'),
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  padding: '4px 10px',
-                  borderRadius: 20,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6
-                }}
-              >
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    background: creator.status === 'ACTIVE' ? '#16A34A' : (creator.status === 'SUSPENDED' ? '#DC2626' : '#94A3B8')
-                  }}
-                />
-                STATUS: {creator.status}
-              </span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
@@ -377,6 +412,7 @@ export default function AdminCreateCreatorPage() {
                     onClick={() => handleCopy(creator.id, 'id')}
                     className="btn btn-outline btn-sm"
                     style={{ height: 34, padding: '0 10px' }}
+                    title="Copy User ID"
                   >
                     {copiedKey === 'id' ? <Check size={14} style={{ color: '#16A34A' }} /> : <Copy size={14} />}
                   </button>
@@ -396,6 +432,7 @@ export default function AdminCreateCreatorPage() {
                     onClick={() => handleCopy(creator.email, 'email')}
                     className="btn btn-outline btn-sm"
                     style={{ height: 34, padding: '0 10px' }}
+                    title="Copy Email"
                   >
                     {copiedKey === 'email' ? <Check size={14} style={{ color: '#16A34A' }} /> : <Copy size={14} />}
                   </button>
@@ -404,15 +441,15 @@ export default function AdminCreateCreatorPage() {
 
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, display: 'block', marginBottom: 4 }}>
-                  INITIAL TEMPORARY PASSWORD
+                  INITIAL PASSWORD
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <code style={{ fontSize: '0.95rem', fontWeight: 700, color: '#2563EB', background: '#FFFFFF', padding: '8px 14px', borderRadius: 8, border: '1px solid #CBD5E1', flex: 1 }}>
-                    {tempPassword}
+                    {initialPassword}
                   </code>
                   <button
                     type="button"
-                    onClick={() => handleCopy(tempPassword, 'pw')}
+                    onClick={() => handleCopy(initialPassword, 'pw')}
                     className="btn btn-outline btn-sm"
                     style={{ height: 38, padding: '0 14px', fontWeight: 600 }}
                   >
@@ -423,7 +460,7 @@ export default function AdminCreateCreatorPage() {
               </div>
             </div>
 
-            {/* Email Dispatch Info */}
+            {/* Email Dispatch Info Note */}
             <div
               style={{
                 marginTop: 20,
@@ -440,11 +477,11 @@ export default function AdminCreateCreatorPage() {
               <div style={{ fontSize: '0.8125rem', color: '#1E293B', flex: 1 }}>
                 {emailStatus?.sent ? (
                   <span>
-                    <strong>Invitation Dispatched:</strong> An onboarding email containing portal access details and these temporary credentials was sent to <strong>{creator.email}</strong>.
+                    <strong>Invitation Dispatched:</strong> An onboarding email containing portal access details and credentials was sent to <strong>{creator.email}</strong>.
                   </span>
                 ) : (
                   <span>
-                    <strong>Email Delivery Notice:</strong> Account created successfully. Credentials were logged locally; please share the temporary credentials with the instructor directly.
+                    <strong>Email Delivery Notice:</strong> Account created successfully. Credentials were logged locally; please share the credentials with the instructor directly.
                   </span>
                 )}
               </div>
@@ -461,11 +498,16 @@ export default function AdminCreateCreatorPage() {
                 setName('')
                 setEmail('')
                 setPhone('')
+                setNationalPhone('')
                 setSpecialization('')
                 setBio('')
                 setOrganization('')
+                setAvatar('')
                 setUserId('')
                 setPassword('')
+                setConfirmPassword('')
+                setErrors({})
+                setTouched({})
               }}
               style={{ height: 44, padding: '0 24px', fontWeight: 600 }}
             >
@@ -477,7 +519,7 @@ export default function AdminCreateCreatorPage() {
               onClick={() => navigate('/admin/creators')}
               style={{ height: 44, padding: '0 28px', fontWeight: 700 }}
             >
-              Go to Creator Directory
+              Go to Creator Management
             </button>
           </div>
         </div>
@@ -1043,14 +1085,14 @@ export default function AdminCreateCreatorPage() {
                   Section 2 — Account Credentials
                 </h2>
                 <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: '2px 0 0 0' }}>
-                  Assign or generate system identifiers and secure initial access credentials.
+                  Assign or generate Creator User ID and Password.
                 </p>
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
               {/* Creator User ID */}
-              <div>
+              <div style={{ gridColumn: '1 / -1' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <label style={{ fontWeight: 700, fontSize: '0.875rem', color: '#1E293B', margin: 0 }}>
                     Creator User ID
@@ -1058,25 +1100,26 @@ export default function AdminCreateCreatorPage() {
                   <button
                     type="button"
                     onClick={handleGenerateUserId}
+                    disabled={isGeneratingUserId}
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#2563EB',
+                      color: isGeneratingUserId ? '#94A3B8' : '#2563EB',
                       fontSize: '0.75rem',
                       fontWeight: 700,
-                      cursor: 'pointer',
+                      cursor: isGeneratingUserId ? 'not-allowed' : 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 4
                     }}
                   >
-                    <RefreshCw size={12} />
-                    <span>Generate User ID</span>
+                    <RefreshCw size={12} style={{ animation: isGeneratingUserId ? 'spin 1s linear infinite' : 'none' }} />
+                    <span>{isGeneratingUserId ? 'Generating...' : 'Generate User ID'}</span>
                   </button>
                 </div>
                 <input
                   type="text"
-                  placeholder="e.g. CR-001 or Auto-Generated"
+                  placeholder="e.g. CR-BAN-001 or Auto-Generated"
                   className="form-input"
                   value={userId}
                   onChange={(e) => {
@@ -1085,8 +1128,8 @@ export default function AdminCreateCreatorPage() {
                   }}
                   style={{ width: '100%', height: 44, fontFamily: 'monospace' }}
                 />
-                <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 4 }}>
-                  Leave blank to auto-generate a system UUID, or specify a custom identifier (e.g. CR-001).
+                <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 4, marginBottom: 0 }}>
+                  Leave blank to auto-generate sequentially (e.g. CR-BAN-001), or specify a custom identifier.
                 </p>
                 {errors.userId && (
                   <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4 }}>
@@ -1095,11 +1138,11 @@ export default function AdminCreateCreatorPage() {
                 )}
               </div>
 
-              {/* Password */}
+              {/* Password * */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <label style={{ fontWeight: 700, fontSize: '0.875rem', color: '#1E293B', margin: 0 }}>
-                    Temporary Password
+                    Password <span style={{ color: '#EF4444' }}>*</span>
                   </label>
                   <button
                     type="button"
@@ -1117,7 +1160,7 @@ export default function AdminCreateCreatorPage() {
                     }}
                   >
                     <Sparkles size={12} />
-                    <span>Generate Secure Password</span>
+                    <span>Generate Password</span>
                   </button>
                 </div>
                 <div style={{ position: 'relative' }}>
@@ -1127,9 +1170,16 @@ export default function AdminCreateCreatorPage() {
                     className="form-input"
                     value={password}
                     onChange={(e) => {
-                      setPassword(e.target.value)
+                      const val = e.target.value
+                      setPassword(val)
                       if (errors.password) setErrors((prev) => ({ ...prev, password: null }))
+                      if (confirmPassword && val !== confirmPassword) {
+                        setErrors((prev) => ({ ...prev, confirmPassword: 'Passwords do not match' }))
+                      } else if (confirmPassword && val === confirmPassword) {
+                        setErrors((prev) => ({ ...prev, confirmPassword: null }))
+                      }
                     }}
+                    onBlur={() => handleBlur('password')}
                     style={{
                       width: '100%',
                       height: 44,
@@ -1137,6 +1187,7 @@ export default function AdminCreateCreatorPage() {
                       borderColor: touched.password && errors.password ? '#EF4444' : '#CBD5E1',
                       fontFamily: showPassword ? 'monospace' : 'inherit'
                     }}
+                    required
                   />
                   <button
                     type="button"
@@ -1152,6 +1203,7 @@ export default function AdminCreateCreatorPage() {
                       cursor: 'pointer',
                       padding: 4
                     }}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -1177,153 +1229,87 @@ export default function AdminCreateCreatorPage() {
                   </div>
                 )}
 
-                <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 6 }}>
-                  Passwords are encrypted using bcrypt salt hashing before storage in PostgreSQL.
+                <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 6, marginBottom: 0 }}>
+                  Minimum 8 characters. Treated as the creator's initial account password.
                 </p>
                 {touched.password && errors.password && (
-                  <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4 }}>
-                    {errors.password}
+                  <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <AlertCircle size={12} /> {errors.password}
+                  </p>
+                )}
+              </div>
+
+              {/* Confirm Password * */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label style={{ fontWeight: 700, fontSize: '0.875rem', color: '#1E293B', margin: 0 }}>
+                    Confirm Password <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  {password && confirmPassword && password === confirmPassword && (
+                    <span style={{ color: '#16A34A', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <Check size={13} /> Passwords match
+                    </span>
+                  )}
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Re-enter initial password"
+                    className="form-input"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setConfirmPassword(val)
+                      if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: null }))
+                      if (password && val !== password) {
+                        setErrors((prev) => ({ ...prev, confirmPassword: 'Passwords do not match' }))
+                      } else if (password && val === password) {
+                        setErrors((prev) => ({ ...prev, confirmPassword: null }))
+                      }
+                    }}
+                    onBlur={() => handleBlur('confirmPassword')}
+                    style={{
+                      width: '100%',
+                      height: 44,
+                      paddingRight: 40,
+                      borderColor: touched.confirmPassword && errors.confirmPassword ? '#EF4444' : '#CBD5E1',
+                      fontFamily: showConfirmPassword ? 'monospace' : 'inherit'
+                    }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: 12,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: '#64748B',
+                      cursor: 'pointer',
+                      padding: 4
+                    }}
+                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+
+                <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 6, marginBottom: 0 }}>
+                  Re-enter initial password to verify match.
+                </p>
+                {touched.confirmPassword && errors.confirmPassword && (
+                  <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <AlertCircle size={12} /> {errors.confirmPassword}
                   </p>
                 )}
               </div>
             </div>
           </section>
 
-          {/* SECTION 3 — ACCOUNT STATUS */}
-          <section
-            style={{
-              background: '#FFFFFF',
-              borderRadius: 16,
-              border: '1px solid #E2E8F0',
-              padding: 28,
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                marginBottom: 20,
-                paddingBottom: 16,
-                borderBottom: '1px solid #F1F5F9'
-              }}
-            >
-              <div
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 10,
-                  background: '#FEF3C7',
-                  color: '#D97706',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <ShieldCheck size={20} />
-              </div>
-              <div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-                  Section 3 — Account Status
-                </h2>
-                <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: '2px 0 0 0' }}>
-                  Determine initial login authorization and portal access rights.
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
-              {/* Option 1: ACTIVE */}
-              <div
-                onClick={() => setStatus('ACTIVE')}
-                style={{
-                  border: `2px solid ${status === 'ACTIVE' ? '#16A34A' : '#E2E8F0'}`,
-                  background: status === 'ACTIVE' ? '#F0FDF4' : '#FFFFFF',
-                  borderRadius: 12,
-                  padding: 16,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <input
-                    type="radio"
-                    checked={status === 'ACTIVE'}
-                    onChange={() => setStatus('ACTIVE')}
-                    style={{ accentColor: '#16A34A' }}
-                  />
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16A34A' }} />
-                  <span style={{ fontWeight: 800, color: '#0F172A', fontSize: '0.9rem' }}>
-                    Active (Recommended)
-                  </span>
-                </div>
-                <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: 0, paddingLeft: 22 }}>
-                  Account is immediately activated. The instructor can log in to Creator Studio and build curriculum right away.
-                </p>
-              </div>
-
-              {/* Option 2: SUSPENDED */}
-              <div
-                onClick={() => setStatus('SUSPENDED')}
-                style={{
-                  border: `2px solid ${status === 'SUSPENDED' ? '#DC2626' : '#E2E8F0'}`,
-                  background: status === 'SUSPENDED' ? '#FEF2F2' : '#FFFFFF',
-                  borderRadius: 12,
-                  padding: 16,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <input
-                    type="radio"
-                    checked={status === 'SUSPENDED'}
-                    onChange={() => setStatus('SUSPENDED')}
-                    style={{ accentColor: '#DC2626' }}
-                  />
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#DC2626' }} />
-                  <span style={{ fontWeight: 800, color: '#0F172A', fontSize: '0.9rem' }}>
-                    Suspended
-                  </span>
-                </div>
-                <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: 0, paddingLeft: 22 }}>
-                  Account is created with suspended privileges. Portal login and curriculum editing are restricted until activated.
-                </p>
-              </div>
-
-              {/* Option 3: INACTIVE */}
-              <div
-                onClick={() => setStatus('INACTIVE')}
-                style={{
-                  border: `2px solid ${status === 'INACTIVE' ? '#64748B' : '#E2E8F0'}`,
-                  background: status === 'INACTIVE' ? '#F8FAFC' : '#FFFFFF',
-                  borderRadius: 12,
-                  padding: 16,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <input
-                    type="radio"
-                    checked={status === 'INACTIVE'}
-                    onChange={() => setStatus('INACTIVE')}
-                    style={{ accentColor: '#64748B' }}
-                  />
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#94A3B8' }} />
-                  <span style={{ fontWeight: 800, color: '#0F172A', fontSize: '0.9rem' }}>
-                    Inactive (Hold Access)
-                  </span>
-                </div>
-                <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: 0, paddingLeft: 22 }}>
-                  Account profile is provisioned in advance, but portal login access is held until manually activated by Admin.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* SECTION 4 — CREDENTIAL DELIVERY */}
+          {/* SECTION 4 — CREDENTIAL DELIVERY / EMAIL */}
           <section
             style={{
               background: '#FFFFFF',
@@ -1359,10 +1345,10 @@ export default function AdminCreateCreatorPage() {
               </div>
               <div>
                 <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-                  Section 4 — Credential Delivery
+                  Section 3 — Credential Delivery / Email
                 </h2>
                 <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: '2px 0 0 0' }}>
-                  Dispatch onboarding instructions and credentials to the instructor.
+                  Send the creator's login details to their registered email after the account is successfully created.
                 </p>
               </div>
             </div>
@@ -1376,6 +1362,7 @@ export default function AdminCreateCreatorPage() {
               }}
             >
               <label
+                htmlFor="checkbox-send-email"
                 style={{
                   display: 'flex',
                   alignItems: 'flex-start',
@@ -1388,6 +1375,7 @@ export default function AdminCreateCreatorPage() {
               >
                 <input
                   type="checkbox"
+                  id="checkbox-send-email"
                   checked={sendEmail}
                   onChange={(e) => setSendEmail(e.target.checked)}
                   style={{
@@ -1399,14 +1387,14 @@ export default function AdminCreateCreatorPage() {
                   }}
                 />
                 <div>
-                  <span style={{ fontWeight: 700, color: '#0F172A' }}>
-                    Send account credentials via email
+                  <span style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.925rem' }}>
+                    Send login credentials to creator's registered email
                   </span>
                   <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: '4px 0 0 0', fontWeight: 400 }}>
                     Recipient: <strong>{email.trim() || 'Creator’s registered email address'}</strong>
                   </p>
                   <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: '4px 0 0 0', fontWeight: 400 }}>
-                    Includes temporary password, studio access link, and curriculum guidelines.
+                    Sends the creator's login details (User ID and password) to their registered email once the account is created.
                   </p>
                 </div>
               </label>
@@ -1485,22 +1473,6 @@ export default function AdminCreateCreatorPage() {
                 >
                   ID: {userId.trim() || 'AUTO-ASSIGN'}
                 </span>
-                <span
-                  style={{
-                    background: status === 'ACTIVE' ? '#DCFCE7' : (status === 'SUSPENDED' ? '#FEE2E2' : '#F1F5F9'),
-                    color: status === 'ACTIVE' ? '#166534' : (status === 'SUSPENDED' ? '#991B1B' : '#475569'),
-                    padding: '3px 8px',
-                    borderRadius: 6,
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5
-                  }}
-                >
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: status === 'ACTIVE' ? '#16A34A' : (status === 'SUSPENDED' ? '#DC2626' : '#94A3B8') }} />
-                  {status}
-                </span>
               </div>
             </div>
 
@@ -1563,21 +1535,28 @@ export default function AdminCreateCreatorPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {userId.trim() ? <CheckCircle2 size={16} style={{ color: '#16A34A' }} /> : <CheckCircle2 size={16} style={{ color: '#94A3B8' }} />}
                 <span style={{ color: '#0F172A', fontWeight: 600 }}>
-                  {userId.trim() ? `User ID: ${userId.trim()}` : 'System ID: Auto UUID'}
+                  {userId.trim() ? `User ID: ${userId.trim()}` : 'User ID: Auto Sequential'}
                 </span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {password.trim() ? <CheckCircle2 size={16} style={{ color: '#16A34A' }} /> : <CheckCircle2 size={16} style={{ color: '#94A3B8' }} />}
-                <span style={{ color: '#0F172A', fontWeight: 600 }}>
-                  {password.trim() ? 'Temporary password set' : 'Auto-generated temporary password'}
+                {password.trim() && confirmPassword.trim() && password === confirmPassword ? (
+                  <CheckCircle2 size={16} style={{ color: '#16A34A' }} />
+                ) : (
+                  <AlertCircle size={16} style={{ color: '#CBD5E1' }} />
+                )}
+                <span style={{ color: password.trim() ? '#0F172A' : '#64748B', fontWeight: password.trim() ? 600 : 400 }}>
+                  {password.trim() && confirmPassword.trim() && password === confirmPassword
+                    ? 'Initial password configured & confirmed'
+                    : (password.trim() ? 'Password confirmation required' : 'Initial password required')}
                 </span>
               </div>
+
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <CheckCircle2 size={16} style={{ color: sendEmail ? '#2563EB' : '#94A3B8' }} />
                 <span style={{ color: '#0F172A', fontWeight: 600 }}>
-                  {sendEmail ? 'Email dispatch enabled' : 'Manual credential handover'}
+                  {sendEmail ? 'Email credentials dispatch enabled' : 'Manual credential handover'}
                 </span>
               </div>
             </div>
@@ -1589,17 +1568,9 @@ export default function AdminCreateCreatorPage() {
       {/* 3. STICKY BOTTOM ACTION BAR */}
       {/* ========================================================================= */}
       <div className="admin-sticky-action-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: status === 'ACTIVE' ? '#16A34A' : (status === 'SUSPENDED' ? '#DC2626' : '#94A3B8')
-            }}
-          />
-          <span style={{ fontSize: '0.8125rem', color: '#475569', fontWeight: 600 }}>
-            Provisioning Creator in {status} mode
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>
+            Complete the profile and credentials to create the creator account.
           </span>
         </div>
 
@@ -1616,7 +1587,7 @@ export default function AdminCreateCreatorPage() {
 
           <button
             type="button"
-            id="btn-create-creator-final"
+            id="btn-create-activate-creator"
             className="btn btn-primary"
             onClick={handleSubmit}
             disabled={isSubmitting}
@@ -1626,9 +1597,11 @@ export default function AdminCreateCreatorPage() {
               fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
+              gap: 8,
               boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
             }}
           >
+            <UserCheck size={16} />
             <span>{isSubmitting ? 'Creating Creator...' : 'Create Creator'}</span>
           </button>
         </div>

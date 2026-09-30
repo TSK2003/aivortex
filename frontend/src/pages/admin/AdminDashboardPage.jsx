@@ -44,7 +44,12 @@ import {
   Sparkles,
   Upload,
   Link2,
-  ChevronDown
+  ChevronDown,
+  Lock,
+  AlertTriangle,
+  Layers,
+  Film,
+  ChevronRight
 } from 'lucide-react'
 import { useToast } from '../../contexts/ToastContext'
 import { useAuth } from '../../contexts/AuthContext'
@@ -77,6 +82,15 @@ const EDIT_CREATOR_STATUS_OPTIONS = [
   { value: 'ACTIVE', label: 'Active', dotColor: '#16A34A' },
   { value: 'SUSPENDED', label: 'Suspended', dotColor: '#DC2626' },
   { value: 'INACTIVE', label: 'Inactive', dotColor: '#94A3B8' }
+]
+
+const QUICK_REVIEW_REASONS = [
+  'Video quality',
+  'Audio quality',
+  'Content correction',
+  'Missing information',
+  'Technical issue',
+  'Other'
 ]
 
 export default function AdminDashboardPage() {
@@ -132,8 +146,75 @@ export default function AdminDashboardPage() {
   const [courses, setCourses] = useState([])
   const [offers, setOffers] = useState([])
   const [verificationQueue, setVerificationQueue] = useState([])
+
+  // Content Review & Lecture Verification States
+  const [reviewFilterStatus, setReviewFilterStatus] = useState('SUBMITTED_FOR_REVIEW')
+  const [reviewSearch, setReviewSearch] = useState('')
+  const [selectedReviewLecture, setSelectedReviewLecture] = useState(null)
+  const [approveModal, setApproveModal] = useState({ open: false, lecture: null, isSubmitting: false })
+  const [requestChangesModal, setRequestChangesModal] = useState({
+    open: false,
+    lecture: null,
+    feedback: '',
+    quickReason: '',
+    error: '',
+    isSubmitting: false
+  })
+  const [unpublishModal, setUnpublishModal] = useState({ open: false, lectureId: null, reason: '', error: '', isSubmitting: false })
+  const [deleteOfferModal, setDeleteOfferModal] = useState({ open: false, offer: null, isSubmitting: false })
+
+  // Admin Course Content & Curriculum Management States
+  const [selectedCurriculumCourse, setSelectedCurriculumCourse] = useState(null)
+  const [curriculumSearch, setCurriculumSearch] = useState('')
+  const [adminSectionModal, setAdminSectionModal] = useState({
+    open: false,
+    mode: 'create',
+    section: null,
+    courseId: null,
+    title: '',
+    description: '',
+    isSaving: false,
+    error: ''
+  })
+  const [adminLectureModal, setAdminLectureModal] = useState({
+    open: false,
+    mode: 'create',
+    sectionId: null,
+    lecture: null,
+    courseId: null,
+    title: '',
+    description: '',
+    duration: '15:00',
+    videoUrl: '',
+    selectedFile: null,
+    uploadMode: 'url',
+    uploadProgress: 0,
+    isUploading: false,
+    isPreview: false,
+    isSaving: false,
+    error: ''
+  })
+  const [adminDeleteCurriculumModal, setAdminDeleteCurriculumModal] = useState({
+    open: false,
+    type: 'section',
+    id: null,
+    title: '',
+    isSubmitting: false
+  })
+  const [curriculumPreviewVideo, setCurriculumPreviewVideo] = useState({
+    open: false,
+    videoUrl: '',
+    title: '',
+    course: ''
+  })
+
   const [paymentsList, setPaymentsList] = useState([])
   const [requestsList, setRequestsList] = useState([])
+  const [requestStatusFilter, setRequestStatusFilter] = useState('ALL')
+  const [requestTypeFilter, setRequestTypeFilter] = useState('ALL')
+  const [requestSearch, setRequestSearch] = useState('')
+  const [rejectModal, setRejectModal] = useState({ open: false, request: null, reason: '', error: '' })
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false)
   const [auditLogs, setAuditLogs] = useState([])
   const [activeSessions, setActiveSessions] = useState([])
   const [reportsData, setReportsData] = useState(null)
@@ -179,6 +260,34 @@ export default function AdminDashboardPage() {
     }
   }, [isCountryDropdownOpen])
 
+  // Lock body scroll when review modal is active
+  useEffect(() => {
+    if (selectedReviewLecture) {
+      const originalOverflow = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = originalOverflow
+      }
+    }
+  }, [selectedReviewLecture])
+
+  // Allow closing modals with Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (requestChangesModal.open && !requestChangesModal.isSubmitting) {
+          setRequestChangesModal({ open: false, lecture: null, feedback: '', quickReason: '', error: '', isSubmitting: false })
+        } else if (approveModal.open && !approveModal.isSubmitting) {
+          setApproveModal({ open: false, lecture: null, isSubmitting: false })
+        } else if (selectedReviewLecture) {
+          setSelectedReviewLecture(null)
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedReviewLecture, requestChangesModal.open, approveModal.open])
+
   const selectedCountry = useMemo(() => {
     return (
       INTERNATIONAL_COUNTRY_CODES.find((c) => c.dialCode === editCreatorCountryCode) ||
@@ -196,6 +305,161 @@ export default function AdminDashboardPage() {
         c.code.toLowerCase().includes(q)
     )
   }, [countrySearch])
+
+  // Playable video URL helper - resolves cloud assets, direct urls, and local dev/proxy endpoints
+  const getPlayableVideoUrl = (rawUrl) => {
+    if (!rawUrl || typeof rawUrl !== 'string') return ''
+    const trimmed = rawUrl.trim()
+    if (!trimmed) return ''
+    if (trimmed.startsWith('blob:') || trimmed.startsWith('https://')) return trimmed
+    if (trimmed.startsWith('http://localhost:3001') || trimmed.startsWith('http://127.0.0.1:3001')) return trimmed
+    if (trimmed.startsWith('http://')) return trimmed
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+  }
+
+  // Format submitted date for clean human-readable display (e.g. Sep 30, 2026)
+  const formatSubmittedDate = (dateStr) => {
+    if (!dateStr) return 'Recently'
+    try {
+      const d = new Date(dateStr)
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    } catch {
+      return 'Recently'
+    }
+  }
+
+  // Convert technical enum statuses into human-readable compact chips with clean status dots
+  const renderReviewStatusChip = (status) => {
+    switch (status) {
+      case 'SUBMITTED_FOR_REVIEW':
+        return (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '3px 10px',
+              borderRadius: 9999,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              background: '#FEF3C7',
+              color: '#92400E',
+              border: '1px solid #FDE68A'
+            }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#D97706' }} />
+            Pending Review
+          </span>
+        )
+      case 'APPROVED':
+        return (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '3px 10px',
+              borderRadius: 9999,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              background: '#DCFCE7',
+              color: '#166534',
+              border: '1px solid #BBF7D0'
+            }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16A34A' }} />
+            Approved
+          </span>
+        )
+      case 'RETURNED_FOR_EDIT':
+      case 'REJECTED':
+        return (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '3px 10px',
+              borderRadius: 9999,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              background: '#FEE2E2',
+              color: '#991B1B',
+              border: '1px solid #FECACA'
+            }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#DC2626' }} />
+            Changes Requested
+          </span>
+        )
+      case 'PUBLISHED':
+        return (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '3px 10px',
+              borderRadius: 9999,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              background: '#DBEAFE',
+              color: '#1E40AF',
+              border: '1px solid #BFDBFE'
+            }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563EB' }} />
+            Published
+          </span>
+        )
+      default:
+        return (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '3px 10px',
+              borderRadius: 9999,
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              background: '#F1F5F9',
+              color: '#475569',
+              border: '1px solid #E2E8F0'
+            }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#64748B' }} />
+            Draft
+          </span>
+        )
+    }
+  }
+
+  // Filtered Review Queue for Content Review Tab
+  const filteredReviewQueue = useMemo(() => {
+    return verificationQueue.filter((v) => {
+      if (reviewFilterStatus === 'SUBMITTED_FOR_REVIEW' && v.status !== 'SUBMITTED_FOR_REVIEW') return false
+      if (reviewFilterStatus === 'RETURNED_FOR_EDIT' && v.status !== 'RETURNED_FOR_EDIT' && v.status !== 'REJECTED') return false
+      if (reviewFilterStatus === 'APPROVED' && v.status !== 'APPROVED' && v.status !== 'PUBLISHED') return false
+
+      if (reviewSearch.trim()) {
+        const q = reviewSearch.toLowerCase().trim()
+        const matchTitle = v.title?.toLowerCase().includes(q)
+        const matchCourse = v.playlist?.course?.title?.toLowerCase().includes(q)
+        const matchSection = v.playlist?.title?.toLowerCase().includes(q)
+        const matchCreator = v.creator?.name?.toLowerCase().includes(q)
+        if (!matchTitle && !matchCourse && !matchSection && !matchCreator) return false
+      }
+      return true
+    })
+  }, [verificationQueue, reviewFilterStatus, reviewSearch])
+
+  // Active course for curriculum workspace - reactive with loaded courses data
+  const activeCurriculumCourse = useMemo(() => {
+    if (!courses || courses.length === 0) return null
+    if (!selectedCurriculumCourse) return courses[0]
+    return courses.find((c) => c.id === selectedCurriculumCourse.id) || courses[0]
+  }, [courses, selectedCurriculumCourse])
 
   const [isSavingEditCreator, setIsSavingEditCreator] = useState(false)
   const [changePasswordModal, setChangePasswordModal] = useState({
@@ -1070,25 +1334,64 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const handleDeleteOffer = async (id, code) => {
-    if (!window.confirm(`Are you sure you want to delete offer coupon "${code}"?`)) return
+  const handleConfirmDeleteOffer = async () => {
+    if (!deleteOfferModal.offer) return
     try {
-      await api.admin.deleteOffer(id)
-      showToast(`Offer ${code} deleted`, 'info')
+      setDeleteOfferModal((prev) => ({ ...prev, isSubmitting: true }))
+      await api.admin.deleteOffer(deleteOfferModal.offer.id)
+      showToast(`Offer ${deleteOfferModal.offer.code} deleted`, 'info')
+      setDeleteOfferModal({ open: false, offer: null, isSubmitting: false })
       loadAdminData()
     } catch (err) {
       showToast(err.message || 'Failed to delete offer', 'error')
+      setDeleteOfferModal((prev) => ({ ...prev, isSubmitting: false }))
     }
   }
 
-  // Video Verification Handlers
-  const handleApproveVideo = async (lessonId) => {
+  // Content Review Handlers
+  const handleConfirmApproveLecture = async () => {
+    if (!approveModal.lecture) return
     try {
-      await api.admin.reviewVideo(lessonId, 'APPROVED', 'Lecture quality verified and approved by Admin.')
-      showToast('Video approved! You can now publish it to students.', 'success')
+      setApproveModal((prev) => ({ ...prev, isSubmitting: true }))
+      await api.admin.reviewVideo(approveModal.lecture.id, 'APPROVED', 'Lecture quality verified and approved by Admin.')
+      showToast(`Lecture "${approveModal.lecture.title}" approved successfully.`, 'success')
+      setApproveModal({ open: false, lecture: null, isSubmitting: false })
+      setSelectedReviewLecture(null)
       loadAdminData()
     } catch (err) {
       showToast(err.message || 'Approval failed', 'error')
+      setApproveModal((prev) => ({ ...prev, isSubmitting: false }))
+    }
+  }
+
+  const handleConfirmRequestChanges = async (e) => {
+    if (e) e.preventDefault()
+    if (!requestChangesModal.lecture) return
+    if (!requestChangesModal.feedback.trim()) {
+      setRequestChangesModal((prev) => ({ ...prev, error: 'Please provide feedback for the Creator.' }))
+      return
+    }
+    try {
+      setRequestChangesModal((prev) => ({ ...prev, isSubmitting: true, error: '' }))
+      await api.admin.reviewVideo(
+        requestChangesModal.lecture.id,
+        'RETURNED_FOR_EDIT',
+        requestChangesModal.feedback.trim()
+      )
+      showToast('Revision feedback sent to creator. Status updated to Changes Requested.', 'info')
+      setRequestChangesModal({
+        open: false,
+        lecture: null,
+        feedback: '',
+        quickReason: '',
+        error: '',
+        isSubmitting: false
+      })
+      setSelectedReviewLecture(null)
+      loadAdminData()
+    } catch (err) {
+      showToast(err.message || 'Failed to submit revision feedback', 'error')
+      setRequestChangesModal((prev) => ({ ...prev, isSubmitting: false }))
     }
   }
 
@@ -1102,26 +1405,236 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const handleUnpublishLesson = async (lessonId) => {
-    const reason = prompt('Reason for unpublishing this lesson:')
-    if (!reason) return
+  const handleConfirmUnpublish = async () => {
+    if (!unpublishModal.lectureId) return
     try {
-      await api.admin.unpublishLesson(lessonId, reason)
+      setUnpublishModal((prev) => ({ ...prev, isSubmitting: true }))
+      await api.admin.unpublishLesson(unpublishModal.lectureId, unpublishModal.reason.trim() || 'Unpublished by Admin')
       showToast('Lecture unpublished from student player', 'info')
+      setUnpublishModal({ open: false, lectureId: null, reason: '', error: '', isSubmitting: false })
       loadAdminData()
     } catch (err) {
       showToast(err.message || 'Unpublish failed', 'error')
+      setUnpublishModal((prev) => ({ ...prev, isSubmitting: false }))
     }
   }
 
-  const handleReviewRequest = async (requestId, action) => {
+  // Admin Course Curriculum Management Handlers
+  const handleSaveSection = async (e) => {
+    if (e) e.preventDefault()
+    if (!adminSectionModal.title.trim()) {
+      setAdminSectionModal((prev) => ({ ...prev, error: 'Section title is required.' }))
+      return
+    }
     try {
-      await api.admin.reviewRequest(requestId, action, `Admin marked request as ${action}`)
-      showToast(`Request ${action.toLowerCase()} successfully`, 'success')
+      setAdminSectionModal((prev) => ({ ...prev, isSaving: true, error: '' }))
+      if (adminSectionModal.mode === 'create') {
+        await api.creator.createPlaylist(
+          adminSectionModal.courseId,
+          adminSectionModal.title.trim(),
+          adminSectionModal.description?.trim() || ''
+        )
+        showToast('Section created successfully', 'success')
+      } else {
+        await api.creator.updatePlaylist(adminSectionModal.section.id, {
+          title: adminSectionModal.title.trim(),
+          description: adminSectionModal.description?.trim() || ''
+        })
+        showToast('Section updated successfully', 'success')
+      }
+      setAdminSectionModal({
+        open: false,
+        mode: 'create',
+        section: null,
+        courseId: null,
+        title: '',
+        description: '',
+        isSaving: false,
+        error: ''
+      })
+      loadAdminData()
+    } catch (err) {
+      setAdminSectionModal((prev) => ({ ...prev, isSaving: false, error: err.message || 'Failed to save section' }))
+    }
+  }
+
+  const handleSaveLecture = async (e) => {
+    if (e) e.preventDefault()
+    if (!adminLectureModal.title.trim()) {
+      setAdminLectureModal((prev) => ({ ...prev, error: 'Lecture title is required.' }))
+      return
+    }
+
+    try {
+      setAdminLectureModal((prev) => ({ ...prev, isSaving: true, error: '' }))
+
+      let finalVideoUrl = adminLectureModal.videoUrl ? adminLectureModal.videoUrl.trim() : null
+      let finalS3Key = adminLectureModal.lecture?.s3Key || null
+
+      if (adminLectureModal.selectedFile) {
+        setAdminLectureModal((prev) => ({ ...prev, isUploading: true, uploadProgress: 15 }))
+
+        const presignedRes = await api.creator.getUploadUrl({
+          fileName: adminLectureModal.selectedFile.name,
+          fileType: adminLectureModal.selectedFile.type || 'video/mp4',
+          courseId: adminLectureModal.courseId || 'general'
+        })
+
+        const { uploadUrl, objectKey, fileUrl } = presignedRes.data
+        finalS3Key = objectKey
+        finalVideoUrl = fileUrl
+
+        setAdminLectureModal((prev) => ({ ...prev, uploadProgress: 30 }))
+        const xhr = new XMLHttpRequest()
+        await new Promise((resolve, reject) => {
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percent = Math.round(30 + (event.loaded / event.total) * 60)
+              setAdminLectureModal((prev) => ({ ...prev, uploadProgress: percent }))
+            }
+          }
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve()
+            else reject(new Error(`Upload error (${xhr.status})`))
+          }
+          xhr.onerror = () => reject(new Error('Network error uploading video file.'))
+
+          const token = localStorage.getItem('apex_token')
+          const uploadUrlWithToken = token && uploadUrl.includes('/upload-local')
+            ? `${uploadUrl}&token=${encodeURIComponent(token)}`
+            : uploadUrl
+
+          xhr.open('PUT', uploadUrlWithToken)
+          if (token && (uploadUrl.includes('localhost') || uploadUrl.includes('127.0.0.1') || uploadUrl.startsWith('/') || uploadUrl.includes('/api/'))) {
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+            xhr.withCredentials = true
+          }
+          xhr.setRequestHeader('Content-Type', adminLectureModal.selectedFile.type || 'video/mp4')
+          xhr.send(adminLectureModal.selectedFile)
+        })
+
+        setAdminLectureModal((prev) => ({ ...prev, uploadProgress: 95 }))
+      }
+
+      let durationSeconds = 0
+      if (adminLectureModal.duration && adminLectureModal.duration.trim()) {
+        const parts = adminLectureModal.duration.trim().split(':')
+        if (parts.length === 2) durationSeconds = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10)
+        else if (parts.length === 3) durationSeconds = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseInt(parts[2], 10)
+      }
+
+      if (adminLectureModal.mode === 'create') {
+        await api.creator.uploadVideo({
+          playlistId: adminLectureModal.sectionId,
+          title: adminLectureModal.title.trim(),
+          description: adminLectureModal.description?.trim() || '',
+          duration: adminLectureModal.duration || '15:00',
+          durationSeconds,
+          videoUrl: finalVideoUrl,
+          s3Key: finalS3Key,
+          isPreview: Boolean(adminLectureModal.isPreview),
+          status: finalVideoUrl ? 'APPROVED' : 'DRAFT'
+        })
+        showToast('Lecture created successfully', 'success')
+      } else {
+        await api.creator.updateLesson(adminLectureModal.lecture.id, {
+          title: adminLectureModal.title.trim(),
+          description: adminLectureModal.description?.trim() || '',
+          duration: adminLectureModal.duration || '15:00',
+          durationSeconds,
+          videoUrl: finalVideoUrl,
+          s3Key: finalS3Key,
+          isPreview: Boolean(adminLectureModal.isPreview)
+        })
+        showToast('Lecture updated successfully', 'success')
+      }
+
+      setAdminLectureModal({
+        open: false,
+        mode: 'create',
+        sectionId: null,
+        lecture: null,
+        courseId: null,
+        title: '',
+        description: '',
+        duration: '15:00',
+        videoUrl: '',
+        selectedFile: null,
+        uploadMode: 'url',
+        uploadProgress: 0,
+        isUploading: false,
+        isPreview: false,
+        isSaving: false,
+        error: ''
+      })
+      loadAdminData()
+    } catch (err) {
+      setAdminLectureModal((prev) => ({ ...prev, isSaving: false, isUploading: false, error: err.message || 'Failed to save lecture' }))
+    }
+  }
+
+  const handleConfirmDeleteCurriculum = async () => {
+    if (!adminDeleteCurriculumModal.id) return
+    try {
+      setAdminDeleteCurriculumModal((prev) => ({ ...prev, isSubmitting: true }))
+      if (adminDeleteCurriculumModal.type === 'section') {
+        await api.creator.deletePlaylist(adminDeleteCurriculumModal.id)
+        showToast('Section deleted successfully', 'info')
+      } else {
+        await api.creator.deleteLesson(adminDeleteCurriculumModal.id)
+        showToast('Lecture deleted successfully', 'info')
+      }
+      setAdminDeleteCurriculumModal({ open: false, type: 'section', id: null, title: '', isSubmitting: false })
+      loadAdminData()
+    } catch (err) {
+      showToast(err.message || 'Failed to delete', 'error')
+      setAdminDeleteCurriculumModal((prev) => ({ ...prev, isSubmitting: false }))
+    }
+  }
+
+  const handleQuickApproveCurriculumLecture = async (lectureId) => {
+    try {
+      await api.admin.reviewVideo(lectureId, 'APPROVED', 'Lecture verified and approved directly by Administrator.')
+      showToast('Lecture approved successfully', 'success')
+      loadAdminData()
+    } catch (err) {
+      showToast(err.message || 'Approval failed', 'error')
+    }
+  }
+
+  const handleReviewRequest = async (requestId, action, reasonText = '') => {
+    try {
+      setIsSubmittingReview(true)
+      const defaultNote = action === 'APPROVED' ? 'Approved by Administrator' : 'Request rejected by Administrator'
+      await api.admin.reviewRequest(requestId, action, reasonText || defaultNote)
+      showToast(action === 'APPROVED' ? 'Request approved successfully' : 'Request rejected', 'success')
+      if (rejectModal.open) {
+        setRejectModal({ open: false, request: null, reason: '', error: '' })
+      }
       loadAdminData()
     } catch (err) {
       showToast(err.message || 'Review action failed', 'error')
+    } finally {
+      setIsSubmittingReview(false)
     }
+  }
+
+  const handleOpenRejectModal = (request) => {
+    setRejectModal({
+      open: true,
+      request,
+      reason: '',
+      error: ''
+    })
+  }
+
+  const handleConfirmReject = async (e) => {
+    if (e) e.preventDefault()
+    if (!rejectModal.reason || !rejectModal.reason.trim()) {
+      setRejectModal((prev) => ({ ...prev, error: 'Rejection reason is mandatory. The creator must see why this request was declined.' }))
+      return
+    }
+    await handleReviewRequest(rejectModal.request.id, 'REJECTED', rejectModal.reason.trim())
   }
 
   const handleBroadcastAnnouncement = async (e) => {
@@ -1360,7 +1873,7 @@ export default function AdminDashboardPage() {
                     <Video size={16} />
                   </div>
                   <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
-                    Video Verification Queue
+                    Content Review Queue
                   </span>
                   {verificationQueue.length > 0 && (
                     <span
@@ -1434,22 +1947,14 @@ export default function AdminDashboardPage() {
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                          <span
-                            style={{
-                              background: '#FEF3C7',
-                              color: '#92400E',
-                              fontSize: '0.6875rem',
-                              fontWeight: 700,
-                              padding: '3px 8px',
-                              borderRadius: 6
-                            }}
-                          >
-                            SUBMITTED
-                          </span>
+                          {renderReviewStatusChip(v.status)}
                           <button
                             type="button"
                             className="btn btn-outline btn-sm"
-                            onClick={() => navigate('/admin/playlists')}
+                            onClick={() => {
+                              setSelectedReviewLecture(v)
+                              navigate('/admin/playlists')
+                            }}
                             style={{ height: 30, fontSize: '0.75rem', padding: '0 10px', fontWeight: 600 }}
                           >
                             Review
@@ -1968,6 +2473,29 @@ export default function AdminDashboardPage() {
 
             <button
               type="button"
+              onClick={() => {
+                if (!selectedCurriculumCourse && courses.length > 0) {
+                  setSelectedCurriculumCourse(courses[0])
+                }
+                setCourseSubTab('curriculum')
+              }}
+              style={{
+                padding: '10px 16px',
+                border: 'none',
+                background: 'none',
+                fontSize: '0.875rem',
+                fontWeight: 700,
+                color: courseSubTab === 'curriculum' ? '#2563EB' : '#64748B',
+                borderBottom: courseSubTab === 'curriculum' ? '2px solid #2563EB' : '2px solid transparent',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              Curriculum & Content Management
+            </button>
+
+            <button
+              type="button"
               onClick={() => setCourseSubTab('pricing')}
               style={{
                 padding: '10px 16px',
@@ -2048,14 +2576,30 @@ export default function AdminDashboardPage() {
                         </td>
                         <td>{c.enrolledStudentsCount || c.studentsCount || 0} learners</td>
                         <td style={{ textAlign: 'right' }}>
-                          <button
-                            className="btn btn-outline btn-xs"
-                            onClick={() => navigate(`/admin/courses/${c.id}/edit`)}
-                            title="Edit Course"
-                            style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600 }}
-                          >
-                            Edit
-                          </button>
+                          <div style={{ display: 'inline-flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-xs"
+                              onClick={() => {
+                                setSelectedCurriculumCourse(c)
+                                setCourseSubTab('curriculum')
+                              }}
+                              title="Manage Course Curriculum & Content"
+                              style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                            >
+                              <Layers size={13} />
+                              <span>Curriculum</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline btn-xs"
+                              onClick={() => navigate(`/admin/courses/${c.id}/edit`)}
+                              title="Edit Course"
+                              style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600 }}
+                            >
+                              Edit
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -2071,6 +2615,578 @@ export default function AdminDashboardPage() {
                   <button className="btn btn-primary btn-sm" onClick={() => navigate('/admin/courses/create')}>
                     Create Course Now
                   </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Subtab: Course Content & Curriculum Management */}
+          {courseSubTab === 'curriculum' && (
+            <div>
+              {/* Course Selector Bar */}
+              <div
+                style={{
+                  background: '#FFFFFF',
+                  borderRadius: 14,
+                  border: '1px solid #E2E8F0',
+                  padding: '16px 20px',
+                  marginBottom: 20,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 16
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setCourseSubTab('catalog')}
+                    style={{ fontSize: '0.8125rem', height: 36, padding: '0 12px' }}
+                  >
+                    ← Back to Catalog
+                  </button>
+                  <div style={{ height: 24, width: 1, background: '#E2E8F0' }} />
+                  <label style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#334155' }}>
+                    Select Course:
+                  </label>
+                  <select
+                    value={activeCurriculumCourse?.id || ''}
+                    onChange={(e) => {
+                      const found = courses.find((c) => c.id === e.target.value)
+                      if (found) setSelectedCurriculumCourse(found)
+                    }}
+                    style={{
+                      height: 36,
+                      borderRadius: 8,
+                      border: '1px solid #CBD5E1',
+                      padding: '0 12px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      color: '#0F172A',
+                      outline: 'none',
+                      background: '#F8FAFC',
+                      cursor: 'pointer',
+                      minWidth: 260
+                    }}
+                  >
+                    {courses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title} ({c.playlists?.length || 0} sections)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  {activeCurriculumCourse && (
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() =>
+                        setAdminSectionModal({
+                          open: true,
+                          mode: 'create',
+                          section: null,
+                          courseId: activeCurriculumCourse.id,
+                          title: '',
+                          description: '',
+                          isSaving: false,
+                          error: ''
+                        })
+                      }
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        height: 36,
+                        fontWeight: 700,
+                        fontSize: '0.8125rem'
+                      }}
+                    >
+                      <Plus size={15} />
+                      <span>Add Section</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {activeCurriculumCourse ? (() => {
+                const playlists = activeCurriculumCourse.playlists || []
+                const allCourseLessons = playlists.flatMap((p) => p.lessons || [])
+                const draftLessons = allCourseLessons.filter((l) => l.status === 'DRAFT' || l.status === 'INCOMPLETE')
+                const pendingLessons = allCourseLessons.filter((l) => l.status === 'SUBMITTED_FOR_REVIEW')
+                const changesLessons = allCourseLessons.filter((l) => l.status === 'RETURNED_FOR_EDIT' || l.status === 'REJECTED')
+                const approvedLessons = allCourseLessons.filter((l) => l.status === 'APPROVED' || l.status === 'PUBLISHED')
+                const completionPercent = allCourseLessons.length > 0 ? Math.round((approvedLessons.length / allCourseLessons.length) * 100) : 0
+
+                return (
+                  <div>
+                    {/* Course Overview & Progress Card */}
+                    <div
+                      style={{
+                        background: '#FFFFFF',
+                        borderRadius: 16,
+                        border: '1px solid #E2E8F0',
+                        padding: 24,
+                        marginBottom: 24,
+                        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                            <span className="badge badge-popular">{activeCurriculumCourse.category}</span>
+                            <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>{activeCurriculumCourse.level}</span>
+                          </div>
+                          <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0F172A', margin: '0 0 6px 0' }}>
+                            {activeCurriculumCourse.title}
+                          </h3>
+                          <div style={{ fontSize: '0.8125rem', color: '#64748B' }}>
+                            Assigned Creator:{' '}
+                            <strong style={{ color: '#334155' }}>
+                              {activeCurriculumCourse.creators && activeCurriculumCourse.creators.length > 0
+                                ? activeCurriculumCourse.creators.map((cr) => cr.creator?.name).join(', ')
+                                : 'Unassigned'}
+                            </strong>
+                          </div>
+                        </div>
+
+                        {/* Progress Meter */}
+                        <div style={{ minWidth: 240, flex: '1 1 240px', maxWidth: 360 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                            <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#334155' }}>Course Completion</span>
+                            <span style={{ fontSize: '0.875rem', fontWeight: 800, color: completionPercent === 100 ? '#16A34A' : '#2563EB' }}>
+                              {completionPercent}%
+                            </span>
+                          </div>
+                          <div style={{ width: '100%', height: 8, background: '#E2E8F0', borderRadius: 9999, overflow: 'hidden' }}>
+                            <div
+                              style={{
+                                width: `${completionPercent}%`,
+                                height: '100%',
+                                background: completionPercent === 100 ? '#16A34A' : '#2563EB',
+                                transition: 'width 0.3s ease'
+                              }}
+                            />
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: 4, textAlign: 'right' }}>
+                            {approvedLessons.length} of {allCourseLessons.length} lectures approved/published
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 6 Metric KPI Status Chips */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, borderTop: '1px solid #F1F5F9', paddingTop: 18 }}>
+                        <div style={{ background: '#F8FAFC', padding: '12px 14px', borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                          <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>Total Sections</div>
+                          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', marginTop: 2 }}>{playlists.length}</div>
+                        </div>
+                        <div style={{ background: '#F8FAFC', padding: '12px 14px', borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                          <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>Total Lectures</div>
+                          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', marginTop: 2 }}>{allCourseLessons.length}</div>
+                        </div>
+                        <div style={{ background: '#F8FAFC', padding: '12px 14px', borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                          <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>Draft Content</div>
+                          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#475569', marginTop: 2 }}>{draftLessons.length}</div>
+                        </div>
+                        <div style={{ background: '#FEF3C7', padding: '12px 14px', borderRadius: 10, border: '1px solid #FDE68A' }}>
+                          <div style={{ fontSize: '0.72rem', color: '#92400E', fontWeight: 600 }}>Pending Review</div>
+                          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#92400E', marginTop: 2 }}>{pendingLessons.length}</div>
+                        </div>
+                        <div style={{ background: '#FEE2E2', padding: '12px 14px', borderRadius: 10, border: '1px solid #FECACA' }}>
+                          <div style={{ fontSize: '0.72rem', color: '#991B1B', fontWeight: 600 }}>Changes Requested</div>
+                          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#991B1B', marginTop: 2 }}>{changesLessons.length}</div>
+                        </div>
+                        <div style={{ background: '#DCFCE7', padding: '12px 14px', borderRadius: 10, border: '1px solid #BBF7D0' }}>
+                          <div style={{ fontSize: '0.72rem', color: '#166534', fontWeight: 600 }}>Approved / Live</div>
+                          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#166534', marginTop: 2 }}>{approvedLessons.length}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sections & Curriculum Tree */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                      {playlists.length > 0 ? (
+                        playlists.map((sec, secIndex) => {
+                          const lessons = sec.lessons || []
+                          return (
+                            <div
+                              key={sec.id}
+                              style={{
+                                background: '#FFFFFF',
+                                borderRadius: 14,
+                                border: '1px solid #E2E8F0',
+                                overflow: 'hidden',
+                                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+                              }}
+                            >
+                              {/* Section Header */}
+                              <div
+                                style={{
+                                  padding: '16px 20px',
+                                  background: '#FAFAFA',
+                                  borderBottom: '1px solid #E2E8F0',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  flexWrap: 'wrap',
+                                  gap: 12
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 200 }}>
+                                  <span
+                                    style={{
+                                      width: 28,
+                                      height: 28,
+                                      borderRadius: 6,
+                                      background: '#0F172A',
+                                      color: '#FFFFFF',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 800,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center'
+                                    }}
+                                  >
+                                    {String(secIndex + 1).padStart(2, '0')}
+                                  </span>
+                                  <div>
+                                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F172A' }}>
+                                      {sec.title}
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                                      {lessons.length} {lessons.length === 1 ? 'lecture' : 'lectures'}
+                                      {sec.description ? ` • ${sec.description}` : ''}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline btn-xs"
+                                    onClick={() =>
+                                      setAdminLectureModal({
+                                        open: true,
+                                        mode: 'create',
+                                        sectionId: sec.id,
+                                        lecture: null,
+                                        courseId: activeCurriculumCourse.id,
+                                        title: '',
+                                        description: '',
+                                        duration: '15:00',
+                                        videoUrl: '',
+                                        selectedFile: null,
+                                        uploadMode: 'url',
+                                        uploadProgress: 0,
+                                        isUploading: false,
+                                        isPreview: false,
+                                        isSaving: false,
+                                        error: ''
+                                      })
+                                    }
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                      padding: '5px 12px',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 700,
+                                      color: '#2563EB',
+                                      borderColor: '#BFDBFE'
+                                    }}
+                                  >
+                                    <Plus size={13} />
+                                    <span>Add Lecture</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline btn-xs"
+                                    onClick={() =>
+                                      setAdminSectionModal({
+                                        open: true,
+                                        mode: 'edit',
+                                        section: sec,
+                                        courseId: activeCurriculumCourse.id,
+                                        title: sec.title,
+                                        description: sec.description || '',
+                                        isSaving: false,
+                                        error: ''
+                                      })
+                                    }
+                                    style={{ padding: '5px 10px', fontSize: '0.75rem', fontWeight: 600 }}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline btn-xs"
+                                    onClick={() =>
+                                      setAdminDeleteCurriculumModal({
+                                        open: true,
+                                        type: 'section',
+                                        id: sec.id,
+                                        title: sec.title,
+                                        isSubmitting: false
+                                      })
+                                    }
+                                    style={{ padding: '5px 10px', fontSize: '0.75rem', color: '#DC2626', borderColor: '#FECACA' }}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Lectures List in Section */}
+                              <div style={{ padding: '12px 20px' }}>
+                                {lessons.length > 0 ? (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {lessons.map((lec, lecIdx) => {
+                                      const hasVideo = Boolean(lec.videoUrl && lec.videoUrl.trim())
+                                      return (
+                                        <div
+                                          key={lec.id}
+                                          style={{
+                                            padding: '12px 14px',
+                                            borderRadius: 10,
+                                            border: '1px solid #F1F5F9',
+                                            background: '#FFFFFF',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            flexWrap: 'wrap',
+                                            gap: 12
+                                          }}
+                                        >
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 220 }}>
+                                            <span style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 700, width: 20 }}>
+                                              {lecIdx + 1}.
+                                            </span>
+                                            <div>
+                                              <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A' }}>
+                                                {lec.title}
+                                              </div>
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
+                                                <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                                                  {lec.duration || '15:00'}
+                                                </span>
+                                                <span style={{ fontSize: '0.75rem', color: '#CBD5E1' }}>•</span>
+                                                {hasVideo ? (
+                                                  <span style={{ fontSize: '0.75rem', color: '#16A34A', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                    <CheckCircle2 size={12} /> Video Attached
+                                                  </span>
+                                                ) : (
+                                                  <span style={{ fontSize: '0.75rem', color: '#DC2626', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                    <AlertTriangle size={12} /> Video Missing
+                                                  </span>
+                                                )}
+                                              </div>
+
+                                              {/* Admin Feedback Display if present */}
+                                              {lec.adminFeedback && (
+                                                <div style={{ marginTop: 6, padding: '4px 8px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 6, fontSize: '0.75rem', color: '#991B1B' }}>
+                                                  <strong>Feedback:</strong> {lec.adminFeedback}
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                            {renderReviewStatusChip(lec.status)}
+
+                                            {hasVideo && (
+                                              <button
+                                                type="button"
+                                                className="btn btn-outline btn-xs"
+                                                onClick={() =>
+                                                  setCurriculumPreviewVideo({
+                                                    open: true,
+                                                    videoUrl: lec.videoUrl,
+                                                    title: lec.title,
+                                                    course: activeCurriculumCourse.title
+                                                  })
+                                                }
+                                                style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                              >
+                                                <Play size={12} />
+                                                <span>Preview</span>
+                                              </button>
+                                            )}
+
+                                            <button
+                                              type="button"
+                                              className="btn btn-outline btn-xs"
+                                              onClick={() =>
+                                                setAdminLectureModal({
+                                                  open: true,
+                                                  mode: 'edit',
+                                                  sectionId: sec.id,
+                                                  lecture: lec,
+                                                  courseId: activeCurriculumCourse.id,
+                                                  title: lec.title,
+                                                  description: lec.description || '',
+                                                  duration: lec.duration || '15:00',
+                                                  videoUrl: lec.videoUrl || '',
+                                                  selectedFile: null,
+                                                  uploadMode: 'url',
+                                                  uploadProgress: 0,
+                                                  isUploading: false,
+                                                  isPreview: Boolean(lec.isPreview),
+                                                  isSaving: false,
+                                                  error: ''
+                                                })
+                                              }
+                                              style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 600 }}
+                                            >
+                                              Edit & Video
+                                            </button>
+
+                                            {/* Quick Admin Actions */}
+                                            {lec.status === 'SUBMITTED_FOR_REVIEW' && (
+                                              <button
+                                                type="button"
+                                                className="btn btn-primary btn-xs"
+                                                onClick={() => {
+                                                  const fullLecture = {
+                                                    ...lec,
+                                                    creator: activeCurriculumCourse.creators?.[0]?.creator || null,
+                                                    playlist: { title: sec.title, course: activeCurriculumCourse }
+                                                  }
+                                                  setSelectedReviewLecture(fullLecture)
+                                                  navigate('/admin/playlists')
+                                                }}
+                                                style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700 }}
+                                              >
+                                                Review
+                                              </button>
+                                            )}
+
+                                            {lec.status === 'APPROVED' && (
+                                              <button
+                                                type="button"
+                                                className="btn btn-outline btn-xs"
+                                                onClick={() => handlePublishLesson(lec.id)}
+                                                style={{ padding: '4px 10px', fontSize: '0.75rem', color: '#16A34A', borderColor: '#86EFAC', fontWeight: 600 }}
+                                              >
+                                                Publish
+                                              </button>
+                                            )}
+
+                                            {lec.status === 'PUBLISHED' && (
+                                              <button
+                                                type="button"
+                                                className="btn btn-outline btn-xs"
+                                                onClick={() => setUnpublishModal({ open: true, lectureId: lec.id, reason: '', error: '', isSubmitting: false })}
+                                                style={{ padding: '4px 10px', fontSize: '0.75rem', color: '#DC2626', borderColor: '#FECACA' }}
+                                              >
+                                                Unpublish
+                                              </button>
+                                            )}
+
+                                            {(lec.status === 'DRAFT' || lec.status === 'RETURNED_FOR_EDIT') && (
+                                              <button
+                                                type="button"
+                                                className="btn btn-outline btn-xs"
+                                                onClick={() => handleQuickApproveCurriculumLecture(lec.id)}
+                                                style={{ padding: '4px 10px', fontSize: '0.75rem', color: '#16A34A', borderColor: '#86EFAC', fontWeight: 600 }}
+                                                title="Directly approve content on creator's behalf"
+                                              >
+                                                Quick Approve
+                                              </button>
+                                            )}
+
+                                            <button
+                                              type="button"
+                                              className="btn btn-outline btn-xs"
+                                              onClick={() =>
+                                                setAdminDeleteCurriculumModal({
+                                                  open: true,
+                                                  type: 'lecture',
+                                                  id: lec.id,
+                                                  title: lec.title,
+                                                  isSubmitting: false
+                                                })
+                                              }
+                                              style={{ padding: '4px 8px', fontSize: '0.75rem', color: '#DC2626', borderColor: '#FECACA' }}
+                                            >
+                                              <Trash2 size={13} />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                ) : (
+                                  <div style={{ textAlign: 'center', padding: '24px 16px', color: '#64748B' }}>
+                                    <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem' }}>No lectures created in this section yet.</p>
+                                    <button
+                                      type="button"
+                                      className="btn btn-outline btn-xs"
+                                      onClick={() =>
+                                        setAdminLectureModal({
+                                          open: true,
+                                          mode: 'create',
+                                          sectionId: sec.id,
+                                          lecture: null,
+                                          courseId: activeCurriculumCourse.id,
+                                          title: '',
+                                          description: '',
+                                          duration: '15:00',
+                                          videoUrl: '',
+                                          selectedFile: null,
+                                          uploadMode: 'url',
+                                          uploadProgress: 0,
+                                          isUploading: false,
+                                          isPreview: false,
+                                          isSaving: false,
+                                          error: ''
+                                        })
+                                      }
+                                      style={{ fontWeight: 600 }}
+                                    >
+                                      + Add Lecture to {sec.title}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E2E8F0', textAlign: 'center', padding: '48px 20px' }}>
+                          <Layers size={40} style={{ color: '#94A3B8', margin: '0 auto 12px auto' }} />
+                          <h4 style={{ margin: '0 0 6px 0', fontSize: '1.1rem', color: '#0F172A' }}>No curriculum sections yet</h4>
+                          <p style={{ color: '#64748B', fontSize: '0.875rem', marginBottom: 16 }}>
+                            Begin building the course structure by creating the first section module.
+                          </p>
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={() =>
+                              setAdminSectionModal({
+                                open: true,
+                                mode: 'create',
+                                section: null,
+                                courseId: activeCurriculumCourse.id,
+                                title: '',
+                                description: '',
+                                isSaving: false,
+                                error: ''
+                              })
+                            }
+                          >
+                            + Add First Section
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })() : (
+                <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E2E8F0', padding: 40, textAlign: 'center' }}>
+                  <p style={{ color: '#64748B', margin: 0 }}>Please select a course to manage its curriculum.</p>
                 </div>
               )}
             </div>
@@ -2126,7 +3242,7 @@ export default function AdminDashboardPage() {
                               <button className="btn btn-outline btn-sm" onClick={() => handleToggleOfferActive(off)}>
                                 {off.isActive ? 'Deactivate' : 'Activate'}
                               </button>
-                              <button className="btn btn-outline btn-sm" onClick={() => handleDeleteOffer(off.id, off.code)} style={{ color: '#DC2626', borderColor: '#FCA5A5' }}>
+                              <button className="btn btn-outline btn-sm" onClick={() => setDeleteOfferModal({ open: true, offer: off, isSubmitting: false })} style={{ color: '#DC2626', borderColor: '#FCA5A5' }}>
                                 <Trash2 size={14} />
                               </button>
                             </div>
@@ -2893,118 +4009,717 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* 5. PLAYLIST & VIDEO MANAGEMENT */}
+      {/* 5. CONTENT REVIEW & VIDEO VERIFICATION QUEUE */}
       {/* ========================================================================= */}
       {activeTab === 'video-verification' && (
         <div>
-          <div style={{ marginBottom: 20 }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
-              Playlist & Video Verification Queue
+          {/* Header */}
+          <div style={{ marginBottom: 24 }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
+              Content Review
             </h2>
-            <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0 }}>
-              Verify creator video submissions against pedagogical and audio-visual benchmarks before public student streaming.
+            <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0, fontWeight: 500 }}>
+              Review creator-submitted lectures, verify video quality, and provide feedback before approval.
             </p>
           </div>
 
+          {/* Queue Filter Bar & Search */}
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: 14,
+              border: '1px solid #E2E8F0',
+              padding: '14px 18px',
+              marginBottom: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 16,
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)'
+            }}
+          >
+            {/* Filter Pills */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              {[
+                {
+                  id: 'SUBMITTED_FOR_REVIEW',
+                  label: 'Pending Review',
+                  count: verificationQueue.filter((v) => v.status === 'SUBMITTED_FOR_REVIEW').length,
+                  dot: '#D97706'
+                },
+                {
+                  id: 'RETURNED_FOR_EDIT',
+                  label: 'Changes Requested',
+                  count: verificationQueue.filter((v) => v.status === 'RETURNED_FOR_EDIT' || v.status === 'REJECTED').length,
+                  dot: '#DC2626'
+                },
+                {
+                  id: 'APPROVED',
+                  label: 'Approved',
+                  count: verificationQueue.filter((v) => v.status === 'APPROVED' || v.status === 'PUBLISHED').length,
+                  dot: '#16A34A'
+                },
+                {
+                  id: 'ALL',
+                  label: 'All Submissions',
+                  count: verificationQueue.length,
+                  dot: '#64748B'
+                }
+              ].map((tab) => {
+                const isActive = reviewFilterStatus === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setReviewFilterStatus(tab.id)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      fontSize: '0.8125rem',
+                      fontWeight: isActive ? 700 : 600,
+                      border: `1px solid ${isActive ? '#2563EB' : '#E2E8F0'}`,
+                      background: isActive ? '#EFF6FF' : '#FFFFFF',
+                      color: isActive ? '#1D4ED8' : '#475569',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: tab.dot }} />
+                    <span>{tab.label}</span>
+                    <span
+                      style={{
+                        padding: '1px 6px',
+                        borderRadius: 9999,
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        background: isActive ? '#DBEAFE' : '#F1F5F9',
+                        color: isActive ? '#1E40AF' : '#64748B'
+                      }}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Search Input */}
+            <div style={{ position: 'relative', width: 280, maxWidth: '100%' }}>
+              <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+              <input
+                type="text"
+                value={reviewSearch}
+                onChange={(e) => setReviewSearch(e.target.value)}
+                placeholder="Search lecture, course, creator..."
+                style={{
+                  width: '100%',
+                  height: 36,
+                  paddingLeft: 34,
+                  paddingRight: 28,
+                  borderRadius: 8,
+                  border: '1px solid #CBD5E1',
+                  fontSize: '0.8125rem',
+                  outline: 'none',
+                  background: '#F8FAFC',
+                  boxSizing: 'border-box'
+                }}
+              />
+              {reviewSearch && (
+                <button
+                  type="button"
+                  onClick={() => setReviewSearch('')}
+                  style={{
+                    position: 'absolute',
+                    right: 8,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#94A3B8',
+                    cursor: 'pointer',
+                    padding: 2
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Review Queue Table */}
           <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
-            {verificationQueue.length > 0 ? (
+            {filteredReviewQueue.length > 0 ? (
               <table className="data-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
-                    <th>Lecture Title</th>
-                    <th>Instructor</th>
-                    <th>Course & Module</th>
-                    <th>Verification Status</th>
-                    <th>Administrative Actions</th>
+                    <th>Lecture</th>
+                    <th>Course</th>
+                    <th>Section</th>
+                    <th>Creator</th>
+                    <th>Submitted</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {verificationQueue.map((v) => (
-                    <tr key={v.id}>
-                      <td><strong>{v.title}</strong></td>
-                      <td>{v.creator?.name || 'Faculty Member'}</td>
-                      <td>
-                        <div>{v.playlist?.course?.title || 'Program'}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{v.playlist?.title} • {v.duration}</div>
-                      </td>
-                      <td>
-                        <span
-                          className="badge"
-                          style={{
-                            background: v.status === 'PUBLISHED' ? '#DCFCE7' : v.status === 'APPROVED' ? '#E0E7FF' : '#FEF3C7',
-                            color: v.status === 'PUBLISHED' ? '#166534' : v.status === 'APPROVED' ? '#3730A3' : '#92400E'
-                          }}
-                        >
-                          {v.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          {v.status !== 'APPROVED' && v.status !== 'PUBLISHED' && (
-                            <button
-                              className="btn btn-outline btn-sm"
-                              onClick={() => handleApproveVideo(v.id)}
-                              style={{ color: '#16A34A', borderColor: '#86EFAC' }}
-                            >
-                              <CheckCircle2 size={14} />
-                              <span>Approve Quality</span>
-                            </button>
-                          )}
-                          {v.status === 'APPROVED' && (
-                            <button
-                              className="btn btn-primary btn-sm"
-                              onClick={() => handlePublishLesson(v.id)}
-                              style={{ background: '#16A34A', borderColor: '#16A34A' }}
-                            >
-                              <Globe size={14} />
-                              <span>Publish to Students</span>
-                            </button>
-                          )}
-                          {v.status === 'PUBLISHED' && (
-                            <button
-                              className="btn btn-outline btn-sm"
-                              onClick={() => handleUnpublishLesson(v.id)}
-                              style={{ color: '#DC2626', borderColor: '#FCA5A5' }}
-                            >
-                              <span>Unpublish</span>
-                            </button>
-                          )}
-                          {v.status !== 'PUBLISHED' && (
-                            <button
-                              className="btn btn-outline btn-sm"
-                              onClick={() => {
-                                const note = prompt('Enter revision feedback note for Instructor:')
-                                if (note) {
-                                  api.admin.reviewVideo(v.id, 'RETURNED_FOR_EDIT', note).then(() => {
-                                    showToast('Video returned with revision instructions', 'info')
-                                    loadAdminData()
-                                  })
-                                }
-                              }}
-                              style={{ color: '#D97706', borderColor: '#FDE68A' }}
-                            >
-                              <RotateCcw size={14} />
-                              <span>Return for Edit</span>
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredReviewQueue.map((v) => {
+                    const hasVideo = Boolean(v.videoUrl && v.videoUrl.trim())
+                    return (
+                      <tr key={v.id}>
+                        {/* Lecture column: Title + Duration + Video status indicator */}
+                        <td>
+                          <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.875rem' }}>
+                            {v.title}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                            <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                              {v.duration || '15:00'}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', color: '#CBD5E1' }}>•</span>
+                            {hasVideo ? (
+                              <span style={{ fontSize: '0.72rem', color: '#16A34A', fontWeight: 600 }}>
+                                Video Ready
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.72rem', color: '#DC2626', fontWeight: 600 }}>
+                                Video Missing
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Course */}
+                        <td>
+                          <div style={{ fontSize: '0.85rem', color: '#1E293B', fontWeight: 600 }}>
+                            {v.playlist?.course?.title || 'Academic Program'}
+                          </div>
+                        </td>
+
+                        {/* Section */}
+                        <td>
+                          <div style={{ fontSize: '0.8125rem', color: '#475569' }}>
+                            {v.playlist?.title || 'Section'}
+                          </div>
+                        </td>
+
+                        {/* Creator */}
+                        <td>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0F172A' }}>
+                            {v.creator?.name || 'Instructor'}
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>
+                            {v.creator?.email || ''}
+                          </div>
+                        </td>
+
+                        {/* Submitted Date */}
+                        <td style={{ fontSize: '0.8125rem', color: '#64748B', whiteSpace: 'nowrap' }}>
+                          {formatSubmittedDate(v.createdAt || v.updatedAt)}
+                        </td>
+
+                        {/* Status Chip */}
+                        <td>
+                          {renderReviewStatusChip(v.status)}
+                        </td>
+
+                        {/* Action: Single Review Button */}
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            onClick={() => setSelectedReviewLecture(v)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '5px 14px',
+                              borderRadius: 8,
+                              fontSize: '0.8125rem',
+                              fontWeight: 700,
+                              color: '#0F172A',
+                              borderColor: '#CBD5E1',
+                              background: '#FFFFFF',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <Eye size={14} style={{ color: '#2563EB' }} />
+                            <span>Review</span>
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             ) : (
-              <div style={{ textAlign: 'center', padding: '44px 20px', color: '#64748B' }}>
-                <CheckCircle2 size={36} style={{ color: '#10B981', margin: '0 auto 10px auto' }} />
-                <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 4px 0', color: '#0F172A' }}>
-                  Verification Queue Clear
+              <div style={{ textAlign: 'center', padding: '52px 20px', color: '#64748B' }}>
+                <CheckCircle2 size={38} style={{ color: '#10B981', margin: '0 auto 12px auto' }} />
+                <h4 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 6px 0', color: '#0F172A' }}>
+                  No Lectures in This Queue
                 </h4>
-                <p style={{ margin: 0, fontSize: '0.85rem' }}>
-                  All creator video lectures have been reviewed and approved.
+                <p style={{ margin: '0 0 16px 0', fontSize: '0.875rem' }}>
+                  {reviewSearch
+                    ? `No submissions matching "${reviewSearch}".`
+                    : reviewFilterStatus === 'SUBMITTED_FOR_REVIEW'
+                    ? 'All creator-submitted lectures have been reviewed.'
+                    : 'No lectures found for the selected review filter.'}
                 </p>
+                {(reviewSearch || reviewFilterStatus !== 'ALL') && (
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => {
+                      setReviewFilterStatus('ALL')
+                      setReviewSearch('')
+                    }}
+                    style={{ fontSize: '0.8125rem' }}
+                  >
+                    View All Submissions
+                  </button>
+                )}
               </div>
             )}
           </div>
+
+          {/* ========================================================================= */}
+          {/* ADMIN VIDEO REVIEW - LARGE CENTERED MODAL */}
+          {/* ========================================================================= */}
+          {selectedReviewLecture && (() => {
+            const hasVideo = Boolean(selectedReviewLecture.videoUrl && selectedReviewLecture.videoUrl.trim())
+            const playableUrl = getPlayableVideoUrl(selectedReviewLecture.videoUrl)
+
+            return (
+              <div
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(15, 23, 42, 0.65)',
+                  backdropFilter: 'blur(4px)',
+                  WebkitBackdropFilter: 'blur(4px)',
+                  zIndex: 2000,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '16px',
+                  boxSizing: 'border-box',
+                  animation: 'fadeIn 0.2s ease-out'
+                }}
+                onClick={() => setSelectedReviewLecture(null)}
+              >
+                <div
+                  style={{
+                    width: 'min(88vw, 1320px)',
+                    height: '88vh',
+                    maxHeight: '88vh',
+                    background: '#FFFFFF',
+                    borderRadius: 16,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.08)',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    animation: 'fadeInSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Modal Header - Sticky Top */}
+                  <div
+                    style={{
+                      padding: '18px 28px',
+                      borderBottom: '1px solid #E2E8F0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: '#FFFFFF',
+                      flexShrink: 0
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-0.02em' }}>
+                          Review Lecture
+                        </h3>
+                        <span style={{ fontSize: '0.85rem', color: '#CBD5E1' }}>•</span>
+                        <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A' }}>
+                          {selectedReviewLecture.title}
+                        </span>
+                        {renderReviewStatusChip(selectedReviewLecture.status)}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8125rem', color: '#64748B', marginTop: 4, flexWrap: 'wrap' }}>
+                        <span>Course: <strong style={{ color: '#334155' }}>{selectedReviewLecture.playlist?.course?.title || 'Academic Program'}</strong></span>
+                        <span style={{ color: '#CBD5E1' }}>•</span>
+                        <span>Section: <strong style={{ color: '#334155' }}>{selectedReviewLecture.playlist?.title || 'Section'}</strong></span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedReviewLecture(null)}
+                      style={{
+                        background: '#F1F5F9',
+                        border: 'none',
+                        width: 36,
+                        height: 36,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#64748B',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        transition: 'background 0.15s ease'
+                      }}
+                      title="Close Review (Esc)"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {/* Modal Body - Scrollable Internally */}
+                  <div
+                    style={{
+                      padding: '24px 32px',
+                      flex: 1,
+                      overflowY: 'auto',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 24
+                    }}
+                  >
+                    {/* Video Review Area - Large 16:9 Player at TOP Center */}
+                    <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto' }}>
+                      {hasVideo ? (
+                        <div
+                          style={{
+                            position: 'relative',
+                            width: '100%',
+                            aspectRatio: '16/9',
+                            background: '#000000',
+                            borderRadius: 14,
+                            overflow: 'hidden',
+                            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.22)'
+                          }}
+                        >
+                          <video
+                            key={selectedReviewLecture.id + (selectedReviewLecture.videoUrl || '')}
+                            controls
+                            playsInline
+                            preload="metadata"
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                            src={playableUrl}
+                          >
+                            Your browser does not support HTML5 video streaming.
+                          </video>
+                        </div>
+                      ) : (
+                        <div
+                          style={{
+                            padding: '52px 24px',
+                            background: '#FEF2F2',
+                            border: '1px solid #FECACA',
+                            borderRadius: 14,
+                            textAlign: 'center'
+                          }}
+                        >
+                          <AlertTriangle size={44} style={{ color: '#DC2626', margin: '0 auto 12px auto' }} />
+                          <h4 style={{ margin: '0 0 6px 0', fontSize: '1.15rem', fontWeight: 700, color: '#991B1B' }}>
+                            Video unavailable
+                          </h4>
+                          <p style={{ margin: 0, fontSize: '0.875rem', color: '#B91C1C', maxWidth: 460, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
+                            This submitted lecture does not have an active video asset. Approval is disabled until the Creator uploads a valid video.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Lecture Information - Clean 2-Column Layout */}
+                    <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto' }}>
+                      <div
+                        style={{
+                          background: '#F8FAFC',
+                          borderRadius: 14,
+                          border: '1px solid #E2E8F0',
+                          padding: '20px 24px'
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                            gap: 20
+                          }}
+                        >
+                          {/* Left Column: Course, Section, Creator */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                            <div>
+                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                                Course
+                              </div>
+                              <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginTop: 3 }}>
+                                {selectedReviewLecture.playlist?.course?.title || 'Academic Program'}
+                              </div>
+                            </div>
+
+                            <div style={{ height: 1, background: '#E2E8F0' }} />
+
+                            <div>
+                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                                Section
+                              </div>
+                              <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1E293B', marginTop: 3 }}>
+                                {selectedReviewLecture.playlist?.title || 'Section'}
+                              </div>
+                            </div>
+
+                            <div style={{ height: 1, background: '#E2E8F0' }} />
+
+                            <div>
+                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                                Creator
+                              </div>
+                              <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginTop: 3 }}>
+                                {selectedReviewLecture.creator?.name || 'Instructor'}
+                              </div>
+                              {selectedReviewLecture.creator?.email && (
+                                <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 1 }}>
+                                  {selectedReviewLecture.creator.email}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Right Column: Duration, Submitted Date, Last Updated, Video Source / Asset Status */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                            <div>
+                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                                Lecture Duration
+                              </div>
+                              <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginTop: 3 }}>
+                                {selectedReviewLecture.duration || '15:00'}
+                              </div>
+                            </div>
+
+                            <div style={{ height: 1, background: '#E2E8F0' }} />
+
+                            <div>
+                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                                Submitted Date
+                              </div>
+                              <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#334155', marginTop: 3 }}>
+                                {formatSubmittedDate(selectedReviewLecture.createdAt)}
+                              </div>
+                            </div>
+
+                            <div style={{ height: 1, background: '#E2E8F0' }} />
+
+                            <div>
+                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                                Last Updated
+                              </div>
+                              <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#334155', marginTop: 3 }}>
+                                {formatSubmittedDate(selectedReviewLecture.updatedAt)}
+                              </div>
+                            </div>
+
+                            <div style={{ height: 1, background: '#E2E8F0' }} />
+
+                            <div>
+                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                                Video Source / Asset Status
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                                {hasVideo ? (
+                                  <>
+                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16A34A', flexShrink: 0 }} />
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#16A34A' }}>
+                                      {selectedReviewLecture.videoUrl?.startsWith('http') ? 'Cloud Asset (Verified)' : 'Local Stream (Verified)'}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#DC2626', flexShrink: 0 }} />
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#DC2626' }}>
+                                      No Video Asset Attached
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Optional Description */}
+                    {selectedReviewLecture.description && (
+                      <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto' }}>
+                        <div
+                          style={{
+                            background: '#FFFFFF',
+                            borderRadius: 14,
+                            border: '1px solid #E2E8F0',
+                            padding: '16px 20px'
+                          }}
+                        >
+                          <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B', marginBottom: 6 }}>
+                            Lecture Description
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                            {selectedReviewLecture.description}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Review History */}
+                    <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto' }}>
+                      <div
+                        style={{
+                          background: '#FFFFFF',
+                          borderRadius: 14,
+                          border: '1px solid #E2E8F0',
+                          padding: '18px 20px'
+                        }}
+                      >
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B', marginBottom: 12 }}>
+                          Review History
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                          {/* Initial Submission */}
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563EB', marginTop: 5, flexShrink: 0 }} />
+                            <div>
+                              <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A' }}>
+                                Submitted for Review
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                                {formatSubmittedDate(selectedReviewLecture.createdAt)} • Uploaded by {selectedReviewLecture.creator?.name || 'Creator'}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Previous Changes Requested & Feedback */}
+                          {selectedReviewLecture.adminFeedback && (
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#DC2626', marginTop: 5, flexShrink: 0 }} />
+                              <div>
+                                <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#DC2626' }}>
+                                  Changes Requested
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: '#64748B', marginBottom: 4 }}>
+                                  {formatSubmittedDate(selectedReviewLecture.updatedAt)} • Editorial Feedback
+                                </div>
+                                <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '8px 12px', fontSize: '0.8125rem', color: '#991B1B', lineHeight: 1.4 }}>
+                                  "{selectedReviewLecture.adminFeedback}"
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Verification logs if any */}
+                          {selectedReviewLecture.verificationLogs && selectedReviewLecture.verificationLogs.map((log) => (
+                            <div key={log.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: log.action === 'APPROVED' ? '#16A34A' : '#D97706', marginTop: 5, flexShrink: 0 }} />
+                              <div>
+                                <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: log.action === 'APPROVED' ? '#16A34A' : '#D97706' }}>
+                                  {log.action === 'APPROVED' ? 'Approved' : 'Changes Requested'}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                                  {formatSubmittedDate(log.createdAt)} • {log.feedbackNote || 'Review decision'}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Modal Footer - Sticky Bottom */}
+                  <div
+                    style={{
+                      padding: '16px 28px',
+                      borderTop: '1px solid #E2E8F0',
+                      background: '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      flexShrink: 0
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={() =>
+                        setRequestChangesModal({
+                          open: true,
+                          lecture: selectedReviewLecture,
+                          feedback: '',
+                          quickReason: '',
+                          error: '',
+                          isSubmitting: false
+                        })
+                      }
+                      style={{
+                        color: '#D97706',
+                        borderColor: '#FDE68A',
+                        background: '#FFFBEB',
+                        fontWeight: 700,
+                        height: 42,
+                        padding: '0 20px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        borderRadius: 8,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <RotateCcw size={16} />
+                      <span>Request Changes</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      disabled={!hasVideo}
+                      onClick={() =>
+                        setApproveModal({
+                          open: true,
+                          lecture: selectedReviewLecture,
+                          isSubmitting: false
+                        })
+                      }
+                      style={{
+                        background: hasVideo ? '#16A34A' : '#94A3B8',
+                        borderColor: hasVideo ? '#16A34A' : '#94A3B8',
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        height: 42,
+                        padding: '0 26px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        borderRadius: 8,
+                        cursor: hasVideo ? 'pointer' : 'not-allowed'
+                      }}
+                      title={!hasVideo ? 'Video unavailable - approval blocked' : 'Approve Lecture'}
+                    >
+                      <CheckCircle2 size={16} />
+                      <span>Approve</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
         </div>
       )}
 
@@ -3193,74 +4908,619 @@ export default function AdminDashboardPage() {
       {/* ========================================================================= */}
       {/* 9. REQUESTS (Creator Profile Change Requests) */}
       {/* ========================================================================= */}
-      {activeTab === 'requests' && (
-        <div>
-          <div style={{ marginBottom: 20 }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
-              Creator Profile Modification Requests
-            </h2>
-            <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0 }}>
-              Review instructor headline, bio, and credential updates before displaying publicly.
-            </p>
-          </div>
+      {activeTab === 'requests' && (() => {
+        const filteredRequests = requestsList.filter((r) => {
+          // Status filter
+          if (requestStatusFilter !== 'ALL' && r.status !== requestStatusFilter) return false
+          
+          // Request type filter
+          if (requestTypeFilter !== 'ALL') {
+            const rType = r.requestType || r.requestedChanges?.type || 'OTHER'
+            if (requestTypeFilter !== rType) return false
+          }
 
-          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
-            {requestsList.length > 0 ? (
-              <table className="data-table" style={{ width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th>Request ID</th>
-                    <th>Instructor Name</th>
-                    <th>Requested Headline / Bio</th>
-                    <th>Status</th>
-                    <th>Decision</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {requestsList.map((r) => (
-                    <tr key={r.id}>
-                      <td><strong>{r.id.slice(0, 8)}</strong></td>
-                      <td>{r.creatorProfile?.user?.name || 'Creator'}</td>
-                      <td>{r.requestedBio || r.requestedHeadline || JSON.stringify(r.requestedChanges || {})}</td>
-                      <td>
-                        <span className="badge" style={{ background: r.status === 'PENDING' ? '#FEF3C7' : '#DCFCE7', color: r.status === 'PENDING' ? '#92400E' : '#166534' }}>
-                          {r.status}
-                        </span>
-                      </td>
-                      <td>
-                        {r.status === 'PENDING' ? (
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            <button
-                              className="btn btn-outline btn-sm"
-                              onClick={() => handleReviewRequest(r.id, 'APPROVED')}
-                              style={{ color: '#16A34A', borderColor: '#86EFAC' }}
-                            >
-                              Approve
-                            </button>
-                            <button
-                              className="btn btn-outline btn-sm"
-                              onClick={() => handleReviewRequest(r.id, 'REJECTED')}
-                              style={{ color: '#EF4444', borderColor: '#FCA5A5' }}
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: '0.8rem', color: '#16A34A', fontWeight: 600 }}>Resolved</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '36px', color: '#64748B' }}>
-                No pending Creator profile requests.
+          // Search query
+          if (requestSearch && requestSearch.trim()) {
+            const q = requestSearch.trim().toLowerCase()
+            const cName = (r.creatorProfile?.user?.name || '').toLowerCase()
+            const cEmail = (r.creatorProfile?.user?.email || '').toLowerCase()
+            const reason = (r.reason || '').toLowerCase()
+            const reqVal = (typeof r.requestedValue === 'string' ? r.requestedValue : JSON.stringify(r.requestedValue || '')).toLowerCase()
+            const curVal = (typeof r.currentValue === 'string' ? r.currentValue : JSON.stringify(r.currentValue || '')).toLowerCase()
+            if (!cName.includes(q) && !cEmail.includes(q) && !reason.includes(q) && !reqVal.includes(q) && !curVal.includes(q)) {
+              return false
+            }
+          }
+          return true
+        })
+
+        const counts = {
+          all: requestsList.length,
+          pending: requestsList.filter((r) => r.status === 'PENDING').length,
+          approved: requestsList.filter((r) => r.status === 'APPROVED').length,
+          rejected: requestsList.filter((r) => r.status === 'REJECTED').length,
+          completed: requestsList.filter((r) => r.status === 'COMPLETED').length,
+          expired: requestsList.filter((r) => r.status === 'EXPIRED').length
+        }
+
+        const formatReqDate = (dateStr) => {
+          if (!dateStr) return 'N/A'
+          try {
+            return new Date(dateStr).toLocaleDateString('en-US', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          } catch {
+            return dateStr
+          }
+        }
+
+        const getTypeMeta = (r) => {
+          const type = r.requestType || r.requestedChanges?.type || 'OTHER'
+          switch (type) {
+            case 'EMAIL_CHANGE':
+              return { label: 'Email Change', icon: Mail, bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' }
+            case 'PASSWORD_CHANGE':
+              return { label: 'Password Change', icon: Key, bg: '#FAF5FF', color: '#7E22CE', border: '#E9D5FF' }
+            case 'PROFILE_PHOTO':
+              return { label: 'Profile Photo', icon: Camera, bg: '#FDF2F8', color: '#BE185D', border: '#FBCFE8' }
+            case 'NAME':
+              return { label: 'Creator Name', icon: UserIcon, bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0' }
+            case 'SPECIALIZATION':
+              return { label: 'Specialization', icon: Tag, bg: '#FFFBEB', color: '#B45309', border: '#FDE68A' }
+            case 'HEADLINE':
+              return { label: 'Headline', icon: FileText, bg: '#F8FAFC', color: '#334155', border: '#CBD5E1' }
+            case 'BIOGRAPHY':
+              return { label: 'Biography', icon: FileText, bg: '#F8FAFC', color: '#334155', border: '#CBD5E1' }
+            default:
+              return { label: 'Profile Change', icon: Edit3, bg: '#F1F5F9', color: '#475569', border: '#E2E8F0' }
+          }
+        }
+
+        return (
+          <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+              <div>
+                <h2 style={{ fontSize: '1.625rem', fontWeight: 800, color: '#0F172A', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+                  Creator Profile Request Center
+                </h2>
+                <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0, fontWeight: 500 }}>
+                  Review faculty credential modifications, email changes, and password approvals with zero-knowledge security governance.
+                </p>
               </div>
-            )}
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={loadAdminData}
+                  disabled={loading}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38, padding: '0 14px', borderRadius: 10, fontWeight: 600 }}
+                >
+                  <RefreshCw size={14} className={loading ? 'spin' : ''} />
+                  <span>Refresh Requests</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
+              <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 1px 3px rgba(15,23,42,0.03)' }}>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: '#F8FAFC', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Requests</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.1 }}>{counts.all}</div>
+                </div>
+              </div>
+
+              <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: '#FEF3C7', color: '#B45309', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Clock size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#92400E', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Pending Approval</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#B45309', lineHeight: 1.1 }}>{counts.pending}</div>
+                </div>
+              </div>
+
+              <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: '#DCFCE7', color: '#15803D', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CheckCircle2 size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#166534', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Approved / Active</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#15803D', lineHeight: 1.1 }}>{counts.approved}</div>
+                </div>
+              </div>
+
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: '#ECFDF5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Check size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#047857', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Completed</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>{counts.completed}</div>
+                </div>
+              </div>
+
+              <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: '#FEE2E2', color: '#B91C1C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <X size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#991B1B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Rejected</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#B91C1C', lineHeight: 1.1 }}>{counts.rejected}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: 14,
+                border: '1px solid #E2E8F0',
+                padding: '16px 20px',
+                marginBottom: 20,
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 16,
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)'
+              }}
+            >
+              {/* Status Filter Tabs */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B', marginRight: 4 }}>Status:</span>
+                {[
+                  { key: 'ALL', label: 'All', count: counts.all },
+                  { key: 'PENDING', label: 'Pending', count: counts.pending },
+                  { key: 'APPROVED', label: 'Approved', count: counts.approved },
+                  { key: 'REJECTED', label: 'Rejected', count: counts.rejected },
+                  { key: 'COMPLETED', label: 'Completed', count: counts.completed },
+                  { key: 'EXPIRED', label: 'Expired', count: counts.expired }
+                ].map((s) => {
+                  const isActive = requestStatusFilter === s.key
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => setRequestStatusFilter(s.key)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 8,
+                        fontSize: '0.8125rem',
+                        fontWeight: 600,
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        background: isActive ? '#0F172A' : '#F1F5F9',
+                        color: isActive ? '#FFFFFF' : '#475569',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6
+                      }}
+                    >
+                      <span>{s.label}</span>
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          padding: '1px 6px',
+                          borderRadius: 10,
+                          background: isActive ? 'rgba(255,255,255,0.25)' : '#E2E8F0',
+                          color: isActive ? '#FFFFFF' : '#64748B'
+                        }}
+                      >
+                        {s.count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Type Filter & Search Controls */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                {/* Request Type Filter */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Filter size={15} style={{ color: '#64748B' }} />
+                  <select
+                    value={requestTypeFilter}
+                    onChange={(e) => setRequestTypeFilter(e.target.value)}
+                    style={{
+                      height: 38,
+                      padding: '0 12px',
+                      borderRadius: 8,
+                      border: '1px solid #CBD5E1',
+                      background: '#FFFFFF',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                      color: '#0F172A',
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="ALL">All Request Types</option>
+                    <option value="EMAIL_CHANGE">Email Address Change</option>
+                    <option value="PASSWORD_CHANGE">Password Change</option>
+                    <option value="PROFILE_PHOTO">Profile Photo</option>
+                    <option value="NAME">Creator Name</option>
+                    <option value="SPECIALIZATION">Specialization</option>
+                    <option value="HEADLINE">Headline</option>
+                    <option value="BIOGRAPHY">Biography</option>
+                  </select>
+                </div>
+
+                {/* Search Bar */}
+                <div style={{ position: 'relative', width: 240 }}>
+                  <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+                  <input
+                    type="text"
+                    placeholder="Search creator or reason..."
+                    value={requestSearch}
+                    onChange={(e) => setRequestSearch(e.target.value)}
+                    style={{
+                      width: '100%',
+                      height: 38,
+                      padding: '0 12px 0 32px',
+                      borderRadius: 8,
+                      border: '1px solid #CBD5E1',
+                      fontSize: '0.8125rem',
+                      color: '#0F172A',
+                      outline: 'none'
+                    }}
+                  />
+                  {requestSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setRequestSearch('')}
+                      style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: '#94A3B8' }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Requests List */}
+            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+              {filteredRequests.length > 0 ? (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="data-table" style={{ width: '100%', minWidth: 900 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: 170 }}>Request Type</th>
+                        <th style={{ width: 220 }}>Creator</th>
+                        <th>Requested Change Details</th>
+                        <th style={{ width: 220 }}>Reason & Date</th>
+                        <th style={{ width: 140 }}>Status</th>
+                        <th style={{ width: 180, textAlign: 'center' }}>Admin Decision</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRequests.map((r) => {
+                        const meta = getTypeMeta(r)
+                        const Icon = meta.icon
+                        const creatorUser = r.creatorProfile?.user || {}
+                        const isPending = r.status === 'PENDING'
+                        const isApproved = r.status === 'APPROVED'
+                        const isCompleted = r.status === 'COMPLETED'
+                        const isRejected = r.status === 'REJECTED'
+                        const isExpired = r.status === 'EXPIRED'
+                        const isPasswordChange = r.requestType === 'PASSWORD_CHANGE'
+                        const isEmailChange = r.requestType === 'EMAIL_CHANGE'
+
+                        return (
+                          <tr key={r.id} style={{ verticalAlign: 'top', borderBottom: '1px solid #F1F5F9' }}>
+                            {/* Request Type */}
+                            <td style={{ padding: '16px 14px' }}>
+                              <div
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  background: meta.bg,
+                                  color: meta.color,
+                                  border: `1px solid ${meta.border}`,
+                                  padding: '5px 10px',
+                                  borderRadius: 8,
+                                  fontSize: '0.78rem',
+                                  fontWeight: 700
+                                }}
+                              >
+                                <Icon size={14} />
+                                <span>{meta.label}</span>
+                              </div>
+                              <div style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: 4, fontFamily: 'monospace' }}>
+                                #{r.id.slice(0, 8)}
+                              </div>
+                            </td>
+
+                            {/* Creator Information */}
+                            <td style={{ padding: '16px 14px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div
+                                  style={{
+                                    width: 38,
+                                    height: 38,
+                                    borderRadius: '50%',
+                                    background: '#EEF2FF',
+                                    color: '#4F46E5',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 700,
+                                    fontSize: '0.85rem',
+                                    overflow: 'hidden',
+                                    flexShrink: 0
+                                  }}
+                                >
+                                  {creatorUser.avatar ? (
+                                    <img src={creatorUser.avatar} alt={creatorUser.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  ) : (
+                                    getCreatorInitials(creatorUser.name || 'CR')
+                                  )}
+                                </div>
+                                <div style={{ minWidth: 0 }}>
+                                  <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {creatorUser.name || 'Creator'}
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {creatorUser.email || 'N/A'}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Requested Change Details */}
+                            <td style={{ padding: '16px 14px' }}>
+                              {isEmailChange ? (
+                                <div style={{ fontSize: '0.8125rem' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                                    <div style={{ background: '#F1F5F9', padding: '4px 8px', borderRadius: 6, color: '#475569', fontSize: '0.78rem' }}>
+                                      <span style={{ color: '#94A3B8', fontSize: '0.7rem', display: 'block', fontWeight: 600 }}>CURRENT EMAIL</span>
+                                      <strong>{r.currentValue || creatorUser.email || 'kpmbanupriya@gmail.com'}</strong>
+                                    </div>
+                                    <ArrowRight size={14} style={{ color: '#94A3B8' }} />
+                                    <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '4px 8px', borderRadius: 6, color: '#1D4ED8', fontSize: '0.78rem' }}>
+                                      <span style={{ color: '#3B82F6', fontSize: '0.7rem', display: 'block', fontWeight: 600 }}>REQUESTED NEW EMAIL</span>
+                                      <strong>{r.requestedValue}</strong>
+                                    </div>
+                                  </div>
+                                  <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: 4 }}>
+                                    🔒 Existing email stays active until Admin approval and OTP verification complete.
+                                  </div>
+                                </div>
+                              ) : isPasswordChange ? (
+                                <div>
+                                  <div
+                                    style={{
+                                      background: '#FAF5FF',
+                                      border: '1px solid #E9D5FF',
+                                      borderRadius: 8,
+                                      padding: '10px 12px',
+                                      fontSize: '0.8rem',
+                                      color: '#6B21A8'
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 4 }}>
+                                      <Shield size={14} style={{ color: '#7E22CE' }} />
+                                      <span>Admin Zero-Knowledge Security Policy</span>
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: '#7E22CE', lineHeight: 1.4 }}>
+                                      Approval grants the Creator a <strong>24-hour permission</strong> to enter their current & new password securely from My Profile. Password data is encrypted directly with bcrypt in the backend.
+                                    </div>
+                                  </div>
+                                  <div style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <Lock size={12} />
+                                    <span>No passwords, hashes, reset tokens, or OTPs are accessible to Admin.</span>
+                                  </div>
+                                </div>
+                              ) : r.requestType === 'PROFILE_PHOTO' ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                  {r.currentValue && (
+                                    <div style={{ textAlign: 'center' }}>
+                                      <div style={{ fontSize: '0.68rem', color: '#64748B', marginBottom: 2 }}>Current</div>
+                                      <img src={r.currentValue} alt="Current" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid #CBD5E1' }} />
+                                    </div>
+                                  )}
+                                  <ArrowRight size={14} style={{ color: '#94A3B8' }} />
+                                  <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '0.68rem', color: '#1D4ED8', fontWeight: 600, marginBottom: 2 }}>Requested</div>
+                                    <img src={r.requestedValue} alt="Requested" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '2px solid #3B82F6' }} />
+                                  </div>
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: '0.8125rem' }}>
+                                  {r.currentValue && (
+                                    <div style={{ color: '#64748B', marginBottom: 4, fontSize: '0.75rem' }}>
+                                      <span style={{ fontWeight: 600 }}>Current: </span>
+                                      {r.currentValue}
+                                    </div>
+                                  )}
+                                  <div style={{ color: '#0F172A', fontWeight: 600 }}>
+                                    <span style={{ color: '#16A34A', fontWeight: 700 }}>Requested: </span>
+                                    {typeof r.requestedValue === 'string' ? r.requestedValue : JSON.stringify(r.requestedValue)}
+                                  </div>
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Reason & Date */}
+                            <td style={{ padding: '16px 14px' }}>
+                              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '8px 10px', fontSize: '0.78rem', color: '#334155', fontStyle: 'italic', marginBottom: 6 }}>
+                                "{r.reason || 'No specific justification provided.'}"
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.72rem', color: '#64748B' }}>
+                                <Calendar size={12} />
+                                <span>{formatReqDate(r.createdAt)}</span>
+                              </div>
+                            </td>
+
+                            {/* Status */}
+                            <td style={{ padding: '16px 14px' }}>
+                              <div>
+                                {isPending && (
+                                  <span className="badge" style={{ background: '#FEF3C7', color: '#92400E', fontWeight: 700, fontSize: '0.75rem', padding: '4px 8px' }}>
+                                    Pending Approval
+                                  </span>
+                                )}
+                                {isApproved && (
+                                  <div>
+                                    <span className="badge" style={{ background: '#DBEAFE', color: '#1E40AF', fontWeight: 700, fontSize: '0.75rem', padding: '4px 8px' }}>
+                                      Approved
+                                    </span>
+                                    {isPasswordChange && (
+                                      <div style={{ fontSize: '0.7rem', color: '#1E40AF', marginTop: 4, fontWeight: 600 }}>
+                                        Awaiting Creator Set
+                                      </div>
+                                    )}
+                                    {isEmailChange && (
+                                      <div style={{ fontSize: '0.7rem', color: '#1E40AF', marginTop: 4, fontWeight: 600 }}>
+                                        Awaiting OTP Verify
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                {isCompleted && (
+                                  <span className="badge" style={{ background: '#DCFCE7', color: '#166534', fontWeight: 700, fontSize: '0.75rem', padding: '4px 8px' }}>
+                                    Completed
+                                  </span>
+                                )}
+                                {isRejected && (
+                                  <div>
+                                    <span className="badge" style={{ background: '#FEE2E2', color: '#991B1B', fontWeight: 700, fontSize: '0.75rem', padding: '4px 8px' }}>
+                                      Rejected
+                                    </span>
+                                    {r.rejectionReason && (
+                                      <div style={{ fontSize: '0.7rem', color: '#B91C1C', marginTop: 4, fontStyle: 'italic' }}>
+                                        Reason: {r.rejectionReason}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                {isExpired && (
+                                  <span className="badge" style={{ background: '#F1F5F9', color: '#64748B', fontWeight: 700, fontSize: '0.75rem', padding: '4px 8px' }}>
+                                    Approval Expired
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Decision Actions */}
+                            <td style={{ padding: '16px 14px', textAlign: 'center' }}>
+                              {isPending ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm"
+                                    onClick={() => handleReviewRequest(r.id, 'APPROVED')}
+                                    disabled={isSubmittingReview}
+                                    style={{
+                                      background: '#16A34A',
+                                      color: '#FFFFFF',
+                                      border: 'none',
+                                      fontWeight: 700,
+                                      fontSize: '0.78rem',
+                                      padding: '6px 12px',
+                                      borderRadius: 8,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: 6,
+                                      boxShadow: '0 1px 3px rgba(22,163,74,0.3)'
+                                    }}
+                                  >
+                                    <Check size={14} />
+                                    <span>Approve</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline btn-sm"
+                                    onClick={() => handleOpenRejectModal(r)}
+                                    disabled={isSubmittingReview}
+                                    style={{
+                                      color: '#EF4444',
+                                      borderColor: '#FCA5A5',
+                                      fontWeight: 600,
+                                      fontSize: '0.78rem',
+                                      padding: '6px 12px',
+                                      borderRadius: 8,
+                                      background: '#FFFFFF',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: 6
+                                    }}
+                                  >
+                                    <X size={14} />
+                                    <span>Reject</span>
+                                  </button>
+                                </div>
+                              ) : isApproved ? (
+                                <div style={{ fontSize: '0.75rem', color: '#1E40AF', background: '#EFF6FF', padding: '6px 8px', borderRadius: 6, fontWeight: 600 }}>
+                                  {isPasswordChange ? 'Awaiting Password Reset' : isEmailChange ? 'Awaiting Email OTP' : 'Permission Active'}
+                                </div>
+                              ) : isCompleted ? (
+                                <div style={{ fontSize: '0.75rem', color: '#166534', background: '#F0FDF4', padding: '6px 8px', borderRadius: 6, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                                  <CheckCircle2 size={13} />
+                                  <span>Resolved</span>
+                                </div>
+                              ) : isRejected ? (
+                                <div style={{ fontSize: '0.75rem', color: '#991B1B', background: '#FEF2F2', padding: '6px 8px', borderRadius: 6, fontWeight: 600 }}>
+                                  Declined
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: '0.75rem', color: '#64748B' }}>Closed</span>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '48px 20px', color: '#64748B' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#F1F5F9', color: '#94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+                    <CheckCircle2 size={28} />
+                  </div>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0F172A', margin: '0 0 6px 0' }}>
+                    No Requests Match Your Filter
+                  </h4>
+                  <p style={{ fontSize: '0.85rem', color: '#64748B', maxWidth: 440, margin: '0 auto 16px auto' }}>
+                    {requestStatusFilter !== 'ALL' || requestTypeFilter !== 'ALL' || requestSearch
+                      ? 'Try clearing your status filter or search query to see other faculty change requests.'
+                      : 'All Creator profile modifications and security requests have been reviewed.'}
+                  </p>
+                  {(requestStatusFilter !== 'ALL' || requestTypeFilter !== 'ALL' || requestSearch) && (
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={() => {
+                        setRequestStatusFilter('ALL')
+                        setRequestTypeFilter('ALL')
+                        setRequestSearch('')
+                      }}
+                    >
+                      Reset All Filters
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* ========================================================================= */}
       {/* 10. AUDIT LOGS */}
@@ -4442,11 +6702,34 @@ export default function AdminDashboardPage() {
         <div className="razorpay-modal-overlay" onClick={() => setSelectedEditCreator(null)}>
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 620, maxHeight: '90vh', overflowY: 'auto', borderRadius: 16 }}
+            style={{
+              maxWidth: 620,
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              borderRadius: 16,
+              overflow: 'hidden',
+              background: '#FFFFFF',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)'
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="razorpay-modal-header" style={{ padding: '18px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {/* Sticky Header */}
+            <div
+              className="razorpay-modal-header"
+              style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 30,
+                background: '#FFFFFF',
+                padding: '18px 24px',
+                borderBottom: '1px solid #E2E8F0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexShrink: 0
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 38, height: 38, borderRadius: 10, background: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Edit3 size={18} />
@@ -4464,15 +6747,41 @@ export default function AdminDashboardPage() {
                 type="button"
                 className="btn-ghost"
                 onClick={() => setSelectedEditCreator(null)}
-                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
+                style={{
+                  padding: 6,
+                  borderRadius: '50%',
+                  color: '#64748B',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
                 aria-label="Close"
               >
                 <X size={18} />
               </button>
             </div>
 
-            {/* Form Body */}
-            <form onSubmit={handleSaveEditCreator} style={{ padding: '22px 24px' }}>
+            {/* Form with Scrollable Body and Sticky Footer */}
+            <form
+              onSubmit={handleSaveEditCreator}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                minHeight: 0,
+                overflow: 'hidden'
+              }}
+            >
+              {/* Scrollable Form Body */}
+              <div
+                className="razorpay-modal-body"
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '22px 24px'
+                }}
+              >
               {/* Row 1: Full Name & Email Address */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginBottom: 14 }}>
                 <div className="form-field-group">
@@ -4913,24 +7222,41 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              {/* Row 6: Account Status */}
-              <div className="form-field-group" style={{ marginBottom: 22 }}>
-                <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1E293B', marginBottom: 6, display: 'block' }}>
-                  Account Status
-                </label>
-                <CustomSelect
-                  options={EDIT_CREATOR_STATUS_OPTIONS}
-                  value={editCreatorForm.status}
-                  onChange={(e) => {
-                    const nextVal = (e?.target?.value !== undefined ? e.target.value : e) || 'ACTIVE'
-                    setEditCreatorForm((prev) => ({ ...prev, status: nextVal }))
-                  }}
-                  buttonStyle={{ height: 42, borderRadius: 8, border: '1px solid #CBD5E1' }}
-                />
+                {/* Row 6: Account Status */}
+                <div className="form-field-group" style={{ marginBottom: 16 }}>
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#1E293B', marginBottom: 6, display: 'block' }}>
+                    Account Status
+                  </label>
+                  <CustomSelect
+                    options={EDIT_CREATOR_STATUS_OPTIONS}
+                    value={editCreatorForm.status}
+                    onChange={(e) => {
+                      const nextVal = (e?.target?.value !== undefined ? e.target.value : e) || 'ACTIVE'
+                      setEditCreatorForm((prev) => ({ ...prev, status: nextVal }))
+                    }}
+                    buttonStyle={{ height: 42, borderRadius: 8, border: '1px solid #CBD5E1' }}
+                    portal={true}
+                    autoPlacement={true}
+                  />
+                </div>
               </div>
 
-              {/* Footer Actions */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 14, borderTop: '1px solid #F1F5F9' }}>
+              {/* Sticky Footer Actions */}
+              <div
+                className="razorpay-modal-footer"
+                style={{
+                  position: 'sticky',
+                  bottom: 0,
+                  zIndex: 20,
+                  background: '#FFFFFF',
+                  padding: '14px 24px',
+                  borderTop: '1px solid #F1F5F9',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: 10,
+                  flexShrink: 0
+                }}
+              >
                 <button
                   type="button"
                   className="btn btn-outline"
@@ -5503,6 +7829,879 @@ export default function AdminDashboardPage() {
                   Done
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 7: MANDATORY REJECTION REASON MODAL */}
+      {/* ========================================================================= */}
+      {rejectModal.open && (
+        <div className="razorpay-modal-overlay" onClick={() => !isSubmittingReview && setRejectModal({ open: false, request: null, reason: '', error: '' })}>
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 520 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div className="razorpay-modal-icon" style={{ background: '#FEE2E2', color: '#DC2626' }}>
+                  <AlertCircle size={20} />
+                </div>
+                <div>
+                  <h3 className="razorpay-modal-title" style={{ fontSize: '1.15rem', margin: 0, color: '#0F172A' }}>
+                    Reject Change Request
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                    {rejectModal.request?.creatorProfile?.user?.name || 'Creator'} ({rejectModal.request?.requestType || 'Request'})
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => !isSubmittingReview && setRejectModal({ open: false, request: null, reason: '', error: '' })}
+                style={{ padding: 6, borderRadius: '50%' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmReject}>
+              <div style={{ padding: '20px' }}>
+                <p style={{ fontSize: '0.875rem', color: '#475569', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+                  Please provide a clear justification for rejecting this request. The creator will view this feedback directly in their <strong>My Profile → Request Status</strong> dashboard.
+                </p>
+
+                {rejectModal.error && (
+                  <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '10px 12px', fontSize: '0.8rem', color: '#B91C1C', marginBottom: 16 }}>
+                    {rejectModal.error}
+                  </div>
+                )}
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    Rejection Reason <span style={{ color: '#DC2626' }}>*</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={rejectModal.reason}
+                    onChange={(e) => setRejectModal((prev) => ({ ...prev, reason: e.target.value, error: '' }))}
+                    placeholder="E.g., The requested email domain must be an authorized organizational address, or the bio exceeds institutional guidelines."
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #CBD5E1',
+                      fontSize: '0.875rem',
+                      lineHeight: 1.4,
+                      outline: 'none',
+                      resize: 'vertical'
+                    }}
+                    autoFocus
+                  />
+                  <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: 4 }}>
+                    Mandatory field. Helps instructors make appropriate revisions before re-submitting.
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => setRejectModal({ open: false, request: null, reason: '', error: '' })}
+                    disabled={isSubmittingReview}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn"
+                    disabled={isSubmittingReview || !rejectModal.reason.trim()}
+                    style={{
+                      background: '#DC2626',
+                      color: '#FFFFFF',
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    {isSubmittingReview ? <RefreshCw size={14} className="spin" /> : <X size={14} />}
+                    <span>Confirm Rejection</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: APPROVE LECTURE CONFIRMATION */}
+      {/* ========================================================================= */}
+      {approveModal.open && (
+        <div className="razorpay-modal-overlay" style={{ zIndex: 2500 }} onClick={() => !approveModal.isSubmitting && setApproveModal({ open: false, lecture: null, isSubmitting: false })}>
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 480, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: '#DCFCE7', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CheckCircle2 size={22} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                    Approve Lecture?
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+                    Content Verification & Pedagogical Approval
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => !approveModal.isSubmitting && setApproveModal({ open: false, lecture: null, isSubmitting: false })}
+                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ padding: '24px' }}>
+              <p style={{ fontSize: '0.9375rem', color: '#334155', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+                <strong style={{ color: '#0F172A' }}>"{approveModal.lecture?.title}"</strong> will be marked as approved and made available according to the existing publishing rules.
+              </p>
+
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '12px 16px', marginBottom: 24 }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748B', marginBottom: 4 }}>Lecture Details</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A' }}>
+                  Course: {approveModal.lecture?.playlist?.course?.title || 'Academic Program'}
+                </div>
+                <div style={{ fontSize: '0.8125rem', color: '#475569', marginTop: 2 }}>
+                  Section: {approveModal.lecture?.playlist?.title || 'Section'} • Creator: {approveModal.lecture?.creator?.name || 'Instructor'}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setApproveModal({ open: false, lecture: null, isSubmitting: false })}
+                  disabled={approveModal.isSubmitting}
+                  style={{ height: 40, padding: '0 18px', fontWeight: 600 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleConfirmApproveLecture}
+                  disabled={approveModal.isSubmitting}
+                  style={{
+                    background: '#16A34A',
+                    borderColor: '#16A34A',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    height: 40,
+                    padding: '0 20px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8
+                  }}
+                >
+                  {approveModal.isSubmitting ? <RefreshCw size={15} className="spin" /> : <CheckCircle2 size={16} />}
+                  <span>Approve Lecture</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: REQUEST CHANGES MODAL */}
+      {/* ========================================================================= */}
+      {requestChangesModal.open && (
+        <div className="razorpay-modal-overlay" style={{ zIndex: 2500 }} onClick={() => !requestChangesModal.isSubmitting && setRequestChangesModal({ open: false, lecture: null, feedback: '', quickReason: '', error: '', isSubmitting: false })}>
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 540, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: '#FEF3C7', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <RotateCcw size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                    Request Changes
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+                    Send actionable revision guidance to the Creator
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => !requestChangesModal.isSubmitting && setRequestChangesModal({ open: false, lecture: null, feedback: '', quickReason: '', error: '', isSubmitting: false })}
+                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmRequestChanges}>
+              <div style={{ padding: '24px' }}>
+                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '12px 16px', marginBottom: 18 }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A' }}>
+                    Lecture: <span style={{ fontWeight: 600, color: '#334155' }}>{requestChangesModal.lecture?.title}</span>
+                  </div>
+                  <div style={{ fontSize: '0.8125rem', color: '#64748B', marginTop: 3 }}>
+                    Creator: <strong style={{ color: '#0F172A' }}>{requestChangesModal.lecture?.creator?.name || 'Instructor'}</strong>
+                  </div>
+                </div>
+
+                {/* Optional Quick Reasons */}
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 8 }}>
+                    Quick Reasons (Optional Helpers):
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {QUICK_REVIEW_REASONS.map((reason) => {
+                      const isSelected = requestChangesModal.quickReason === reason
+                      return (
+                        <button
+                          key={reason}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setRequestChangesModal((prev) => ({ ...prev, quickReason: '' }))
+                            } else {
+                              setRequestChangesModal((prev) => {
+                                const prefix = `[${reason}] `
+                                const cleanFeedback = prev.feedback.replace(/^\[.*?\]\s*/, '')
+                                return {
+                                  ...prev,
+                                  quickReason: reason,
+                                  feedback: `${prefix}${cleanFeedback}`.trimStart(),
+                                  error: ''
+                                }
+                              })
+                            }
+                          }}
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: 9999,
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            border: `1px solid ${isSelected ? '#2563EB' : '#CBD5E1'}`,
+                            background: isSelected ? '#EFF6FF' : '#FFFFFF',
+                            color: isSelected ? '#1D4ED8' : '#475569',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          {isSelected ? '● ' : '○ '}
+                          {reason}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Feedback * */}
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <label style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#334155' }}>
+                      Feedback <span style={{ color: '#DC2626' }}>*</span>
+                    </label>
+                  </div>
+                  <textarea
+                    rows={5}
+                    value={requestChangesModal.feedback}
+                    onChange={(e) => setRequestChangesModal((prev) => ({ ...prev, feedback: e.target.value, error: '' }))}
+                    placeholder="Explain what should be corrected before resubmission..."
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      border: `1px solid ${requestChangesModal.error ? '#DC2626' : '#CBD5E1'}`,
+                      fontSize: '0.875rem',
+                      lineHeight: 1.5,
+                      outline: 'none',
+                      resize: 'vertical',
+                      boxSizing: 'border-box'
+                    }}
+                    autoFocus
+                  />
+                  {requestChangesModal.error ? (
+                    <div style={{ fontSize: '0.78rem', color: '#DC2626', marginTop: 4, fontWeight: 600 }}>
+                      {requestChangesModal.error}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: 4 }}>
+                      Mandatory field. The creator will view this feedback in their Course Workspace to make revisions.
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => setRequestChangesModal({ open: false, lecture: null, feedback: '', quickReason: '', error: '', isSubmitting: false })}
+                    disabled={requestChangesModal.isSubmitting}
+                    style={{ height: 40, padding: '0 18px', fontWeight: 600 }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={requestChangesModal.isSubmitting}
+                    style={{
+                      background: '#D97706',
+                      borderColor: '#D97706',
+                      color: '#FFFFFF',
+                      fontWeight: 700,
+                      height: 40,
+                      padding: '0 20px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8
+                    }}
+                  >
+                    {requestChangesModal.isSubmitting ? <RefreshCw size={15} className="spin" /> : <Send size={15} />}
+                    <span>Send Feedback</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: UNPUBLISH LECTURE MODAL */}
+      {/* ========================================================================= */}
+      {unpublishModal.open && (
+        <div className="razorpay-modal-overlay" onClick={() => !unpublishModal.isSubmitting && setUnpublishModal({ open: false, lectureId: null, reason: '', error: '', isSubmitting: false })}>
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 480, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                Unpublish Lecture
+              </h3>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => !unpublishModal.isSubmitting && setUnpublishModal({ open: false, lectureId: null, reason: '', error: '', isSubmitting: false })}
+                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ padding: '24px' }}>
+              <p style={{ fontSize: '0.875rem', color: '#475569', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+                Unpublishing will hide this lecture from enrolled students. Provide an administrative reason:
+              </p>
+
+              <div style={{ marginBottom: 20 }}>
+                <textarea
+                  rows={3}
+                  value={unpublishModal.reason}
+                  onChange={(e) => setUnpublishModal((prev) => ({ ...prev, reason: e.target.value }))}
+                  placeholder="Reason for unpublishing this lecture..."
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #CBD5E1',
+                    fontSize: '0.85rem',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setUnpublishModal({ open: false, lectureId: null, reason: '', error: '', isSubmitting: false })}
+                  disabled={unpublishModal.isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleConfirmUnpublish}
+                  disabled={unpublishModal.isSubmitting}
+                  style={{ background: '#DC2626', borderColor: '#DC2626', color: '#FFFFFF', fontWeight: 700 }}
+                >
+                  {unpublishModal.isSubmitting ? <RefreshCw size={14} className="spin" /> : null}
+                  <span>Unpublish Lecture</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: DELETE OFFER MODAL */}
+      {/* ========================================================================= */}
+      {deleteOfferModal.open && (
+        <div className="razorpay-modal-overlay" onClick={() => !deleteOfferModal.isSubmitting && setDeleteOfferModal({ open: false, offer: null, isSubmitting: false })}>
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 440, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Trash2 size={18} />
+                </div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                  Delete Coupon Offer?
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => !deleteOfferModal.isSubmitting && setDeleteOfferModal({ open: false, offer: null, isSubmitting: false })}
+                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px 24px' }}>
+              <p style={{ fontSize: '0.875rem', color: '#334155', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+                Are you sure you want to permanently delete offer coupon <strong style={{ color: '#0F172A' }}>"{deleteOfferModal.offer?.code}"</strong>? This coupon will no longer be valid at checkout.
+              </p>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setDeleteOfferModal({ open: false, offer: null, isSubmitting: false })}
+                  disabled={deleteOfferModal.isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={handleConfirmDeleteOffer}
+                  disabled={deleteOfferModal.isSubmitting}
+                  style={{ background: '#DC2626', color: '#FFFFFF', fontWeight: 700 }}
+                >
+                  {deleteOfferModal.isSubmitting ? <RefreshCw size={14} className="spin" /> : null}
+                  <span>Delete Coupon</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: ADMIN SECTION MODAL (ADD / EDIT) */}
+      {/* ========================================================================= */}
+      {adminSectionModal.open && (
+        <div className="razorpay-modal-overlay" onClick={() => !adminSectionModal.isSaving && setAdminSectionModal((prev) => ({ ...prev, open: false }))}>
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 480, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                {adminSectionModal.mode === 'create' ? 'Create New Section' : 'Edit Section'}
+              </h3>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => !adminSectionModal.isSaving && setAdminSectionModal((prev) => ({ ...prev, open: false }))}
+                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSection}>
+              <div style={{ padding: '24px' }}>
+                {adminSectionModal.error && (
+                  <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '10px 12px', fontSize: '0.8rem', color: '#B91C1C', marginBottom: 16 }}>
+                    {adminSectionModal.error}
+                  </div>
+                )}
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    Section Title <span style={{ color: '#DC2626' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={adminSectionModal.title}
+                    onChange={(e) => setAdminSectionModal((prev) => ({ ...prev, title: e.target.value, error: '' }))}
+                    placeholder="E.g., High-Performance Computing with NumPy"
+                    style={{ width: '100%', height: 38, padding: '0 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                    autoFocus
+                  />
+                </div>
+
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    Section Description (Optional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={adminSectionModal.description}
+                    onChange={(e) => setAdminSectionModal((prev) => ({ ...prev, description: e.target.value }))}
+                    placeholder="Brief overview of concepts covered in this section..."
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => setAdminSectionModal((prev) => ({ ...prev, open: false }))}
+                    disabled={adminSectionModal.isSaving}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={adminSectionModal.isSaving || !adminSectionModal.title.trim()}
+                    style={{ fontWeight: 700 }}
+                  >
+                    {adminSectionModal.isSaving ? <RefreshCw size={14} className="spin" /> : null}
+                    <span>{adminSectionModal.mode === 'create' ? 'Create Section' : 'Save Changes'}</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: ADMIN LECTURE MODAL (ADD / EDIT & VIDEO UPLOAD) */}
+      {/* ========================================================================= */}
+      {adminLectureModal.open && (
+        <div className="razorpay-modal-overlay" onClick={() => !adminLectureModal.isSaving && !adminLectureModal.isUploading && setAdminLectureModal((prev) => ({ ...prev, open: false }))}>
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 560, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                  {adminLectureModal.mode === 'create' ? 'Add Lecture to Section' : 'Edit Lecture & Video Asset'}
+                </h3>
+                <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+                  Admin Curriculum Management & Video Ingestion
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => !adminLectureModal.isSaving && !adminLectureModal.isUploading && setAdminLectureModal((prev) => ({ ...prev, open: false }))}
+                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveLecture}>
+              <div style={{ padding: '24px' }}>
+                {adminLectureModal.error && (
+                  <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '10px 12px', fontSize: '0.8rem', color: '#B91C1C', marginBottom: 16 }}>
+                    {adminLectureModal.error}
+                  </div>
+                )}
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    Lecture Title <span style={{ color: '#DC2626' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={adminLectureModal.title}
+                    onChange={(e) => setAdminLectureModal((prev) => ({ ...prev, title: e.target.value, error: '' }))}
+                    placeholder="E.g., 01 Broadcasting, Slicing & Boolean Masking"
+                    style={{ width: '100%', height: 38, padding: '0 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                    autoFocus
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                      Duration
+                    </label>
+                    <input
+                      type="text"
+                      value={adminLectureModal.duration}
+                      onChange={(e) => setAdminLectureModal((prev) => ({ ...prev, duration: e.target.value }))}
+                      placeholder="15:00"
+                      style={{ width: '100%', height: 38, padding: '0 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', paddingTop: 24 }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 600, color: '#334155' }}>
+                      <input
+                        type="checkbox"
+                        checked={adminLectureModal.isPreview}
+                        onChange={(e) => setAdminLectureModal((prev) => ({ ...prev, isPreview: e.target.checked }))}
+                        style={{ width: 16, height: 16 }}
+                      />
+                      <span>Free Public Preview</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Video Asset Source Mode */}
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 8 }}>
+                    Video Asset Configuration:
+                  </label>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                    <button
+                      type="button"
+                      onClick={() => setAdminLectureModal((prev) => ({ ...prev, uploadMode: 'url' }))}
+                      style={{
+                        flex: 1,
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        fontSize: '0.8125rem',
+                        fontWeight: 700,
+                        border: `1px solid ${adminLectureModal.uploadMode === 'url' ? '#2563EB' : '#CBD5E1'}`,
+                        background: adminLectureModal.uploadMode === 'url' ? '#EFF6FF' : '#FFFFFF',
+                        color: adminLectureModal.uploadMode === 'url' ? '#1D4ED8' : '#64748B',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cloud / Stream Video URL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAdminLectureModal((prev) => ({ ...prev, uploadMode: 'upload' }))}
+                      style={{
+                        flex: 1,
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        fontSize: '0.8125rem',
+                        fontWeight: 700,
+                        border: `1px solid ${adminLectureModal.uploadMode === 'upload' ? '#2563EB' : '#CBD5E1'}`,
+                        background: adminLectureModal.uploadMode === 'upload' ? '#EFF6FF' : '#FFFFFF',
+                        color: adminLectureModal.uploadMode === 'upload' ? '#1D4ED8' : '#64748B',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Upload Local Video File
+                    </button>
+                  </div>
+
+                  {adminLectureModal.uploadMode === 'url' ? (
+                    <div>
+                      <input
+                        type="text"
+                        value={adminLectureModal.videoUrl}
+                        onChange={(e) => setAdminLectureModal((prev) => ({ ...prev, videoUrl: e.target.value }))}
+                        placeholder="https://commondatastorage.googleapis.com/... or S3/CloudFront/MP4 URL"
+                        style={{ width: '100%', height: 38, padding: '0 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                      <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: 4 }}>
+                        Supports Google Cloud Storage, AWS S3, CloudFront, or any standard MP4/HLS streaming URL.
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) {
+                            setAdminLectureModal((prev) => ({ ...prev, selectedFile: file }))
+                          }
+                        }}
+                        style={{ display: 'block', width: '100%', fontSize: '0.85rem', color: '#334155' }}
+                      />
+                      {adminLectureModal.selectedFile && (
+                        <div style={{ fontSize: '0.75rem', color: '#16A34A', fontWeight: 600, marginTop: 4 }}>
+                          Selected: {adminLectureModal.selectedFile.name} ({Math.round(adminLectureModal.selectedFile.size / (1024 * 1024))} MB)
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {adminLectureModal.isUploading && (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, color: '#2563EB', marginBottom: 4 }}>
+                        <span>Uploading Video File...</span>
+                        <span>{adminLectureModal.uploadProgress}%</span>
+                      </div>
+                      <div style={{ width: '100%', height: 6, background: '#E2E8F0', borderRadius: 9999, overflow: 'hidden' }}>
+                        <div style={{ width: `${adminLectureModal.uploadProgress}%`, height: '100%', background: '#2563EB', transition: 'width 0.2s ease' }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    Description (Optional)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={adminLectureModal.description}
+                    onChange={(e) => setAdminLectureModal((prev) => ({ ...prev, description: e.target.value }))}
+                    placeholder="Pedagogical objectives or lab instructions..."
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #CBD5E1', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => setAdminLectureModal((prev) => ({ ...prev, open: false }))}
+                    disabled={adminLectureModal.isSaving || adminLectureModal.isUploading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={adminLectureModal.isSaving || adminLectureModal.isUploading || !adminLectureModal.title.trim()}
+                    style={{ fontWeight: 700 }}
+                  >
+                    {adminLectureModal.isSaving ? <RefreshCw size={14} className="spin" /> : null}
+                    <span>{adminLectureModal.mode === 'create' ? 'Create Lecture' : 'Save Changes'}</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: ADMIN DELETE CURRICULUM CONFIRMATION */}
+      {/* ========================================================================= */}
+      {adminDeleteCurriculumModal.open && (
+        <div className="razorpay-modal-overlay" onClick={() => !adminDeleteCurriculumModal.isSubmitting && setAdminDeleteCurriculumModal((prev) => ({ ...prev, open: false }))}>
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 440, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Trash2 size={18} />
+                </div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                  Delete {adminDeleteCurriculumModal.type === 'section' ? 'Section' : 'Lecture'}?
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => !adminDeleteCurriculumModal.isSubmitting && setAdminDeleteCurriculumModal((prev) => ({ ...prev, open: false }))}
+                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px 24px' }}>
+              <p style={{ fontSize: '0.875rem', color: '#334155', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+                Are you sure you want to permanently delete <strong style={{ color: '#0F172A' }}>"{adminDeleteCurriculumModal.title}"</strong>?
+                {adminDeleteCurriculumModal.type === 'section' && ' All child lectures in this section will also be removed.'}
+              </p>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setAdminDeleteCurriculumModal((prev) => ({ ...prev, open: false }))}
+                  disabled={adminDeleteCurriculumModal.isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={handleConfirmDeleteCurriculum}
+                  disabled={adminDeleteCurriculumModal.isSubmitting}
+                  style={{ background: '#DC2626', color: '#FFFFFF', fontWeight: 700 }}
+                >
+                  {adminDeleteCurriculumModal.isSubmitting ? <RefreshCw size={14} className="spin" /> : null}
+                  <span>Confirm Delete</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: CURRICULUM PREVIEW VIDEO PLAYER */}
+      {/* ========================================================================= */}
+      {curriculumPreviewVideo.open && (
+        <div className="modal-overlay" onClick={() => setCurriculumPreviewVideo({ open: false, videoUrl: '', title: '', course: '' })}>
+          <div
+            className="modal-dialog"
+            style={{ maxWidth: 840, background: '#0F172A', color: '#FFFFFF', padding: 0, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ padding: '16px 20px', background: '#1E293B', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', color: '#38BDF8', fontWeight: 700, textTransform: 'uppercase' }}>
+                  {curriculumPreviewVideo.course || 'Course Preview'}
+                </span>
+                <h3 style={{ color: '#FFFFFF', fontSize: '1.05rem', margin: '2px 0 0 0' }}>{curriculumPreviewVideo.title}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCurriculumPreviewVideo({ open: false, videoUrl: '', title: '', course: '' })}
+                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#FFFFFF', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: '#000000' }}>
+              <video
+                controls
+                autoPlay
+                playsInline
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                src={getPlayableVideoUrl(curriculumPreviewVideo.videoUrl)}
+              >
+                Your browser does not support HTML5 video streaming.
+              </video>
             </div>
           </div>
         </div>

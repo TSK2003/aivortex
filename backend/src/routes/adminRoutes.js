@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   getAnalyticsOverview,
   getCreators,
+  getNextCreatorUserId,
   getCreatorById,
   createCreator,
   updateCreator,
@@ -52,6 +53,7 @@ router.patch('/profile', updateAdminProfile)
 
 // Creators Management & Provisioning
 router.get('/creators', getCreators)
+router.get('/creators/next-user-id', getNextCreatorUserId)
 router.post('/creators', createCreator)
 router.get('/creators/:id', getCreatorById)
 router.put('/creators/:id', updateCreator)
@@ -93,6 +95,8 @@ router.get('/enrollments', getEnrollments)
 // Creator Profile Change Requests
 router.get('/requests', getRequests)
 router.patch('/requests/:id', reviewRequest)
+router.post('/requests/:id/review', reviewRequest)
+router.patch('/requests/:id/review', reviewRequest)
 
 // Broadcast Announcements
 router.post('/announcements', broadcastAnnouncement)

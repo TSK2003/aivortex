@@ -1,10 +1,12 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronDown, Check } from 'lucide-react'
 
 /**
  * CustomSelect — Modern, High-End Dropdown Component
  * Replaces default browser <select> with a sleek, accessible,
  * custom-rendered floating menu with smooth hover and active states.
+ * Supports auto-placement (upward/downward detection) and portal rendering.
  */
 export default function CustomSelect({
   options = [],
@@ -19,10 +21,22 @@ export default function CustomSelect({
   buttonStyle = {},
   menuStyle = {},
   disabled = false,
-  id
+  id,
+  portal = false,
+  autoPlacement = true
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef(null)
+  const menuRef = useRef(null)
+
+  const [placement, setPlacement] = useState({
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 0,
+    openUpward: false,
+    maxHeight: 280
+  })
 
   // Normalize options: supports array of strings OR array of { value, label, sublabel, dotColor }
   const normalizedOptions = options.map((opt) => {
@@ -40,10 +54,68 @@ export default function CustomSelect({
   // Find currently selected option
   const selectedOption = normalizedOptions.find((opt) => String(opt.value) === String(value))
 
+  // Calculate coordinates & determine whether to open upward or downward
+  const updatePlacement = useCallback(() => {
+    if (!containerRef.current) return
+
+    const rect = containerRef.current.getBoundingClientRect()
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight
+
+    // Approximate height: options * 44px + 16px padding
+    const estimatedHeight = Math.min(normalizedOptions.length * 44 + 16, 280)
+    const spaceBelow = viewportHeight - rect.bottom - 12
+    const spaceAbove = rect.top - 12
+
+    // Auto-detect whether to open upward:
+    // If not enough room below (< estimatedHeight) and there's more room above
+    const shouldOpenUpward = autoPlacement && spaceBelow < estimatedHeight && spaceAbove > spaceBelow
+
+    const calculatedMaxHeight = shouldOpenUpward
+      ? Math.max(Math.min(spaceAbove, 320), 120)
+      : Math.max(Math.min(spaceBelow, 320), 120)
+
+    setPlacement({
+      top: rect.bottom + 4,
+      bottom: viewportHeight - rect.top + 4,
+      left: align === 'right' ? Math.max(rect.right - rect.width, 8) : rect.left,
+      width: rect.width,
+      openUpward: shouldOpenUpward,
+      maxHeight: calculatedMaxHeight
+    })
+  }, [normalizedOptions.length, autoPlacement, align])
+
+  useLayoutEffect(() => {
+    if (isOpen) {
+      updatePlacement()
+    }
+  }, [isOpen, updatePlacement])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleScrollOrResize = () => {
+      updatePlacement()
+    }
+
+    window.addEventListener('resize', handleScrollOrResize)
+    window.addEventListener('scroll', handleScrollOrResize, true)
+
+    return () => {
+      window.removeEventListener('resize', handleScrollOrResize)
+      window.removeEventListener('scroll', handleScrollOrResize, true)
+    }
+  }, [isOpen, updatePlacement])
+
   // Close on outside click
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
+      const container = containerRef.current
+      const menu = menuRef.current
+      if (
+        container &&
+        !container.contains(e.target) &&
+        (!menu || !menu.contains(e.target))
+      ) {
         setIsOpen(false)
       }
     }
@@ -71,9 +143,128 @@ export default function CustomSelect({
     }
   }
 
-  const displayText = selectedOption
-    ? (prefix ? `${prefix}${selectedOption.label}` : selectedOption.label)
-    : placeholder
+  const portalMenuStyle = {
+    position: 'fixed',
+    top: placement.openUpward ? 'auto' : `${placement.top}px`,
+    bottom: placement.openUpward ? `${placement.bottom}px` : 'auto',
+    left: `${placement.left}px`,
+    width: `${placement.width}px`,
+    minWidth: `${placement.width}px`,
+    maxWidth: menuStyle?.maxWidth || '480px',
+    maxHeight: `${placement.maxHeight}px`,
+    background: 'var(--color-bg-card, #FFFFFF)',
+    border: '1px solid var(--color-border, #E2E8F0)',
+    borderRadius: 10,
+    boxShadow: '0 12px 28px -4px rgba(15, 23, 42, 0.18), 0 4px 10px -2px rgba(15, 23, 42, 0.08)',
+    padding: 5,
+    zIndex: 99999,
+    overflowY: normalizedOptions.length > 6 ? 'auto' : 'hidden',
+    animation: 'fadeInMenu 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
+    boxSizing: 'border-box',
+    ...menuStyle
+  }
+
+  const inlineMenuStyle = {
+    position: 'absolute',
+    top: placement.openUpward ? 'auto' : 'calc(100% + 5px)',
+    bottom: placement.openUpward ? 'calc(100% + 5px)' : 'auto',
+    left: align === 'right' ? 'auto' : 0,
+    right: align === 'right' ? 0 : 'auto',
+    minWidth: '100%',
+    width: menuStyle?.width || '100%',
+    maxWidth: menuStyle?.maxWidth || '420px',
+    background: 'var(--color-bg-card, #FFFFFF)',
+    border: '1px solid var(--color-border, #E2E8F0)',
+    borderRadius: 10,
+    boxShadow: 'var(--shadow-lg, 0 10px 25px -5px rgba(15, 23, 42, 0.12))',
+    padding: 5,
+    zIndex: 1050,
+    maxHeight: `${placement.maxHeight || 320}px`,
+    overflowY: normalizedOptions.length > 6 ? 'auto' : 'hidden',
+    animation: 'fadeInMenu 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
+    boxSizing: 'border-box',
+    ...menuStyle
+  }
+
+  const menuContent = (
+    <div
+      ref={menuRef}
+      role="listbox"
+      style={portal ? portalMenuStyle : inlineMenuStyle}
+    >
+      {normalizedOptions.map((opt) => {
+        const isSelected = String(opt.value) === String(value)
+        return (
+          <div
+            key={String(opt.value)}
+            role="option"
+            aria-selected={isSelected}
+            onClick={() => handleSelect(opt.value)}
+            style={{
+              display: 'flex',
+              alignItems: opt.sublabel ? 'flex-start' : 'center',
+              justifyContent: 'space-between',
+              padding: opt.sublabel ? '9px 12px' : '9px 12px',
+              borderRadius: 8,
+              fontSize: '0.86rem',
+              fontWeight: isSelected ? 700 : 500,
+              color: isSelected ? 'var(--color-secondary, #2563EB)' : 'var(--color-text, #1E293B)',
+              background: isSelected ? 'var(--color-secondary-light, #EFF6FF)' : 'transparent',
+              cursor: 'pointer',
+              transition: 'background 0.12s ease, color 0.12s ease',
+              marginBottom: 2
+            }}
+            onMouseEnter={(e) => {
+              if (!isSelected) {
+                e.currentTarget.style.background = 'var(--color-bg-subtle, #F1F5F9)'
+                e.currentTarget.style.color = 'var(--color-text, #0F172A)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSelected) {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.color = 'var(--color-text, #1E293B)'
+              }
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1, textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {opt.dotColor && (
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: opt.dotColor,
+                      flexShrink: 0
+                    }}
+                  />
+                )}
+                <span style={{ fontWeight: isSelected ? 700 : 600, color: isSelected ? 'var(--color-secondary, #1D4ED8)' : 'var(--color-text, #0F172A)' }}>
+                  {opt.label}
+                </span>
+              </div>
+              {opt.sublabel && (
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 400,
+                    color: isSelected ? 'var(--color-secondary, #2563EB)' : 'var(--color-text-secondary, #64748B)',
+                    lineHeight: 1.35
+                  }}
+                >
+                  {opt.sublabel}
+                </span>
+              )}
+            </div>
+            {isSelected && (
+              <Check size={15} style={{ color: 'var(--color-secondary, #2563EB)', marginLeft: 10, marginTop: opt.sublabel ? 3 : 0, flexShrink: 0 }} />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
 
   return (
     <div
@@ -184,104 +375,9 @@ export default function CustomSelect({
         />
       </button>
 
-      {/* Floating Menu */}
-      {isOpen && (
-        <div
-          role="listbox"
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 5px)',
-            left: align === 'right' ? 'auto' : 0,
-            right: align === 'right' ? 0 : 'auto',
-            minWidth: '100%',
-            width: menuStyle?.width || '100%',
-            maxWidth: menuStyle?.maxWidth || '420px',
-            background: 'var(--color-bg-card, #FFFFFF)',
-            border: '1px solid var(--color-border, #E2E8F0)',
-            borderRadius: 10,
-            boxShadow: 'var(--shadow-lg, 0 10px 25px -5px rgba(15, 23, 42, 0.12))',
-            padding: 5,
-            zIndex: 1050,
-            maxHeight: 320,
-            overflowY: 'auto',
-            animation: 'fadeInMenu 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
-            boxSizing: 'border-box',
-            ...menuStyle
-          }}
-        >
-          {normalizedOptions.map((opt) => {
-            const isSelected = String(opt.value) === String(value)
-            return (
-              <div
-                key={String(opt.value)}
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => handleSelect(opt.value)}
-                style={{
-                  display: 'flex',
-                  alignItems: opt.sublabel ? 'flex-start' : 'center',
-                  justifyContent: 'space-between',
-                  padding: opt.sublabel ? '9px 12px' : '9px 12px',
-                  borderRadius: 8,
-                  fontSize: '0.86rem',
-                  fontWeight: isSelected ? 700 : 500,
-                  color: isSelected ? 'var(--color-secondary, #2563EB)' : 'var(--color-text, #1E293B)',
-                  background: isSelected ? 'var(--color-secondary-light, #EFF6FF)' : 'transparent',
-                  cursor: 'pointer',
-                  transition: 'background 0.12s ease, color 0.12s ease',
-                  marginBottom: 2
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.background = 'var(--color-bg-subtle, #F1F5F9)'
-                    e.currentTarget.style.color = 'var(--color-text, #0F172A)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.background = 'transparent'
-                    e.currentTarget.style.color = 'var(--color-text, #1E293B)'
-                  }
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1, textAlign: 'left' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {opt.dotColor && (
-                      <span
-                        style={{
-                          width: 7,
-                          height: 7,
-                          borderRadius: '50%',
-                          background: opt.dotColor,
-                          flexShrink: 0
-                        }}
-                      />
-                    )}
-                    <span style={{ fontWeight: isSelected ? 700 : 600, color: isSelected ? 'var(--color-secondary, #1D4ED8)' : 'var(--color-text, #0F172A)' }}>
-                      {opt.label}
-                    </span>
-                  </div>
-                  {opt.sublabel && (
-                    <span
-                      style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 400,
-                        color: isSelected ? 'var(--color-secondary, #2563EB)' : 'var(--color-text-secondary, #64748B)',
-                        lineHeight: 1.35
-                      }}
-                    >
-                      {opt.sublabel}
-                    </span>
-                  )}
-                </div>
-                {isSelected && (
-                  <Check size={15} style={{ color: 'var(--color-secondary, #2563EB)', marginLeft: 10, marginTop: opt.sublabel ? 3 : 0, flexShrink: 0 }} />
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+      {/* Dropdown Menu: rendered via portal or inline */}
+      {isOpen && (portal ? createPortal(menuContent, document.body) : menuContent)}
     </div>
   )
 }
+

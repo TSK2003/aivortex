@@ -1,4 +1,5 @@
 import express from 'express'
+import path from 'path'
 import cors from 'cors'
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
@@ -79,6 +80,9 @@ app.use('/api/creator', creatorRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/payments', paymentRoutes)
 app.use('/api', notificationRoutes)
+
+// Serve Uploaded Media Files Statically
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 
 // 404 Handler for Unmatched API Routes
 app.use('/api', (req, res, next) => {
