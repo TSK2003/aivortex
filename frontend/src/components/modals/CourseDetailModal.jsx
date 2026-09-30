@@ -57,6 +57,12 @@ export default function CourseDetailModal({ course, isOpen, onClose, onEnroll, o
             <div>{studentsCount.toLocaleString()} Students Enrolled</div>
             <div>•</div>
             <div>Level: {course.level || 'All Levels'}</div>
+            {course.language && (
+              <>
+                <div>•</div>
+                <div>Language: {course.language}</div>
+              </>
+            )}
             <div>•</div>
             <div>Total Duration: {course.duration || `${course.durationHours || 24} Hours`}</div>
           </div>

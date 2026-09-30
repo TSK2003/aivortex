@@ -35,8 +35,17 @@ export default function CoursesPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
   const categories = ['All', 'Data Science', 'Machine Learning', 'Artificial Intelligence', 'Web Development', 'Trading', 'Cloud Computing']
-  const levels = ['All', 'Beginner', 'Intermediate', 'Advanced']
-  const languages = ['All', 'English', 'Hindi', 'Tamil']
+  const languages = [
+    'All',
+    'English',
+    'Tamil',
+    'Thanglish',
+    'Hindi',
+    'Bilingual (English/Tamil)',
+    'Bilingual (English/Hindi)',
+    'Bilingual (Tamil/Thanglish)',
+    'Multilingual'
+  ]
   const priceTypes = ['All', 'Paid Only', 'Free Only']
   const sortOptions = [
     { value: 'popularity', label: 'Most Popular' },

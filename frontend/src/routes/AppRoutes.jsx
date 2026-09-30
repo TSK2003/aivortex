@@ -102,12 +102,20 @@ export default function AppRoutes() {
         <Route index element={<Navigate to="/creator/dashboard" replace />} />
         <Route path="dashboard" element={<CreatorDashboardPage />} />
         <Route path="courses" element={<CreatorDashboardPage />} />
-        <Route path="playlists" element={<CreatorDashboardPage />} />
-        <Route path="upload" element={<CreatorDashboardPage />} />
-        <Route path="submissions" element={<CreatorDashboardPage />} />
+        <Route path="courses/:courseId" element={<CreatorDashboardPage />} />
+        <Route path="analytics" element={<CreatorDashboardPage />} />
+        <Route path="earnings" element={<CreatorDashboardPage />} />
+        <Route path="messages" element={<CreatorDashboardPage />} />
+        <Route path="library" element={<CreatorDashboardPage />} />
+        <Route path="content" element={<Navigate to="/creator/library" replace />} />
+        <Route path="review" element={<Navigate to="/creator/feedback" replace />} />
         <Route path="feedback" element={<CreatorDashboardPage />} />
         <Route path="profile" element={<CreatorDashboardPage />} />
-        <Route path="profile-request" element={<CreatorDashboardPage />} />
+        <Route path="settings" element={<Navigate to="/creator/profile" replace />} />
+        <Route path="playlists" element={<Navigate to="/creator/courses" replace />} />
+        <Route path="upload" element={<Navigate to="/creator/courses" replace />} />
+        <Route path="submissions" element={<Navigate to="/creator/feedback" replace />} />
+        <Route path="profile-request" element={<Navigate to="/creator/profile" replace />} />
       </Route>
 
       {/* Admin Portal (Protected) */}
@@ -125,6 +133,8 @@ export default function AppRoutes() {
         <Route path="creators" element={<AdminDashboardPage />} />
         <Route path="students" element={<AdminDashboardPage />} />
         <Route path="courses/create" element={<AdminCreateCoursePage />} />
+        <Route path="courses/:courseId/edit" element={<AdminCreateCoursePage />} />
+        <Route path="courses/edit" element={<AdminCreateCoursePage />} />
         <Route path="courses" element={<AdminDashboardPage />} />
         <Route path="playlists" element={<AdminDashboardPage />} />
         <Route path="video-verification" element={<AdminDashboardPage />} />

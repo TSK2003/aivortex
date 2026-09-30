@@ -1,6 +1,7 @@
 import app from './app.js'
 import { env } from './config/env.js'
 
+// ApexLearn API Server Entry Point
 const PORT = parseInt(env.PORT, 10) || 3001
 
 const server = app.listen(PORT, () => {
