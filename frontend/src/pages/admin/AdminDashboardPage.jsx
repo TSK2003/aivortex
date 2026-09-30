@@ -38,7 +38,7 @@ import {
   Copy,
   Pause,
   Play,
-  ExternalLink
+  ExternalLink,
   Filter,
   ArrowUpDown,
   EyeOff,
@@ -8885,20 +8885,6 @@ export default function AdminDashboardPage() {
                   </div>
                 )}
 
-                {/* 2. Editable Fields: Full Name & Phone Number */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 20, marginBottom: 20 }}>
-                  <div className="form-field-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={editProfileForm.name}
-                      onChange={(e) => setEditProfileForm({ ...editProfileForm, name: e.target.value })}
-                      placeholder="e.g. Dr. Vikram Sen"
-                      required
-                    />
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
                     Rejection Reason <span style={{ color: '#DC2626' }}>*</span>
@@ -8991,23 +8977,6 @@ export default function AdminDashboardPage() {
               </button>
             </div>
 
-                {/* 3. Read-Only System Fields: Email & Role */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 20, marginBottom: 20 }}>
-                  <div className="form-field-group">
-                    <label className="form-label" style={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Email Address</span>
-                      <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 500 }}>System Locked</span>
-                    </label>
-                    <input
-                      type="email"
-                      className="form-input"
-                      value={currentDisplayUser.email || 'director@apexlearn.edu'}
-                      disabled
-                      style={{ background: '#F8FAFC', cursor: 'not-allowed', color: '#64748B' }}
-                    />
-                    <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: 4, display: 'block' }}>
-                      Email is bound to the PostgreSQL admin account credential.
-                    </span>
             <div style={{ padding: '24px' }}>
               <p style={{ fontSize: '0.9375rem', color: '#334155', margin: '0 0 16px 0', lineHeight: 1.5 }}>
                 <strong style={{ color: '#0F172A' }}>"{approveModal.lecture?.title}"</strong> will be marked as approved and made available according to the existing publishing rules.

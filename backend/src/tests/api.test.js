@@ -57,7 +57,7 @@ describe('ApexLearn Production E2E Test Suite', () => {
     assert.equal(res.status, 200)
     assert.equal(res.body.success, true)
     assert.equal(res.body.data.status, 'ONLINE')
-    assert.equal(res.body.data.service, 'ApexLearn API Engine')
+    assert.equal(res.body.data.service, 'aivortex API Engine')
 
     const apiRes = await makeRequest('GET', '/api/health')
     assert.equal(apiRes.status, 200)

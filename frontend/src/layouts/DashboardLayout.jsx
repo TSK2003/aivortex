@@ -443,7 +443,6 @@ export default function DashboardLayout({ role = 'student' }) {
                 type="button"
                 className="btn-ghost mobile-sidebar-toggle"
                 onClick={() => setSidebarOpen(true)}
-                aria-label="Open Sidebar"
                 aria-label="Toggle Navigation Sidebar"
               >
                 <Menu size={20} />
@@ -456,7 +455,6 @@ export default function DashboardLayout({ role = 'student' }) {
               <NotificationDropdown />
               <div style={{ width: 1, height: 22, background: '#E2E8F0' }} />
               <span className="topbar-session-badge" style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
             </div>
           </header>
         )}

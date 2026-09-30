@@ -1,18 +1,24 @@
-import { Menu, Sun, Moon } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { Menu, Sun, Moon, Eye, Edit, Settings, LogOut, ChevronDown } from 'lucide-react'
 import NotificationMenu from './NotificationMenu'
 import { useTheme } from '../../contexts/ThemeContext'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function AdminHeader({
   onToggleSidebar,
   pendingVideosCount = 0,
   pendingRequestsCount = 0,
   recentOrdersCount = 0,
-  notifications = []
+  notifications = [],
+  onLogout
 }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const profileRef = useRef(null)
   const navigate = useNavigate()
   const location = useLocation()
+  const { toggleTheme, isDark } = useTheme()
+  const { user, logout } = useAuth()
 
   // Dynamic title based on current pathname
   const getPageTitle = () => {
@@ -64,11 +70,6 @@ export default function AdminHeader({
 
   return (
     <header
-      className="admin-header-bar"
-  const { toggleTheme, isDark } = useTheme()
-
-  return (
-    <header
       className="dashboard-topbar admin-header"
       style={{
         height: '64px',
@@ -85,10 +86,8 @@ export default function AdminHeader({
         transition: 'background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease'
       }}
     >
-      {/* Left side: Hamburger button + Title */}
-      <div className="admin-header-left" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
       {/* Left side: [Hamburger] [Admin Portal] [LIVE] */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div className="admin-header-left" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <button
           type="button"
           onClick={onToggleSidebar}
@@ -120,8 +119,7 @@ export default function AdminHeader({
 
         <div className="admin-header-title-wrap" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span
-            className="admin-header-main-title"
-            className="topbar-title"
+            className="topbar-title admin-header-main-title"
             style={{
               fontSize: '1.125rem',
               fontWeight: 800,
@@ -459,7 +457,12 @@ export default function AdminHeader({
                   id="admin-menu-logout"
                   onClick={async () => {
                     setProfileOpen(false)
-                    if (onLogout) await onLogout()
+                    if (onLogout) {
+                      await onLogout()
+                    } else if (logout) {
+                      await logout()
+                      navigate('/login')
+                    }
                   }}
                   style={{
                     width: '100%',
