@@ -97,8 +97,17 @@ export const api = {
     },
     getCourseBySlug: (slug) => request(`/public/courses/${slug}`),
     verifyCertificate: (code) => request(`/public/certificates/${code}`),
-    getProjects: () => request('/public/projects'),
+    getProjectCategories: () => request('/public/projects/categories'),
+    getProjects: (params = {}) => {
+      const query = new URLSearchParams(params).toString()
+      return request(`/public/projects${query ? `?${query}` : ''}`)
+    },
     getLiveSessions: () => request('/public/live-sessions'),
+    rsvpLiveSession: (sessionId, data) =>
+      request(`/public/live-sessions/${sessionId}/rsvp`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
     getOffers: () => request('/public/offers'),
     validateOffer: (code, courseId) =>
       request('/public/offers/validate', {
@@ -111,7 +120,9 @@ export const api = {
         body: JSON.stringify(data)
       }),
     getAbout: () => request('/public/about'),
-    getFooter: () => request('/public/footer')
+    getFooter: () => request('/public/footer'),
+    getCourseReviews: (courseId) => request(`/public/courses/${courseId}/reviews`),
+    getFeaturedReviews: () => request('/public/reviews/featured')
   },
 
   // Payments & Checkout (Backend is Authoritative)
@@ -171,7 +182,13 @@ export const api = {
     markNotificationRead: (id) =>
       request(`/student/notifications/${id}/read`, { method: 'PATCH' }),
     markAllNotificationsRead: () =>
-      request('/student/notifications/mark-all-read', { method: 'PATCH' })
+      request('/student/notifications/mark-all-read', { method: 'PATCH' }),
+    getCourseReviewStatus: (courseId) => request(`/student/courses/${courseId}/review`),
+    submitCourseReview: (courseId, reviewData) =>
+      request(`/student/courses/${courseId}/review`, {
+        method: 'POST',
+        body: JSON.stringify(reviewData)
+      })
   },
 
   // Creator Workshop
@@ -367,6 +384,112 @@ export const api = {
       request('/admin/footer', {
         method: 'PUT',
         body: JSON.stringify(footerData)
+      }),
+    getReviews: (params = {}) => {
+      const query = new URLSearchParams(params).toString()
+      return request(`/admin/reviews${query ? `?${query}` : ''}`)
+    },
+    approveReview: (id) =>
+      request(`/admin/reviews/${id}/approve`, { method: 'PATCH' }),
+    rejectReview: (id, reason) =>
+      request(`/admin/reviews/${id}/reject`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reason })
+      }),
+    toggleFeatureReview: (id, isFeatured) =>
+      request(`/admin/reviews/${id}/feature`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isFeatured })
+      }),
+    // Projects & Categories Content Management
+    getProjects: (params = {}) => {
+      const query = new URLSearchParams(params).toString()
+      return request(`/admin/projects${query ? `?${query}` : ''}`)
+    },
+    getProject: (id) => request(`/admin/projects/${id}`),
+    createProject: (data) =>
+      request('/admin/projects', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    updateProject: (id, data) =>
+      request(`/admin/projects/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      }),
+    deleteProject: (id) =>
+      request(`/admin/projects/${id}`, {
+        method: 'DELETE'
+      }),
+    publishProject: (id, status) =>
+      request(`/admin/projects/${id}/publish`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      }),
+    toggleEnableProject: (id, isEnabled) =>
+      request(`/admin/projects/${id}/toggle-enable`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isEnabled })
+      }),
+    reorderProjects: (items) =>
+      request('/admin/projects/reorder', {
+        method: 'PATCH',
+        body: JSON.stringify({ items })
+      }),
+    getProjectCategories: () => request('/admin/projects/categories'),
+    createProjectCategory: (data) =>
+      request('/admin/projects/categories', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    updateProjectCategory: (id, data) =>
+      request(`/admin/projects/categories/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      }),
+    deleteProjectCategory: (id) =>
+      request(`/admin/projects/categories/${id}`, {
+        method: 'DELETE'
+      }),
+    // Live Sessions Content Management
+    getLiveSessions: (params = {}) => {
+      const query = new URLSearchParams(params).toString()
+      return request(`/admin/live-sessions${query ? `?${query}` : ''}`)
+    },
+    getLiveSession: (id) => request(`/admin/live-sessions/${id}`),
+    createLiveSession: (data) =>
+      request('/admin/live-sessions', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    updateLiveSession: (id, data) =>
+      request(`/admin/live-sessions/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      }),
+    deleteLiveSession: (id) =>
+      request(`/admin/live-sessions/${id}`, {
+        method: 'DELETE'
+      }),
+    updateLiveSessionStatus: (id, status) =>
+      request(`/admin/live-sessions/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      }),
+    duplicateLiveSession: (id) =>
+      request(`/admin/live-sessions/${id}/duplicate`, {
+        method: 'POST'
+      }),
+    reorderLiveSessions: (items) =>
+      request('/admin/live-sessions/reorder', {
+        method: 'PATCH',
+        body: JSON.stringify({ items })
+      }),
+    // Media Upload
+    uploadMedia: (data) =>
+      request('/admin/media/upload', {
+        method: 'POST',
+        body: JSON.stringify(data)
       })
   }
 }

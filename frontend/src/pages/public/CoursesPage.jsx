@@ -7,6 +7,7 @@ import CourseDetailModal from '../../components/modals/CourseDetailModal'
 import VideoModal from '../../components/modals/VideoModal'
 import PaymentModal from '../../components/modals/PaymentModal'
 import api from '../../services/api'
+import { COURSE_LEVEL_OPTIONS } from '../../data/initialData'
 
 export default function CoursesPage() {
   const { courseId: routeCourseId } = useParams()
@@ -35,6 +36,20 @@ export default function CoursesPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
   const categories = ['All', 'Data Science', 'Machine Learning', 'Artificial Intelligence', 'Web Development', 'Trading', 'Cloud Computing']
+  const levels = useMemo(() => {
+    const baseLevels = COURSE_LEVEL_OPTIONS ?? [
+      'All',
+      'Beginner',
+      'Beginner to Intermediate',
+      'Intermediate',
+      'Intermediate to Advanced',
+      'Advanced'
+    ]
+    const dynamicLevels = Array.isArray(courses)
+      ? courses.map((c) => c?.level).filter(Boolean)
+      : []
+    return Array.from(new Set([...baseLevels, ...dynamicLevels]))
+  }, [courses])
   const languages = [
     'All',
     'English',
@@ -125,11 +140,13 @@ export default function CoursesPage() {
   }, [courses, routeCourseId, enrollParam, location.key])
 
   const filteredCourses = useMemo(() => {
+    if (!Array.isArray(courses)) return []
     return courses
       .filter((c) => {
+        if (!c) return false
         const matchesSearch =
-          (c.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (c.shortDescription || '').toLowerCase().includes(searchQuery.toLowerCase())
+          (c.title || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+          (c.shortDescription || '').toLowerCase().includes((searchQuery || '').toLowerCase())
         const matchesCategory =
           selectedCategory === 'All' || (c.category || '').toLowerCase() === selectedCategory.toLowerCase()
         const matchesLevel =
@@ -138,16 +155,16 @@ export default function CoursesPage() {
           selectedLanguage === 'All' || (c.language || 'English').toLowerCase() === selectedLanguage.toLowerCase()
         const matchesPrice =
           selectedPriceType === 'All' ||
-          (selectedPriceType === 'Paid Only' && !c.isFree && c.price > 0) ||
+          (selectedPriceType === 'Paid Only' && !c.isFree && (c.price || 0) > 0) ||
           (selectedPriceType === 'Free Only' && (c.isFree || c.price === 0))
 
         return matchesSearch && matchesCategory && matchesLevel && matchesLanguage && matchesPrice
       })
       .sort((a, b) => {
-        if (sortBy === 'rating') return (b.averageRating || 0) - (a.averageRating || 0)
-        if (sortBy === 'price-low') return (a.price || 0) - (b.price || 0)
-        if (sortBy === 'price-high') return (b.price || 0) - (a.price || 0)
-        return (b.studentsCount || 0) - (a.studentsCount || 0)
+        if (sortBy === 'rating') return (b?.averageRating || 0) - (a?.averageRating || 0)
+        if (sortBy === 'price-low') return (a?.price || 0) - (b?.price || 0)
+        if (sortBy === 'price-high') return (b?.price || 0) - (a?.price || 0)
+        return (b?.studentsCount || 0) - (a?.studentsCount || 0)
       })
   }, [courses, searchQuery, selectedCategory, selectedLevel, selectedLanguage, selectedPriceType, sortBy])
 

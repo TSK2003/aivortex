@@ -27,7 +27,8 @@ import {
   Video,
   Award,
   Sparkles,
-  Settings
+  Settings,
+  Star
 } from 'lucide-react'
 
 /**
@@ -56,6 +57,9 @@ const ADMIN_NAV_SECTIONS = [
     title: 'CONTENT / PLATFORM',
     items: [
       { path: '/admin/public-page', label: 'Public Pages & Footer CMS', icon: Globe },
+      { path: '/admin/projects', label: 'Projects Management', icon: FolderGit2 },
+      { path: '/admin/live-sessions', label: 'Live Sessions Management', icon: Video },
+      { path: '/admin/reviews', label: 'Course Reviews', icon: Star },
       { path: '/admin/notifications', label: 'Notifications', icon: Bell },
     ]
   },

@@ -38,7 +38,7 @@ import {
   Copy,
   Pause,
   Play,
-  ExternalLink
+  ExternalLink,
   Filter,
   ArrowUpDown,
   EyeOff,
@@ -50,7 +50,9 @@ import {
   AlertTriangle,
   Layers,
   Film,
-  ChevronRight
+  ChevronRight,
+  Star,
+  MessageSquare
 } from 'lucide-react'
 import { useToast } from '../../contexts/ToastContext'
 import { useAuth } from '../../contexts/AuthContext'
@@ -59,6 +61,9 @@ import CustomSelect from '../../components/common/CustomSelect'
 import api from '../../services/api'
 import defaultAboutData from '../../data/defaultAboutData'
 import defaultFooterData from '../../data/defaultFooterData'
+import AdminProjectsManager from '../../components/admin/AdminProjectsManager'
+import AdminLiveSessionsManager from '../../components/admin/AdminLiveSessionsManager'
+import AdminCmsManager from '../../components/admin/AdminCmsManager'
 import {
   INTERNATIONAL_COUNTRY_CODES,
   parsePhoneNumber,
@@ -115,6 +120,9 @@ export default function AdminDashboardPage() {
     if (path.includes('/admin/offers')) return 'pricing'
     if (path.includes('/admin/public-page')) return 'public-controls'
     if (path.includes('/admin/public-controls')) return 'public-controls'
+    if (path.includes('/admin/reviews')) return 'reviews'
+    if (path.includes('/admin/projects')) return 'projects'
+    if (path.includes('/admin/live-sessions')) return 'live-sessions'
     if (path.includes('/admin/notifications')) return 'notifications'
     if (path.includes('/admin/reports')) return 'reports'
     if (path.includes('/admin/requests')) return 'requests'
@@ -165,6 +173,20 @@ export default function AdminDashboardPage() {
   })
   const [unpublishModal, setUnpublishModal] = useState({ open: false, lectureId: null, reason: '', error: '', isSubmitting: false })
   const [deleteOfferModal, setDeleteOfferModal] = useState({ open: false, offer: null, isSubmitting: false })
+
+  // Admin Course Reviews Moderation States
+  const [adminReviews, setAdminReviews] = useState([])
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [reviewStatusFilter, setReviewStatusFilter] = useState('ALL')
+  const [reviewCourseFilter, setReviewCourseFilter] = useState('ALL')
+  const [reviewSearchQuery, setReviewSearchQuery] = useState('')
+  const [rejectReviewModal, setRejectReviewModal] = useState({
+    open: false,
+    review: null,
+    reason: '',
+    error: '',
+    isSubmitting: false
+  })
 
   // Admin Course Content & Curriculum Management States
   const [selectedCurriculumCourse, setSelectedCurriculumCourse] = useState(null)
@@ -529,6 +551,9 @@ export default function AdminDashboardPage() {
       setCourseSubTab('pricing')
     } else if (currentTab === 'public-controls') {
       setActiveTab('public-controls')
+    } else if (currentTab === 'reviews') {
+      setActiveTab('reviews')
+      fetchAdminReviews()
     } else if (currentTab === 'profile') {
       const searchParams = new URLSearchParams(location.search)
       const mode = searchParams.get('mode')
@@ -691,7 +716,8 @@ export default function AdminDashboardPage() {
         repRes,
         profRes,
         aboutRes,
-        footerRes
+        footerRes,
+        reviewsRes
       ] = await Promise.allSettled([
         api.admin.getOverview(),
         api.admin.getCreators(),
@@ -706,7 +732,8 @@ export default function AdminDashboardPage() {
         api.admin.getReports(),
         api.admin.getProfile(),
         api.admin.getAbout(),
-        api.admin.getFooter()
+        api.admin.getFooter(),
+        api.admin.getReviews()
       ])
 
       if (aboutRes.status === 'fulfilled' && aboutRes.value?.data?.about) {
@@ -789,6 +816,11 @@ export default function AdminDashboardPage() {
       if (repRes.status === 'fulfilled' && repRes.value?.data) {
         setReportsData(repRes.value.data)
       }
+      if (reviewsRes.status === 'fulfilled' && reviewsRes.value?.data?.reviews) {
+        setAdminReviews(reviewsRes.value.data.reviews)
+      } else {
+        setAdminReviews([])
+      }
     } catch (err) {
       console.warn('Admin load note:', err.message)
     } finally {
@@ -799,6 +831,71 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     loadAdminData()
   }, [])
+
+  // Admin Course Reviews Moderation Handlers
+  const fetchAdminReviews = async (status = reviewStatusFilter, courseId = reviewCourseFilter, search = reviewSearchQuery) => {
+    try {
+      setReviewsLoading(true)
+      const params = {}
+      if (status && status !== 'ALL') params.status = status
+      if (courseId && courseId !== 'ALL') params.courseId = courseId
+      if (search && search.trim()) params.search = search.trim()
+      const res = await api.admin.getReviews(params)
+      if (res?.data?.reviews) {
+        setAdminReviews(res.data.reviews)
+      } else {
+        setAdminReviews([])
+      }
+    } catch (err) {
+      console.warn('Admin reviews fetch error:', err.message)
+    } finally {
+      setReviewsLoading(false)
+    }
+  }
+
+  const handleApproveReview = async (reviewId) => {
+    try {
+      const res = await api.admin.approveReview(reviewId)
+      showToast(res?.message || 'Review approved successfully!', 'success')
+      fetchAdminReviews()
+      api.admin.getCourses().then((cRes) => {
+        if (cRes?.data?.courses) setCourses(cRes.data.courses)
+      }).catch(() => {})
+    } catch (err) {
+      showToast(err.message || 'Failed to approve review', 'error')
+    }
+  }
+
+  const handleRejectReviewSubmit = async (e) => {
+    if (e) e.preventDefault()
+    if (!rejectReviewModal.reason || !rejectReviewModal.reason.trim()) {
+      setRejectReviewModal((prev) => ({ ...prev, error: 'A clear reason for rejection is required.' }))
+      return
+    }
+    try {
+      setRejectReviewModal((prev) => ({ ...prev, isSubmitting: true, error: '' }))
+      const res = await api.admin.rejectReview(rejectReviewModal.review.id, rejectReviewModal.reason.trim())
+      showToast(res?.message || 'Review rejected and feedback recorded.', 'info')
+      setRejectReviewModal({ open: false, review: null, reason: '', error: '', isSubmitting: false })
+      fetchAdminReviews()
+      api.admin.getCourses().then((cRes) => {
+        if (cRes?.data?.courses) setCourses(cRes.data.courses)
+      }).catch(() => {})
+    } catch (err) {
+      setRejectReviewModal((prev) => ({ ...prev, isSubmitting: false, error: err.message || 'Failed to reject review' }))
+    }
+  }
+
+  const handleToggleFeatureReview = async (reviewId, currentFeatured) => {
+    try {
+      const nextFeatured = !currentFeatured
+      const res = await api.admin.toggleFeatureReview(reviewId, nextFeatured)
+      showToast(res?.message || (nextFeatured ? 'Review featured on Homepage!' : 'Review removed from Homepage featured stories.'), 'success')
+      fetchAdminReviews()
+    } catch (err) {
+      showToast(err.message || 'Failed to update review featured status', 'error')
+    }
+  }
 
   // Creator Handlers
   const handleInviteCreator = async (e) => {
@@ -4898,888 +4995,579 @@ export default function AdminDashboardPage() {
       {/* 6.5. PUBLIC PAGE & ABOUT US MANAGEMENT */}
       {/* ========================================================================= */}
       {activeTab === 'public-controls' && (
-        <div style={{ maxWidth: 1080 }}>
-          {/* Top-Level CMS Section Switcher */}
-          <div
-            style={{
-              display: 'inline-flex',
-              background: '#F1F5F9',
-              padding: '4px',
-              borderRadius: '12px',
-              border: '1px solid #E2E8F0',
-              marginBottom: 24,
-              gap: 4
-            }}
-          >
-            <button
-              type="button"
-              id="btn-cms-tab-footer"
-              onClick={() => setCmsSection('footer')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '9px 20px',
-                borderRadius: '8px',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                border: 'none',
-                background: cmsSection === 'footer' ? '#FFFFFF' : 'transparent',
-                color: cmsSection === 'footer' ? '#0F172A' : '#64748B',
-                boxShadow: cmsSection === 'footer' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <span>Footer Navigation &amp; Brand CMS</span>
-            </button>
+        <AdminCmsManager showToast={showToast} />
+      )}
 
-            <button
-              type="button"
-              id="btn-cms-tab-about"
-              onClick={() => setCmsSection('about')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '9px 20px',
-                borderRadius: '8px',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                border: 'none',
-                background: cmsSection === 'about' ? '#FFFFFF' : 'transparent',
-                color: cmsSection === 'about' ? '#0F172A' : '#64748B',
-                boxShadow: cmsSection === 'about' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <span>About Page &amp; Leadership CMS</span>
-            </button>
-          </div>
+      {/* ========================================================================= */}
+      {/* 6.8. COURSE REVIEWS MODERATION & HOME FEATURE WORKFLOW */}
+      {/* ========================================================================= */}
+      {activeTab === 'reviews' && (() => {
+        const counts = {
+          all: adminReviews.length,
+          pending: adminReviews.filter((r) => r.status === 'PENDING').length,
+          approved: adminReviews.filter((r) => r.status === 'APPROVED').length,
+          rejected: adminReviews.filter((r) => r.status === 'REJECTED').length,
+          featured: adminReviews.filter((r) => r.isFeatured).length
+        }
 
-          {/* =========================================================================
-              PANEL 1: FOOTER NAVIGATION & BRAND CMS
-              ========================================================================= */}
-          {cmsSection === 'footer' && (
-            <div>
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
-                <div>
-                  <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
-                    Footer Navigation &amp; Brand Details
-                  </h2>
-                  <p style={{ color: '#64748B', fontSize: '0.9rem', margin: 0 }}>
-                    Configure company bio, Quick Links, Our Courses links, Contact Us links, and copyright statement in real time.
-                  </p>
+        const filteredReviews = adminReviews.filter((r) => {
+          if (reviewStatusFilter !== 'ALL' && r.status !== reviewStatusFilter) return false
+          if (reviewCourseFilter !== 'ALL' && r.courseId !== reviewCourseFilter && r.course?.id !== reviewCourseFilter) return false
+          if (reviewSearchQuery.trim()) {
+            const q = reviewSearchQuery.toLowerCase().trim()
+            const matchStudent = r.student?.name?.toLowerCase().includes(q) || r.student?.email?.toLowerCase().includes(q)
+            const matchCourse = r.course?.title?.toLowerCase().includes(q)
+            const matchTitle = (r.title || '').toLowerCase().includes(q)
+            const matchText = (r.reviewText || '').toLowerCase().includes(q)
+            if (!matchStudent && !matchCourse && !matchTitle && !matchText) return false
+          }
+          return true
+        })
+
+        return (
+          <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+              <div>
+                <h2 style={{ fontSize: '1.625rem', fontWeight: 800, color: '#0F172A', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+                  Course Reviews Moderation
+                </h2>
+                <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0, fontWeight: 500 }}>
+                  Audit, approve, and curate verified scholar testimonials. Only approved reviews appear on course pages; featured reviews appear on the homepage.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={() => fetchAdminReviews()}
+                  disabled={reviewsLoading}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38, padding: '0 14px', borderRadius: 10, fontWeight: 600 }}
+                >
+                  <RefreshCw size={14} className={reviewsLoading ? 'spin' : ''} />
+                  <span>Refresh Reviews</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
+              <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 1px 3px rgba(15,23,42,0.03)' }}>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: '#F8FAFC', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Star size={20} />
                 </div>
-
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={handleResetFooterDefaults}
-                    className="btn btn-outline btn-sm"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    title="Reset fields to official footer defaults"
-                  >
-                    <RotateCcw size={14} />
-                    <span>Reset Defaults</span>
-                  </button>
-
-                  <a
-                    href="/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-outline btn-sm"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#2563EB', borderColor: '#BFDBFE', background: '#EFF6FF' }}
-                  >
-                    <ExternalLink size={14} />
-                    <span>View Live Footer</span>
-                  </a>
-
-                  <button
-                    type="button"
-                    onClick={handleSaveFooterData}
-                    disabled={isSavingFooter}
-                    className="btn btn-primary btn-sm"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 140 }}
-                  >
-                    <Save size={14} />
-                    <span>{isSavingFooter ? 'Saving...' : 'Save & Publish'}</span>
-                  </button>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Reviews</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.1 }}>{counts.all}</div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                {/* 1. Brand Description & Bio */}
-                <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
-                    Company Description / Bio (Column 1)
-                  </h3>
-                  <p style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: 14 }}>
-                    Shown directly beneath the Aivortex brand logo in the footer across all public pages.
-                  </p>
-                  <textarea
-                    className="form-control"
-                    rows={3}
-                    value={footerData.brandDesc || ''}
-                    onChange={(e) => setFooterData({ ...footerData, brandDesc: e.target.value })}
-                    placeholder="Enter short company bio..."
+              <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: '#FEF3C7', color: '#B45309', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Clock size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#92400E', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Pending Approval</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#B45309', lineHeight: 1.1 }}>{counts.pending}</div>
+                </div>
+              </div>
+
+              <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: '#DCFCE7', color: '#15803D', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CheckCircle2 size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#166534', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Approved Reviews</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#15803D', lineHeight: 1.1 }}>{counts.approved}</div>
+                </div>
+              </div>
+
+              <div style={{ background: '#FAF5FF', border: '1px solid #E9D5FF', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: '#F3E8FF', color: '#7E22CE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Sparkles size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', color: '#6B21A8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Featured on Home</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#7E22CE', lineHeight: 1.1 }}>{counts.featured}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: 14,
+                border: '1px solid #E2E8F0',
+                padding: '16px 20px',
+                marginBottom: 20,
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 16,
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)'
+              }}
+            >
+              {/* Status Filter Tabs */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B', marginRight: 4 }}>Status:</span>
+                {[
+                  { key: 'ALL', label: 'All Reviews', count: counts.all },
+                  { key: 'PENDING', label: 'Pending Approval', count: counts.pending },
+                  { key: 'APPROVED', label: 'Approved', count: counts.approved },
+                  { key: 'REJECTED', label: 'Rejected', count: counts.rejected }
+                ].map((s) => {
+                  const isActive = reviewStatusFilter === s.key
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => setReviewStatusFilter(s.key)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 8,
+                        fontSize: '0.8125rem',
+                        fontWeight: 600,
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        background: isActive ? '#0F172A' : '#F1F5F9',
+                        color: isActive ? '#FFFFFF' : '#475569',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6
+                      }}
+                    >
+                      <span>{s.label}</span>
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          padding: '1px 6px',
+                          borderRadius: 9999,
+                          fontWeight: 700,
+                          background: isActive ? 'rgba(255,255,255,0.2)' : '#E2E8F0',
+                          color: isActive ? '#FFFFFF' : '#475569'
+                        }}
+                      >
+                        {s.count}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Course Program & Search Controls */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                {/* Course Dropdown */}
+                <select
+                  value={reviewCourseFilter}
+                  onChange={(e) => setReviewCourseFilter(e.target.value)}
+                  style={{
+                    height: 38,
+                    padding: '0 12px',
+                    borderRadius: 8,
+                    border: '1px solid #CBD5E1',
+                    fontSize: '0.8125rem',
+                    color: '#334155',
+                    background: '#FFFFFF',
+                    fontWeight: 600,
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="ALL">All Academic Courses</option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Search Input */}
+                <div style={{ position: 'relative' }}>
+                  <Search
+                    size={14}
+                    style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}
                   />
-                </div>
-
-                {/* 2. Column 2: Quick Links */}
-                <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
-                        Column 2: Quick Links
-                      </h3>
-                      <p style={{ fontSize: '0.85rem', color: '#64748B', margin: 0 }}>
-                        Configure column heading and navigation items.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleAddFooterLink('quickLinks')}
-                      className="btn btn-outline btn-sm"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    >
-                      <Plus size={14} />
-                      <span>Add Quick Link</span>
-                    </button>
-                  </div>
-
-                  <div style={{ marginBottom: 16 }}>
-                    <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>Column Heading</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={footerData.quickLinksTitle || ''}
-                      onChange={(e) => setFooterData({ ...footerData, quickLinksTitle: e.target.value })}
-                      placeholder="Quick Links"
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {footerData.quickLinks?.map((link, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr 1fr auto',
-                          gap: 12,
-                          alignItems: 'center',
-                          background: '#F8FAFC',
-                          padding: '10px 14px',
-                          borderRadius: 10,
-                          border: '1px solid #EDF2F7'
-                        }}
-                      >
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={link.label || ''}
-                          onChange={(e) => handleUpdateFooterLink('quickLinks', idx, 'label', e.target.value)}
-                          placeholder="Link Text (e.g. Home)"
-                        />
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={link.path || ''}
-                          onChange={(e) => handleUpdateFooterLink('quickLinks', idx, 'path', e.target.value)}
-                          placeholder="Path (e.g. /courses)"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFooterLink('quickLinks', idx)}
-                          className="btn btn-outline btn-sm"
-                          style={{ color: '#EF4444', borderColor: '#FCA5A5', padding: '6px 10px' }}
-                          title="Remove link"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 3. Column 3: Our Courses */}
-                <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
-                        Column 3: Our Courses
-                      </h3>
-                      <p style={{ fontSize: '0.85rem', color: '#64748B', margin: 0 }}>
-                        Configure the course links shown in the footer.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleAddFooterLink('coursesLinks')}
-                      className="btn btn-outline btn-sm"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    >
-                      <Plus size={14} />
-                      <span>Add Course Link</span>
-                    </button>
-                  </div>
-
-                  <div style={{ marginBottom: 16 }}>
-                    <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>Column Heading</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={footerData.coursesTitle || ''}
-                      onChange={(e) => setFooterData({ ...footerData, coursesTitle: e.target.value })}
-                      placeholder="Our Courses"
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {footerData.coursesLinks?.map((link, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr 1fr auto',
-                          gap: 12,
-                          alignItems: 'center',
-                          background: '#F8FAFC',
-                          padding: '10px 14px',
-                          borderRadius: 10,
-                          border: '1px solid #EDF2F7'
-                        }}
-                      >
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={link.label || ''}
-                          onChange={(e) => handleUpdateFooterLink('coursesLinks', idx, 'label', e.target.value)}
-                          placeholder="Course Title (e.g. Python for Data Science)"
-                        />
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={link.path || ''}
-                          onChange={(e) => handleUpdateFooterLink('coursesLinks', idx, 'path', e.target.value)}
-                          placeholder="Path (e.g. /courses/python-for-data-science)"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFooterLink('coursesLinks', idx)}
-                          className="btn btn-outline btn-sm"
-                          style={{ color: '#EF4444', borderColor: '#FCA5A5', padding: '6px 10px' }}
-                          title="Remove link"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 4. Column 4: Contact Us */}
-                <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
-                        Column 4: Contact Us
-                      </h3>
-                      <p style={{ fontSize: '0.85rem', color: '#64748B', margin: 0 }}>
-                        Configure contact, institutional inquiry, and legal navigation links.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleAddFooterLink('contactLinks')}
-                      className="btn btn-outline btn-sm"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    >
-                      <Plus size={14} />
-                      <span>Add Contact Link</span>
-                    </button>
-                  </div>
-
-                  <div style={{ marginBottom: 16 }}>
-                    <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>Column Heading</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={footerData.contactTitle || ''}
-                      onChange={(e) => setFooterData({ ...footerData, contactTitle: e.target.value })}
-                      placeholder="Contact Us"
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {footerData.contactLinks?.map((link, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr 1fr auto',
-                          gap: 12,
-                          alignItems: 'center',
-                          background: '#F8FAFC',
-                          padding: '10px 14px',
-                          borderRadius: 10,
-                          border: '1px solid #EDF2F7'
-                        }}
-                      >
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={link.label || ''}
-                          onChange={(e) => handleUpdateFooterLink('contactLinks', idx, 'label', e.target.value)}
-                          placeholder="Link Text (e.g. Contact Support)"
-                        />
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={link.path || ''}
-                          onChange={(e) => handleUpdateFooterLink('contactLinks', idx, 'path', e.target.value)}
-                          placeholder="Path (e.g. /contact)"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFooterLink('contactLinks', idx)}
-                          className="btn btn-outline btn-sm"
-                          style={{ color: '#EF4444', borderColor: '#FCA5A5', padding: '6px 10px' }}
-                          title="Remove link"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 5. Footer Bottom Bar: Copyright Text */}
-                <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
-                    Footer Bottom Bar / Copyright Notice
-                  </h3>
-                  <p style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: 14 }}>
-                    Official legal copyright string displayed at the very bottom of the website.
-                  </p>
                   <input
                     type="text"
-                    className="form-control"
-                    value={footerData.copyrightText || ''}
-                    onChange={(e) => setFooterData({ ...footerData, copyrightText: e.target.value })}
-                    placeholder="© 2026 Aivortex. All rights reserved. • Learn. Grow. Innovate."
+                    placeholder="Search scholar, course, text..."
+                    value={reviewSearchQuery}
+                    onChange={(e) => setReviewSearchQuery(e.target.value)}
+                    style={{
+                      height: 38,
+                      width: 230,
+                      paddingLeft: 32,
+                      paddingRight: 10,
+                      borderRadius: 8,
+                      border: '1px solid #CBD5E1',
+                      fontSize: '0.8125rem',
+                      outline: 'none'
+                    }}
                   />
                 </div>
               </div>
-
-              {/* Sticky Bottom Save Bar for Footer */}
-              <div
-                style={{
-                  position: 'sticky',
-                  bottom: 16,
-                  background: '#0F172A',
-                  color: '#FFFFFF',
-                  borderRadius: 14,
-                  padding: '14px 24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  boxShadow: '0 12px 32px rgba(15, 23, 42, 0.4)',
-                  marginTop: 28,
-                  zIndex: 10
-                }}
-              >
-                <div style={{ fontSize: '0.88rem', color: '#94A3B8' }}>
-                  Modifications made here immediately update the website footer across all public pages in real time.
-                </div>
-
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <button
-                    type="button"
-                    onClick={handleResetFooterDefaults}
-                    className="btn btn-outline btn-sm"
-                    style={{ color: '#E2E8F0', borderColor: '#334155' }}
-                  >
-                    Reset Defaults
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleSaveFooterData}
-                    disabled={isSavingFooter}
-                    className="btn btn-primary btn-sm"
-                    style={{ minWidth: 140, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                  >
-                    <Save size={14} />
-                    <span>{isSavingFooter ? 'Saving Changes...' : 'Save & Publish'}</span>
-                  </button>
-                </div>
-              </div>
             </div>
-          )}
 
-          {/* =========================================================================
-              PANEL 2: ABOUT PAGE & LEADERSHIP CMS
-              ========================================================================= */}
-          {cmsSection === 'about' && (
-            <div>
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
-                <div>
-                  <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
-                    Public Page &amp; About Us Management
-                  </h2>
-                  <p style={{ color: '#64748B', fontSize: '0.9rem', margin: 0 }}>
-                    Configure official company story, mission, vision, offerings, philosophy, and executive leadership (CEO &amp; Program Director).
+            {/* Moderation Reviews Table */}
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: 16,
+                border: '1px solid #E2E8F0',
+                overflow: 'hidden',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              }}
+            >
+              {reviewsLoading ? (
+                <div style={{ padding: '48px 24px', textAlign: 'center', color: '#64748B' }}>
+                  <RefreshCw size={24} className="spin" style={{ margin: '0 auto 12px auto', color: '#2563EB' }} />
+                  <p style={{ margin: 0, fontWeight: 600 }}>Loading course reviews...</p>
+                </div>
+              ) : filteredReviews.length > 0 ? (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                        <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Scholar</th>
+                        <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Course</th>
+                        <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Rating & Feedback</th>
+                        <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Submitted</th>
+                        <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Status</th>
+                        <th style={{ padding: '14px 18px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Feature on Home</th>
+                        <th style={{ padding: '14px 18px', textAlign: 'right', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredReviews.map((r) => {
+                        const studentInitials = (r.student?.name || 'S')
+                          .split(' ')
+                          .map((n) => n[0])
+                          .slice(0, 2)
+                          .join('')
+                          .toUpperCase()
+
+                        const isApproved = r.status === 'APPROVED'
+                        const isPending = r.status === 'PENDING'
+                        const isRejected = r.status === 'REJECTED'
+
+                        return (
+                          <tr key={r.id} style={{ borderBottom: '1px solid #F1F5F9', verticalAlign: 'top' }}>
+                            {/* Scholar */}
+                            <td style={{ padding: '16px 18px', minWidth: 180 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div
+                                  style={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+                                    color: '#FFFFFF',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                    flexShrink: 0
+                                  }}
+                                >
+                                  {studentInitials}
+                                </div>
+                                <div style={{ overflow: 'hidden' }}>
+                                  <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.875rem' }}>
+                                    {r.student?.name || 'Scholar'}
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#64748B', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                    {r.student?.email || 'scholar@apexlearn.edu'}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Course */}
+                            <td style={{ padding: '16px 18px', minWidth: 160 }}>
+                              <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.85rem', marginBottom: 2 }}>
+                                {r.course?.title || 'Course'}
+                              </div>
+                              <span
+                                style={{
+                                  fontSize: '0.7rem',
+                                  padding: '2px 8px',
+                                  borderRadius: 4,
+                                  background: '#F1F5F9',
+                                  color: '#475569',
+                                  fontWeight: 600
+                                }}
+                              >
+                                {r.course?.slug || 'program'}
+                              </span>
+                            </td>
+
+                            {/* Rating & Feedback */}
+                            <td style={{ padding: '16px 18px', minWidth: 280, maxWidth: 420 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    size={14}
+                                    fill={star <= r.rating ? '#F59E0B' : 'transparent'}
+                                    color={star <= r.rating ? '#F59E0B' : '#CBD5E1'}
+                                  />
+                                ))}
+                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#B45309', marginLeft: 4 }}>
+                                  {r.rating}.0
+                                </span>
+                              </div>
+                              {r.title && (
+                                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0F172A', marginBottom: 2 }}>
+                                  "{r.title}"
+                                </div>
+                              )}
+                              <p style={{ margin: 0, fontSize: '0.8125rem', color: '#334155', lineHeight: 1.45 }}>
+                                {r.reviewText}
+                              </p>
+                              {r.rejectionReason && (
+                                <div
+                                  style={{
+                                    marginTop: 8,
+                                    padding: '6px 10px',
+                                    borderRadius: 6,
+                                    background: '#FEF2F2',
+                                    border: '1px solid #FCA5A5',
+                                    fontSize: '0.75rem',
+                                    color: '#991B1B'
+                                  }}
+                                >
+                                  <strong>Rejection Note:</strong> {r.rejectionReason}
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Submitted Date */}
+                            <td style={{ padding: '16px 18px', fontSize: '0.8rem', color: '#64748B', whiteSpace: 'nowrap' }}>
+                              {formatSubmittedDate(r.createdAt)}
+                            </td>
+
+                            {/* Status */}
+                            <td style={{ padding: '16px 18px', whiteSpace: 'nowrap' }}>
+                              {isPending && (
+                                <span
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    padding: '4px 10px',
+                                    borderRadius: 9999,
+                                    background: '#FEF3C7',
+                                    color: '#92400E',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700
+                                  }}
+                                >
+                                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B' }} />
+                                  Pending Approval
+                                </span>
+                              )}
+                              {isApproved && (
+                                <span
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    padding: '4px 10px',
+                                    borderRadius: 9999,
+                                    background: '#DCFCE7',
+                                    color: '#166534',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700
+                                  }}
+                                >
+                                  <Check size={12} strokeWidth={3} />
+                                  Approved
+                                </span>
+                              )}
+                              {isRejected && (
+                                <span
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    padding: '4px 10px',
+                                    borderRadius: 9999,
+                                    background: '#FEE2E2',
+                                    color: '#991B1B',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700
+                                  }}
+                                >
+                                  <X size={12} strokeWidth={3} />
+                                  Rejected
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Feature on Home Toggle */}
+                            <td style={{ padding: '16px 18px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                              {isApproved ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleFeatureReview(r.id, r.isFeatured)}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    padding: '5px 12px',
+                                    borderRadius: 8,
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    border: r.isFeatured ? '1px solid #7E22CE' : '1px solid #CBD5E1',
+                                    background: r.isFeatured ? '#FAF5FF' : '#FFFFFF',
+                                    color: r.isFeatured ? '#7E22CE' : '#64748B',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  title={r.isFeatured ? 'Click to remove from homepage featured reviews' : 'Click to feature on homepage'}
+                                >
+                                  <Star size={12} fill={r.isFeatured ? '#7E22CE' : 'transparent'} />
+                                  <span>{r.isFeatured ? 'Featured' : 'Feature'}</span>
+                                </button>
+                              ) : (
+                                <span
+                                  style={{
+                                    fontSize: '0.72rem',
+                                    color: '#94A3B8',
+                                    background: '#F8FAFC',
+                                    padding: '4px 8px',
+                                    borderRadius: 6,
+                                    border: '1px dashed #CBD5E1'
+                                  }}
+                                  title="Only approved reviews can be featured on home"
+                                >
+                                  Approve first
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Actions */}
+                            <td style={{ padding: '16px 18px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                                {isPending && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleApproveReview(r.id)}
+                                      className="btn btn-sm"
+                                      style={{
+                                        background: '#16A34A',
+                                        color: '#FFFFFF',
+                                        border: 'none',
+                                        padding: '5px 12px',
+                                        borderRadius: 8,
+                                        fontSize: '0.78rem',
+                                        fontWeight: 700,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 4
+                                      }}
+                                    >
+                                      <Check size={12} strokeWidth={3} />
+                                      <span>Approve</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setRejectReviewModal({ open: true, review: r, reason: '', error: '', isSubmitting: false })}
+                                      className="btn btn-sm"
+                                      style={{
+                                        background: '#DC2626',
+                                        color: '#FFFFFF',
+                                        border: 'none',
+                                        padding: '5px 12px',
+                                        borderRadius: 8,
+                                        fontSize: '0.78rem',
+                                        fontWeight: 700,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 4
+                                      }}
+                                    >
+                                      <X size={12} strokeWidth={3} />
+                                      <span>Reject</span>
+                                    </button>
+                                  </>
+                                )}
+                                {isApproved && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setRejectReviewModal({ open: true, review: r, reason: '', error: '', isSubmitting: false })}
+                                    className="btn btn-outline btn-sm"
+                                    style={{
+                                      color: '#DC2626',
+                                      borderColor: '#FCA5A5',
+                                      padding: '4px 10px',
+                                      borderRadius: 8,
+                                      fontSize: '0.75rem',
+                                      fontWeight: 600
+                                    }}
+                                  >
+                                    Reject / Revoke
+                                  </button>
+                                )}
+                                {isRejected && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleApproveReview(r.id)}
+                                    className="btn btn-outline btn-sm"
+                                    style={{
+                                      color: '#16A34A',
+                                      borderColor: '#86EFAC',
+                                      padding: '4px 10px',
+                                      borderRadius: 8,
+                                      fontSize: '0.75rem',
+                                      fontWeight: 600
+                                    }}
+                                  >
+                                    Re-Approve
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ padding: '48px 24px', textAlign: 'center', color: '#64748B' }}>
+                  <Star size={36} style={{ margin: '0 auto 12px auto', color: '#94A3B8', opacity: 0.6 }} />
+                  <h4 style={{ margin: '0 0 6px 0', color: '#0F172A', fontSize: '1rem', fontWeight: 700 }}>No Course Reviews Found</h4>
+                  <p style={{ margin: 0, fontSize: '0.85rem' }}>
+                    {reviewSearchQuery || reviewStatusFilter !== 'ALL' || reviewCourseFilter !== 'ALL'
+                      ? 'No reviews match your current filters. Try resetting status or course filter.'
+                      : 'No student reviews have been submitted yet.'}
                   </p>
                 </div>
-
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={handleResetAboutDefaults}
-                    className="btn btn-outline btn-sm"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    title="Reset fields to official company default text"
-                  >
-                    <RotateCcw size={14} />
-                    <span>Reset Defaults</span>
-                  </button>
-
-                  <a
-                    href="/about"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-outline btn-sm"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#2563EB', borderColor: '#BFDBFE', background: '#EFF6FF' }}
-                  >
-                    <ExternalLink size={14} />
-                    <span>View Live About Page</span>
-                  </a>
-
-                  <button
-                    type="button"
-                    onClick={handleSaveAboutData}
-                    disabled={isSavingAbout}
-                    className="btn btn-primary btn-sm"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 140 }}
-                  >
-                    <Save size={14} />
-                    <span>{isSavingAbout ? 'Saving...' : 'Save Changes'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Sub Navigation Tabs */}
-              <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid #E2E8F0', marginBottom: 24, overflowX: 'auto', paddingBottom: 2 }}>
-                {[
-                  { id: 'leadership', label: 'Executive Leadership (CEO & Director)' },
-                  { id: 'story', label: 'Hero, Mission & Vision' },
-                  { id: 'offerings', label: 'What We Do & Why Aivortex' },
-                  { id: 'audience', label: 'Philosophy, Audience & Promise' }
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setAboutSubTab(tab.id)}
-                    style={{
-                      padding: '10px 18px',
-                      borderRadius: '10px 10px 0 0',
-                      border: 'none',
-                      background: aboutSubTab === tab.id ? '#FFFFFF' : 'transparent',
-                      borderBottom: aboutSubTab === tab.id ? '2.5px solid #2563EB' : '2.5px solid transparent',
-                      fontWeight: aboutSubTab === tab.id ? 700 : 500,
-                      color: aboutSubTab === tab.id ? '#2563EB' : '#64748B',
-                      cursor: 'pointer',
-                      fontSize: '0.88rem',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-
-          {/* Sub Tab 1: Executive Leadership (CEO & Program Director) */}
-          {aboutSubTab === 'leadership' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 480px), 1fr))', gap: 24 }}>
-                {aboutData.leadership?.map((leader) => (
-                  <div
-                    key={leader.id}
-                    style={{
-                      background: '#FFFFFF',
-                      borderRadius: 16,
-                      border: '1px solid #E2E8F0',
-                      padding: 24,
-                      boxShadow: '0 4px 16px -2px rgba(15, 23, 42, 0.05)',
-                      display: 'flex',
-                      flexDirection: 'column'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                      <div
-                        style={{
-                          width: 80,
-                          height: 80,
-                          borderRadius: 12,
-                          overflow: 'hidden',
-                          background: '#0F172A',
-                          border: '2px solid #E2E8F0',
-                          flexShrink: 0
-                        }}
-                      >
-                        <img
-                          src={leader.image}
-                          alt={leader.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                          {leader.sectionTitle}
-                        </div>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: '2px 0 4px 0' }}>
-                          {leader.name}
-                        </h3>
-                        <div style={{ fontSize: '0.85rem', color: '#64748B' }}>
-                          {leader.role}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      <div className="form-field-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>Section Title Badge</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={leader.sectionTitle || ''}
-                          onChange={(e) => handleUpdateLeaderField(leader.id, 'sectionTitle', e.target.value)}
-                          placeholder="e.g. Meet our CEO"
-                        />
-                      </div>
-
-                      <div className="form-field-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>Full Name</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={leader.name || ''}
-                          onChange={(e) => handleUpdateLeaderField(leader.id, 'name', e.target.value)}
-                          placeholder="e.g. Saravanan.S"
-                        />
-                      </div>
-
-                      <div className="form-field-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>Degrees / Qualifications</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={leader.qualifications || ''}
-                          onChange={(e) => handleUpdateLeaderField(leader.id, 'qualifications', e.target.value)}
-                          placeholder="e.g. B.E, PDDDS, MS-Data Science"
-                        />
-                      </div>
-
-                      <div className="form-field-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>Current Company / Professional Position</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={leader.company || ''}
-                          onChange={(e) => handleUpdateLeaderField(leader.id, 'company', e.target.value)}
-                          placeholder="e.g. Data Science and AI specialist at one of Big4 organization"
-                        />
-                      </div>
-
-                      <div className="form-field-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>Executive Role / Title</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={leader.role || ''}
-                          onChange={(e) => handleUpdateLeaderField(leader.id, 'role', e.target.value)}
-                          placeholder="e.g. CEO & Co-Founder"
-                        />
-                      </div>
-
-                      <div className="form-field-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>Image URL / Asset Path</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={leader.image || ''}
-                          onChange={(e) => handleUpdateLeaderField(leader.id, 'image', e.target.value)}
-                          placeholder="/team/ceo-saravanan.png"
-                        />
-                      </div>
-
-                      <div className="form-field-group" style={{ margin: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>Bio / Narrative</label>
-                        <textarea
-                          className="form-control"
-                          rows={3}
-                          value={leader.bio || ''}
-                          onChange={(e) => handleUpdateLeaderField(leader.id, 'bio', e.target.value)}
-                          placeholder="Summary of experience and background..."
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Sub Tab 2: Hero, Mission & Vision */}
-          {aboutSubTab === 'story' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {/* Hero Settings */}
-              <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24 }}>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', marginBottom: 14 }}>
-                  Hero Headline &amp; Narrative
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div className="form-field-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>Hero Main Title</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={aboutData.hero?.title || ''}
-                      onChange={(e) => setAboutData({ ...aboutData, hero: { ...aboutData.hero, title: e.target.value } })}
-                    />
-                  </div>
-                  <div className="form-field-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>Lead Mission Paragraph</label>
-                    <textarea
-                      className="form-control"
-                      rows={2}
-                      value={aboutData.hero?.subtitle || ''}
-                      onChange={(e) => setAboutData({ ...aboutData, hero: { ...aboutData.hero, subtitle: e.target.value } })}
-                    />
-                  </div>
-                  <div className="form-field-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>Extended Story Paragraph</label>
-                    <textarea
-                      className="form-control"
-                      rows={3}
-                      value={aboutData.hero?.introParagraph || ''}
-                      onChange={(e) => setAboutData({ ...aboutData, hero: { ...aboutData.hero, introParagraph: e.target.value } })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Mission & Vision Settings */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 460px), 1fr))', gap: 20 }}>
-                {/* Mission */}
-                <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1.5px solid #BFDBFE', padding: 24 }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#2563EB', marginBottom: 12 }}>
-                    Mission Statement
-                  </h3>
-                  <textarea
-                    className="form-control"
-                    rows={4}
-                    value={aboutData.mission?.description || ''}
-                    onChange={(e) => setAboutData({ ...aboutData, mission: { ...aboutData.mission, description: e.target.value } })}
-                  />
-                </div>
-
-                {/* Vision */}
-                <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1.5px solid #DDD6FE', padding: 24 }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#7C3AED', marginBottom: 12 }}>
-                    Vision Statement
-                  </h3>
-                  <textarea
-                    className="form-control"
-                    rows={4}
-                    value={aboutData.vision?.description || ''}
-                    onChange={(e) => setAboutData({ ...aboutData, vision: { ...aboutData.vision, description: e.target.value } })}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Sub Tab 3: What We Do & Why Aivortex */}
-          {aboutSubTab === 'offerings' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {/* What We Do */}
-              <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24 }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', marginBottom: 16 }}>
-                  What We Do (5 Core Pillars)
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {aboutData.whatWeDo?.map((item, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        background: '#F8FAFC',
-                        borderRadius: 12,
-                        padding: 16,
-                        border: '1px solid #EDF2F7',
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 2fr',
-                        gap: 12
-                      }}
-                    >
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={item.title || ''}
-                        onChange={(e) => handleUpdateWhatWeDo(idx, 'title', e.target.value)}
-                        placeholder="Pillar Title"
-                        style={{ fontWeight: 700 }}
-                      />
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={item.description || ''}
-                        onChange={(e) => handleUpdateWhatWeDo(idx, 'description', e.target.value)}
-                        placeholder="Description"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Why Aivortex */}
-              <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24 }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', marginBottom: 16 }}>
-                  Why Aivortex (5 Value Propositions)
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {aboutData.whyAivortex?.map((item, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        background: '#F8FAFC',
-                        borderRadius: 12,
-                        padding: 16,
-                        border: '1px solid #EDF2F7',
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 2fr',
-                        gap: 12
-                      }}
-                    >
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={item.title || ''}
-                        onChange={(e) => handleUpdateWhyAivortex(idx, 'title', e.target.value)}
-                        placeholder="Advantage Title"
-                        style={{ fontWeight: 700 }}
-                      />
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={item.description || ''}
-                        onChange={(e) => handleUpdateWhyAivortex(idx, 'description', e.target.value)}
-                        placeholder="Description"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Sub Tab 4: Philosophy, Audience & Promise */}
-          {aboutSubTab === 'audience' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {/* Philosophy */}
-              <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24 }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', marginBottom: 16 }}>
-                  Our Philosophy (Learn. Grow. Innovate.)
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 16 }}>
-                  {aboutData.philosophy?.map((philo, idx) => (
-                    <div key={idx} style={{ background: '#F8FAFC', borderRadius: 12, padding: 16, border: '1px solid #EDF2F7' }}>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#2563EB', marginBottom: 6 }}>
-                        Step 0{idx + 1}: {philo.step}
-                      </div>
-                      <textarea
-                        className="form-control"
-                        rows={2}
-                        value={philo.tagline || ''}
-                        onChange={(e) => {
-                          const updated = [...(aboutData.philosophy || [])]
-                          updated[idx] = { ...updated[idx], tagline: e.target.value }
-                          setAboutData({ ...aboutData, philosophy: updated })
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Our Promise */}
-              <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24 }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', marginBottom: 12 }}>
-                  Our Promise
-                </h3>
-                <textarea
-                  className="form-control"
-                  rows={3}
-                  value={aboutData.ourPromise || ''}
-                  onChange={(e) => setAboutData({ ...aboutData, ourPromise: e.target.value })}
-                  placeholder="Official promise to students and partners..."
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Sticky Bottom Save Bar */}
-          <div
-            style={{
-              position: 'sticky',
-              bottom: 16,
-              background: '#0F172A',
-              color: '#FFFFFF',
-              borderRadius: 14,
-              padding: '14px 24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              boxShadow: '0 12px 32px rgba(15, 23, 42, 0.4)',
-              marginTop: 28,
-              zIndex: 10
-            }}
-          >
-            <div style={{ fontSize: '0.88rem', color: '#94A3B8' }}>
-              Changes made here update the public <strong style={{ color: '#F1F5F9' }}>/about</strong> page and leadership showcase in real time.
-            </div>
-
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button
-                type="button"
-                onClick={handleResetAboutDefaults}
-                className="btn btn-outline btn-sm"
-                style={{ color: '#E2E8F0', borderColor: '#334155' }}
-              >
-                Reset Defaults
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSaveAboutData}
-                disabled={isSavingAbout}
-                className="btn btn-primary btn-sm"
-                style={{ minWidth: 140, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-              >
-                <Save size={14} />
-                <span>{isSavingAbout ? 'Saving Changes...' : 'Save & Publish'}</span>
-              </button>
+              )}
             </div>
           </div>
-        </div>
+        )
+      })()}
+
+      {/* ========================================================================= */}
+      {/* 6.9. PROJECTS MANAGEMENT (DYNAMIC CONTENT) */}
+      {/* ========================================================================= */}
+      {activeTab === 'projects' && (
+        <AdminProjectsManager showToast={showToast} />
       )}
-    </div>
-  )}
+
+      {/* ========================================================================= */}
+      {/* 6.10. LIVE SESSIONS MANAGEMENT (DYNAMIC CONTENT) */}
+      {/* ========================================================================= */}
+      {activeTab === 'live-sessions' && (
+        <AdminLiveSessionsManager showToast={showToast} />
+      )}
 
       {/* ========================================================================= */}
       {/* 7. NOTIFICATIONS / ANNOUNCEMENTS */}
@@ -8885,20 +8673,6 @@ export default function AdminDashboardPage() {
                   </div>
                 )}
 
-                {/* 2. Editable Fields: Full Name & Phone Number */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 20, marginBottom: 20 }}>
-                  <div className="form-field-group">
-                    <label className="form-label" style={{ fontWeight: 700 }}>
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={editProfileForm.name}
-                      onChange={(e) => setEditProfileForm({ ...editProfileForm, name: e.target.value })}
-                      placeholder="e.g. Dr. Vikram Sen"
-                      required
-                    />
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
                     Rejection Reason <span style={{ color: '#DC2626' }}>*</span>
@@ -8991,23 +8765,6 @@ export default function AdminDashboardPage() {
               </button>
             </div>
 
-                {/* 3. Read-Only System Fields: Email & Role */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 20, marginBottom: 20 }}>
-                  <div className="form-field-group">
-                    <label className="form-label" style={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Email Address</span>
-                      <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 500 }}>System Locked</span>
-                    </label>
-                    <input
-                      type="email"
-                      className="form-input"
-                      value={currentDisplayUser.email || 'director@apexlearn.edu'}
-                      disabled
-                      style={{ background: '#F8FAFC', cursor: 'not-allowed', color: '#64748B' }}
-                    />
-                    <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: 4, display: 'block' }}>
-                      Email is bound to the PostgreSQL admin account credential.
-                    </span>
             <div style={{ padding: '24px' }}>
               <p style={{ fontSize: '0.9375rem', color: '#334155', margin: '0 0 16px 0', lineHeight: 1.5 }}>
                 <strong style={{ color: '#0F172A' }}>"{approveModal.lecture?.title}"</strong> will be marked as approved and made available according to the existing publishing rules.
@@ -9739,6 +9496,175 @@ export default function AdminDashboardPage() {
                 Your browser does not support HTML5 video streaming.
               </video>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: ADMIN REJECT COURSE REVIEW */}
+      {/* ========================================================================= */}
+      {rejectReviewModal.open && (
+        <div
+          className="razorpay-modal-overlay"
+          onClick={() => !rejectReviewModal.isSubmitting && setRejectReviewModal((prev) => ({ ...prev, open: false }))}
+        >
+          <div
+            className="razorpay-modal"
+            style={{ maxWidth: 520, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="razorpay-modal-header"
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: '#FEE2E2',
+                    color: '#DC2626',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <AlertCircle size={18} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                    Reject Course Review
+                  </h3>
+                  <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                    {rejectReviewModal.review?.student?.name} • {rejectReviewModal.review?.course?.title}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => !rejectReviewModal.isSubmitting && setRejectReviewModal((prev) => ({ ...prev, open: false }))}
+                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleRejectReviewSubmit}>
+              <div style={{ padding: '20px 24px' }}>
+                {/* Context Review Snippet */}
+                {rejectReviewModal.review && (
+                  <div
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      background: '#F8FAFC',
+                      border: '1px solid #E2E8F0',
+                      marginBottom: 16
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          size={12}
+                          fill={star <= rejectReviewModal.review.rating ? '#F59E0B' : 'transparent'}
+                          color={star <= rejectReviewModal.review.rating ? '#F59E0B' : '#CBD5E1'}
+                        />
+                      ))}
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#B45309', marginLeft: 4 }}>
+                        {rejectReviewModal.review.rating}.0
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', fontStyle: 'italic', lineHeight: 1.4 }}>
+                      "{rejectReviewModal.review.reviewText}"
+                    </p>
+                  </div>
+                )}
+
+                {/* Quick Helper Reasons */}
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: 8, textTransform: 'uppercase' }}>
+                    Quick Reasons
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {[
+                      'Inappropriate or offensive language',
+                      'Spam or promotional content',
+                      'Violates community guidelines',
+                      'Off-topic / Not about course content',
+                      'Misattributed or duplicate review'
+                    ].map((reason) => (
+                      <button
+                        key={reason}
+                        type="button"
+                        onClick={() => setRejectReviewModal((prev) => ({ ...prev, reason }))}
+                        style={{
+                          fontSize: '0.72rem',
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          border: rejectReviewModal.reason === reason ? '1px solid #DC2626' : '1px solid #CBD5E1',
+                          background: rejectReviewModal.reason === reason ? '#FEF2F2' : '#F8FAFC',
+                          color: rejectReviewModal.reason === reason ? '#991B1B' : '#475569',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {reason}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Detailed Reason Textarea */}
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    Rejection Reason (Sent to Scholar) <span style={{ color: '#DC2626' }}>*</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={rejectReviewModal.reason}
+                    onChange={(e) => setRejectReviewModal((prev) => ({ ...prev, reason: e.target.value, error: '' }))}
+                    placeholder="Provide specific feedback on why this review was rejected so the student can revise it..."
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: rejectReviewModal.error ? '1px solid #EF4444' : '1px solid #CBD5E1',
+                      fontSize: '0.85rem',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  {rejectReviewModal.error && (
+                    <div style={{ fontSize: '0.75rem', color: '#DC2626', marginTop: 4, fontWeight: 600 }}>
+                      {rejectReviewModal.error}
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Actions */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => setRejectReviewModal((prev) => ({ ...prev, open: false }))}
+                    disabled={rejectReviewModal.isSubmitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn"
+                    disabled={rejectReviewModal.isSubmitting}
+                    style={{ background: '#DC2626', color: '#FFFFFF', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    {rejectReviewModal.isSubmitting ? <RefreshCw size={14} className="spin" /> : null}
+                    <span>Confirm Rejection</span>
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}

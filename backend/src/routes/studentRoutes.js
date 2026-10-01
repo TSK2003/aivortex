@@ -25,12 +25,20 @@ import {
   markNotificationAsRead,
   markAllNotificationsAsRead
 } from '../controllers/supportNotificationController.js'
+import {
+  getStudentCourseReview,
+  submitCourseReview
+} from '../controllers/reviewController.js'
 import { requireAuth, requireRole } from '../middleware/authMiddleware.js'
 
 const router = Router()
 
 // All routes require authentication & student or admin role
 router.use(requireAuth, requireRole('STUDENT', 'ADMIN'))
+
+// Course Reviews by Eligible Scholars
+router.get('/courses/:courseId/review', getStudentCourseReview)
+router.post('/courses/:courseId/review', submitCourseReview)
 
 // Dashboard & Courses
 router.get('/dashboard', getDashboardStats)

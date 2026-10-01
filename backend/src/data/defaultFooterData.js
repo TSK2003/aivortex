@@ -24,7 +24,7 @@ export const defaultFooterData = {
     { label: "Privacy Policy", path: "/privacy" },
     { label: "Terms & Conditions", path: "/terms" }
   ],
-  copyrightText: "© 2026 Aivortex. All rights reserved. • Learn. Grow. Innovate."
+  copyrightText: "© 2026 Aivortex. All rights reserved. Learn. Grow. Innovate."
 }
 
 export default defaultFooterData

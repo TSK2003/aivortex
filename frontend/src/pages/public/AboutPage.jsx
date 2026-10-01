@@ -168,7 +168,7 @@ export default function AboutPage() {
                   }}
                 >
                   <img
-                    src={leader.image}
+                    src={leader.image ? `${leader.image}?v=2` : leader.image}
                     alt={leader.name}
                     style={{
                       width: '100%',

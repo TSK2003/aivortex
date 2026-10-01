@@ -124,7 +124,7 @@ export default function Footer() {
         {/* Footer Bottom Bar */}
         <div className="footer-bottom-bar">
           <p className="copyright-text">
-            {footer.copyrightText || `© ${new Date().getFullYear()} Aivortex. All rights reserved. • Learn. Grow. Innovate.`}
+            {(footer.copyrightText || `© ${new Date().getFullYear()} Aivortex. All rights reserved. Learn. Grow. Innovate.`).replace(/\s*[•·]\s*/g, ' ')}
           </p>
         </div>
       </div>

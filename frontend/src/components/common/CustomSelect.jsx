@@ -67,8 +67,8 @@ export default function CustomSelect({
     const spaceAbove = rect.top - 12
 
     // Auto-detect whether to open upward:
-    // If not enough room below (< estimatedHeight) and there's more room above
-    const shouldOpenUpward = autoPlacement && spaceBelow < estimatedHeight && spaceAbove > spaceBelow
+    // Only open upward if space below is genuinely insufficient (< 120px) and there is more room above
+    const shouldOpenUpward = autoPlacement && spaceBelow < 120 && spaceAbove > spaceBelow
 
     const calculatedMaxHeight = shouldOpenUpward
       ? Math.max(Math.min(spaceAbove, 320), 120)
@@ -375,74 +375,6 @@ export default function CustomSelect({
         />
       </button>
 
-      {/* Floating Menu */}
-      {isOpen && (
-        <div
-          role="listbox"
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 6px)',
-            left: 0,
-            right: 0,
-            minWidth: '100%',
-            width: 'max-content',
-            maxWidth: 'min(340px, calc(100vw - 32px))',
-            background: '#FFFFFF',
-            border: '1px solid #E2E8F0',
-            borderRadius: 12,
-            boxShadow: '0 14px 34px -4px rgba(15, 23, 42, 0.12), 0 4px 8px -2px rgba(15, 23, 42, 0.05)',
-            padding: 6,
-            zIndex: 1050,
-            maxHeight: 260,
-            overflowY: 'auto',
-            animation: 'fadeInMenu 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
-            ...menuStyle
-          }}
-        >
-          {normalizedOptions.map((opt) => {
-            const isSelected = String(opt.value) === String(value)
-            return (
-              <div
-                key={String(opt.value)}
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => handleSelect(opt.value)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '9px 12px',
-                  borderRadius: 8,
-                  fontSize: '0.86rem',
-                  fontWeight: isSelected ? 700 : 500,
-                  color: isSelected ? '#2563EB' : '#1E293B',
-                  background: isSelected ? '#EFF6FF' : 'transparent',
-                  cursor: 'pointer',
-                  transition: 'background 0.12s ease, color 0.12s ease',
-                  marginBottom: 2
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.background = '#F1F5F9'
-                    e.currentTarget.style.color = '#0F172A'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.background = 'transparent'
-                    e.currentTarget.style.color = '#1E293B'
-                  }
-                }}
-              >
-                <span>{opt.label}</span>
-                {isSelected && (
-                  <Check size={14} style={{ color: '#2563EB', marginLeft: 8, flexShrink: 0 }} />
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
       {/* Dropdown Menu: rendered via portal or inline */}
       {isOpen && (portal ? createPortal(menuContent, document.body) : menuContent)}
     </div>

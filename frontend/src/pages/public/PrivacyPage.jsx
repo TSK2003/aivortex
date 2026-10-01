@@ -13,7 +13,7 @@ export default function PrivacyPage() {
             Privacy Policy
           </h1>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
-            Last revised: September 2026 • Compliant with Indian DPDP Act and international standards.
+             Compliant with Indian DPDP Act and international standards.
           </p>
         </div>
 
@@ -34,8 +34,8 @@ export default function PrivacyPage() {
           </p>
 
           <h2 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', fontWeight: 700, marginBottom: 12 }}>4. Contact Us Regarding Your Data</h2>
-          <p>
-            You may request a copy or deletion of your profile data by writing to privacy@apexlearn.edu or filing a support ticket from your Student Dashboard.
+          <p>    You may request a copy or deletion of your profile data by writing to aivortexgroup@gmail.com or filing a support ticket from your Student Dashboard.
+          
           </p>
         </div>
       </div>
