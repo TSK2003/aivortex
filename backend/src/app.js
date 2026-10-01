@@ -55,12 +55,12 @@ app.use(cookieParser(env.COOKIE_SECRET))
 
 // Body Parsing (with rawBody capture for webhook verification)
 app.use(express.json({
-  limit: '10mb',
+  limit: '100mb',
   verify: (req, res, buf) => {
     req.rawBody = buf
   }
 }))
-app.use(express.urlencoded({ extended: true, limit: '10mb' }))
+app.use(express.urlencoded({ extended: true, limit: '100mb' }))
 
 // Request Logging
 if (env.NODE_ENV !== 'test') {

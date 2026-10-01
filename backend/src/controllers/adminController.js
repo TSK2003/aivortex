@@ -883,6 +883,7 @@ export async function getAdminCourses(req, res, next) {
       })
       return {
         ...c,
+        previewVideoUrl: c.demoVideoUrl || null,
         totalModules: c.playlists.length,
         totalLessons,
         enrolledStudentsCount: c.enrollments.length
@@ -907,6 +908,8 @@ export async function createCourse(req, res, next) {
       duration = '30 Hours',
       language = 'English',
       thumbnail,
+      previewVideoUrl,
+      demoVideoUrl,
       price = 0,
       originalPrice = 0,
       discountPercent = 0,
@@ -924,16 +927,18 @@ export async function createCourse(req, res, next) {
 
     if (thumbnail && thumbnail.trim()) {
       const trimmedThumb = thumbnail.trim()
-      if (!/^https:\/\//i.test(trimmedThumb)) {
-        throw new BadRequestError('Please enter a valid HTTPS image URL.')
+      if (!/^https:\/\//i.test(trimmedThumb) && !trimmedThumb.startsWith('/uploads/')) {
+        throw new BadRequestError('Please enter a valid image URL or upload an image.')
       }
-      try {
-        const parsed = new URL(trimmedThumb)
-        if (parsed.protocol !== 'https:' || !parsed.hostname || !parsed.hostname.includes('.')) {
+      if (/^https:\/\//i.test(trimmedThumb)) {
+        try {
+          const parsed = new URL(trimmedThumb)
+          if (parsed.protocol !== 'https:' || !parsed.hostname || !parsed.hostname.includes('.')) {
+            throw new BadRequestError('Please enter a valid HTTPS image URL.')
+          }
+        } catch {
           throw new BadRequestError('Please enter a valid HTTPS image URL.')
         }
-      } catch {
-        throw new BadRequestError('Please enter a valid HTTPS image URL.')
       }
     }
 
@@ -943,6 +948,8 @@ export async function createCourse(req, res, next) {
     if (existing) {
       throw new BadRequestError(`Course with slug '${courseSlug}' already exists`)
     }
+
+    const resolvedVideoUrl = (previewVideoUrl || demoVideoUrl) ? String(previewVideoUrl || demoVideoUrl).trim() : null
 
     const course = await prisma.course.create({
       data: {
@@ -955,6 +962,7 @@ export async function createCourse(req, res, next) {
         duration,
         language,
         thumbnail: (thumbnail && thumbnail.trim()) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80',
+        demoVideoUrl: resolvedVideoUrl,
         price: Number(price),
         originalPrice: Number(originalPrice || price),
         discountPercent: Number(discountPercent),
@@ -986,7 +994,7 @@ export async function createCourse(req, res, next) {
       }
     })
 
-    return successResponse(res, { course }, 'Course created successfully in DRAFT mode', 201)
+    return successResponse(res, { course: { ...course, previewVideoUrl: course.demoVideoUrl } }, 'Course created successfully in DRAFT mode', 201)
   } catch (err) {
     next(err)
   }
@@ -1007,21 +1015,29 @@ export async function updateCourse(req, res, next) {
     if (data.thumbnail !== undefined && data.thumbnail !== null) {
       const trimmedThumb = String(data.thumbnail).trim()
       if (trimmedThumb) {
-        if (!/^https:\/\//i.test(trimmedThumb)) {
-          throw new BadRequestError('Please enter a valid HTTPS image URL.')
+        if (!/^https:\/\//i.test(trimmedThumb) && !trimmedThumb.startsWith('/uploads/')) {
+          throw new BadRequestError('Please enter a valid image URL or upload an image.')
         }
-        try {
-          const parsed = new URL(trimmedThumb)
-          if (parsed.protocol !== 'https:' || !parsed.hostname || !parsed.hostname.includes('.')) {
+        if (/^https:\/\//i.test(trimmedThumb)) {
+          try {
+            const parsed = new URL(trimmedThumb)
+            if (parsed.protocol !== 'https:' || !parsed.hostname || !parsed.hostname.includes('.')) {
+              throw new BadRequestError('Please enter a valid HTTPS image URL.')
+            }
+          } catch {
             throw new BadRequestError('Please enter a valid HTTPS image URL.')
           }
-        } catch {
-          throw new BadRequestError('Please enter a valid HTTPS image URL.')
         }
         updatePayload.thumbnail = trimmedThumb
       } else {
         updatePayload.thumbnail = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80'
       }
+    }
+
+    if (data.previewVideoUrl !== undefined) {
+      updatePayload.demoVideoUrl = data.previewVideoUrl ? String(data.previewVideoUrl).trim() : null
+    } else if (data.demoVideoUrl !== undefined) {
+      updatePayload.demoVideoUrl = data.demoVideoUrl ? String(data.demoVideoUrl).trim() : null
     }
 
     const fields = [

@@ -83,6 +83,8 @@ export async function getCourses(req, res, next) {
         duration: c.duration,
         language: c.language,
         thumbnail: c.thumbnail,
+        thumbnailUrl: c.thumbnail,
+        previewVideoUrl: c.demoVideoUrl || null,
         originalPrice: c.originalPrice,
         price: c.price,
         discountPercent: c.discountPercent,
@@ -195,6 +197,8 @@ export async function getCourseBySlug(req, res, next) {
     return successResponse(res, {
       course: {
         ...course,
+        previewVideoUrl: course.demoVideoUrl || null,
+        thumbnailUrl: course.thumbnail,
         demoVideo
       }
     })

@@ -142,6 +142,9 @@ export default function AppRoutes() {
         <Route path="offers" element={<AdminDashboardPage />} />
         <Route path="public-page" element={<AdminDashboardPage />} />
         <Route path="public-controls" element={<AdminDashboardPage />} />
+        <Route path="projects" element={<AdminDashboardPage />} />
+        <Route path="live-sessions" element={<AdminDashboardPage />} />
+        <Route path="reviews" element={<AdminDashboardPage />} />
         <Route path="payments" element={<AdminDashboardPage />} />
         <Route path="notifications" element={<AdminDashboardPage />} />
         <Route path="requests" element={<AdminDashboardPage />} />

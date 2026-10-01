@@ -159,14 +159,12 @@ export default function BrandLogo({
           viewBox="218 19 290 266"
           width="100%"
           height="100%"
-          className="brand-logo-icon-svg"
           style={{ display: 'block', width: '100%', height: '100%', flexShrink: 0 }}
-          role="img"
-          aria-label="AIVORTEX Icon"
+          aria-hidden="true"
         >
-          <g fill={fillColor} style={{ transition: 'fill 0.3s ease' }}>
-            <path id="icon-left" className="brand-icon-part brand-icon-left" d="M 363.50 20.00 L 219.10 283.40 L 293.10 283.40 L 400.00 90.90 Z" />
-            <path id="icon-right" className="brand-icon-part brand-icon-right" d="M 420.30 123.70 L 506.50 283.40 L 432.50 283.40 L 382.50 192.40 Z" />
+          <g fill={fillColor}>
+            <path id="icon-left" d="M 363.50 20.00 L 219.10 283.40 L 293.10 283.40 L 400.00 90.90 Z" />
+            <path id="icon-right" d="M 420.30 123.70 L 506.50 283.40 L 432.50 283.40 L 382.50 192.40 Z" />
           </g>
         </svg>
       </div>

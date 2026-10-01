@@ -510,6 +510,25 @@
   border-radius: 6px;
 }
 
+.course-preview-touch-btn {
+  display: none;
+  transition: all var(--transition-fast);
+}
+
+.course-card:hover .course-preview-touch-btn {
+  display: flex !important;
+}
+
+@media (hover: none), (max-width: 1024px) {
+  .course-preview-touch-btn {
+    display: flex !important;
+  }
+}
+
+.course-preview-touch-btn:hover {
+  transform: scale(1.05);
+}
+
 .course-card-body {
   padding: 22px 24px;
   display: flex;
