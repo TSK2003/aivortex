@@ -1,0 +1,22 @@
+{
+  "name": "apexlearn-platform",
+  "version": "1.0.0",
+  "description": "ApexLearn Online Course & LMS Platform — Full-Stack Production System",
+  "scripts": {
+    "build": "npm --prefix frontend run build",
+    "build:frontend": "npm --prefix frontend run build",
+    "start": "node backend/src/server.js",
+    "start:backend": "npm --prefix backend start",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "test": "npm --prefix backend test",
+    "test:backend": "npm --prefix backend test",
+    "prisma:generate": "npm --prefix backend run prisma:generate",
+    "prisma:migrate": "npm --prefix backend run prisma:migrate",
+    "prisma:push": "npm --prefix backend run prisma:push",
+    "prisma:seed": "npm --prefix backend run prisma:seed"
+  },
+  "prisma": {
+    "schema": "backend/prisma/schema.prisma"
+  }
+}

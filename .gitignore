@@ -1,0 +1,96 @@
+# ==========================================
+# ApexLearn Production Root .gitignore
+# Enterprise Full-Stack LMS & Course Platform
+# ==========================================
+
+# Dependencies
+node_modules/
+*/node_modules/
+package-lock.json.bak
+yarn.lock
+pnpm-lock.yaml
+
+# Environment Variables & Secrets (CRITICAL SECURITY)
+.env
+.env.*
+*.env
+!*.env.example
+!.env.example
+!.env.production.example
+
+# Build & Compilation Outputs
+dist/
+*/dist/
+build/
+*/build/
+out/
+.next/
+*.tsbuildinfo
+
+# Temporary, Scratch & Audit Directories
+_audit/
+scratch/
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+audit_*.png
+mobile_*.png
+__pycache__/
+*.pyc
+
+# Logs & Process Monitor Files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+pm2.log
+pm2-error.log
+pm2-out.log
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# IDE & Editor Directories
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+.gemini/
+.claude/
+.agents/
+
+# Testing, Coverage & Telemetry
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+
+# SSL Certificates, Keys & Private Tokens
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+
+# Database Dumps & Local SQLite Files
+*.sqlite
+*.sqlite3
+*.db-journal
+*.dump
+*.sql.gz

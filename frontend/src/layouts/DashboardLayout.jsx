@@ -1,0 +1,480 @@
+import { useState, useEffect } from 'react'
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
+import NotificationDropdown from '../components/common/NotificationDropdown'
+import BrandLogo from '../components/common/BrandLogo'
+import api from '../services/api'
+import AdminHeader from '../components/admin/AdminHeader'
+import SidebarAccountControl from '../components/common/SidebarAccountControl'
+import {
+  LayoutDashboard,
+  Users,
+  GraduationCap,
+  BookOpen,
+  ListVideo,
+  CreditCard,
+  Globe,
+  Bell,
+  BarChart3,
+  MessageSquare,
+  FileText,
+  Shield,
+  LogOut,
+  Menu,
+  X,
+  FolderGit2,
+  Video,
+  Award,
+  Sparkles,
+  Settings,
+  Star
+} from 'lucide-react'
+
+/**
+ * DashboardLayout provides the structured sidebar + topbar layout used by
+ * Admin, Creator, and Student portals.
+ */
+
+const ADMIN_NAV_SECTIONS = [
+  {
+    title: 'MAIN',
+    items: [
+      { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ]
+  },
+  {
+    title: 'MANAGEMENT',
+    items: [
+      { path: '/admin/creators', label: 'Creator Management', icon: Users },
+      { path: '/admin/students', label: 'Student Management', icon: GraduationCap },
+      { path: '/admin/courses', label: 'Course Management', icon: BookOpen },
+      { path: '/admin/playlists', label: 'Content Review', icon: ListVideo, badgeKey: 'pendingVideos' },
+      { path: '/admin/payments', label: 'Payments & Enrollments', icon: CreditCard },
+    ]
+  },
+  {
+    title: 'CONTENT / PLATFORM',
+    items: [
+      { path: '/admin/public-page', label: 'Public Pages & Footer CMS', icon: Globe },
+      { path: '/admin/projects', label: 'Projects Management', icon: FolderGit2 },
+      { path: '/admin/live-sessions', label: 'Live Sessions Management', icon: Video },
+      { path: '/admin/reviews', label: 'Course Reviews', icon: Star },
+      { path: '/admin/notifications', label: 'Notifications', icon: Bell },
+    ]
+  },
+  {
+    title: 'ANALYTICS',
+    items: [
+      { path: '/admin/reports', label: 'Reports & Analytics', icon: BarChart3 },
+    ]
+  },
+  {
+    title: 'SYSTEM',
+    items: [
+      { path: '/admin/requests', label: 'Requests', icon: MessageSquare, badgeKey: 'pendingRequests' },
+      { path: '/admin/audit-logs', label: 'Audit Logs', icon: FileText },
+      { path: '/admin/security', label: 'Security & Settings', icon: Shield },
+    ]
+  }
+]
+
+const CREATOR_NAV_SECTIONS = [
+  {
+    title: '',
+    items: [
+      { path: '/creator/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/creator/courses', label: 'My Courses', icon: BookOpen },
+      { path: '/creator/analytics', label: 'Analytics', icon: BarChart3 },
+      { path: '/creator/earnings', label: 'Earnings', icon: CreditCard },
+      { path: '/creator/messages', label: 'Messages', icon: MessageSquare, badgeKey: 'feedbackCount' },
+      { path: '/creator/profile', label: 'Settings', icon: Settings },
+    ]
+  }
+]
+
+const STUDENT_NAV = [
+  { path: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/student/courses', label: 'My Courses', icon: BookOpen },
+  { path: '/student/projects', label: 'Capstone Projects', icon: FolderGit2 },
+  { path: '/student/live-sessions', label: 'Live Sessions', icon: Video },
+  { path: '/student/certificates', label: 'Certificates', icon: GraduationCap },
+  { path: '/student/payments', label: 'Invoices & Billing', icon: CreditCard },
+  { path: '/student/notifications', label: 'Notifications', icon: Bell },
+  { path: '/student/support', label: 'Support & Queries', icon: MessageSquare },
+  { path: '/student/profile', label: 'Account Profile', icon: Users },
+]
+
+export default function DashboardLayout({ role = 'student' }) {
+  const { user, logout } = useAuth()
+  const { isDark } = useTheme()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  // Live domain metrics for admin notification bell & sidebar badges
+  const [adminMetrics, setAdminMetrics] = useState({
+    pendingVideos: 0,
+    pendingRequests: 0,
+    recentOrders: 0
+  })
+
+  // Live creator metrics for feedback/changes requested badge
+  const [creatorMetrics, setCreatorMetrics] = useState({
+    feedbackCount: 0
+  })
+
+  useEffect(() => {
+    if (role === 'admin') {
+      api.admin.getOverview()
+        .then((res) => {
+          if (res?.data?.analytics) {
+            setAdminMetrics({
+              pendingVideos: res.data.analytics.pendingVerificationCount || 0,
+              pendingRequests: res.data.analytics.pendingRequestsCount || 0,
+              recentOrders: res.data.recentOrders?.length || 0
+            })
+          }
+        })
+        .catch(() => { })
+    } else if (role === 'creator') {
+      api.creator.getSubmissions()
+        .then((res) => {
+          const subs = res?.data?.submissions || []
+          const changesReq = subs.filter((s) => s.status === 'RETURNED_FOR_EDIT').length
+          setCreatorMetrics({ feedbackCount: changesReq })
+        })
+        .catch(() => { })
+    }
+  }, [role, location.pathname])
+
+  const handleToggleSidebar = () => {
+    if (window.innerWidth <= 1024) {
+      setSidebarOpen((prev) => !prev)
+    } else {
+      setSidebarCollapsed((prev) => !prev)
+    }
+  }
+
+  const roleLabel =
+    role === 'admin' ? 'Admin Portal' : role === 'creator' ? 'Creator Portal' : 'Student Portal'
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/')
+  }
+
+  return (
+    <div className="dashboard-layout">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="sidebar-overlay active"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-header">
+          <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <BrandLogo size="sm" theme={isDark ? 'dark' : 'light'} />
+          </a>
+          <button
+            className="btn-ghost sidebar-close-mobile"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close Sidebar"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* User card (displayed only for student, admin and creator profiles are placed at the sidebar bottom) */}
+        {role === 'student' && (
+          <div className="sidebar-user-card">
+            <div
+              className="sidebar-user-avatar"
+              style={{
+                width: 38,
+                height: 38,
+                minWidth: 38,
+                minHeight: 38,
+                maxWidth: 38,
+                maxHeight: 38,
+                borderRadius: '50%',
+                aspectRatio: '1 / 1',
+                flexShrink: 0,
+                background: 'var(--color-secondary)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                lineHeight: 1,
+              }}
+            >
+              {user?.name?.charAt(0)?.toUpperCase() || role.charAt(0).toUpperCase()}
+            </div>
+            <div className="sidebar-user-info" style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+              <div className="sidebar-user-name" title={user?.name || roleLabel}>
+                {user?.name || roleLabel}
+              </div>
+              <div className="sidebar-user-role" title={user?.email || `${role}@apexlearn.com`}>
+                {user?.email || `${role}@apexlearn.com`}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation */}
+        <nav
+          className="sidebar-nav"
+          style={role === 'admin' || role === 'creator' ? { paddingTop: '16px', paddingBottom: '20px' } : undefined}
+        >
+          {role === 'admin' || role === 'creator' ? (
+            // Admin & Creator Organised Sections
+            (role === 'admin' ? ADMIN_NAV_SECTIONS : CREATOR_NAV_SECTIONS).map((section, sIndex) => (
+              <div
+                key={section.title || `sec-${sIndex}`}
+                style={{
+                  marginBottom: 6,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2
+                }}
+              >
+                {section.title ? (
+                  <div
+                    className="sidebar-section-header"
+                    style={{
+                      paddingTop: sIndex === 0 ? '4px' : '10px',
+                      paddingBottom: '4px',
+                      paddingLeft: '14px',
+                      paddingRight: '14px'
+                    }}
+                  >
+                    {section.title}
+                  </div>
+                ) : null}
+                {section.items.map((item) => {
+                  const Icon = item.icon
+                  const badgeValue = item.badgeKey
+                    ? (role === 'admin' ? adminMetrics[item.badgeKey] : creatorMetrics[item.badgeKey])
+                    : 0
+
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      className={({ isActive }) =>
+                        `sidebar-nav-item ${isActive ? 'active' : ''}`
+                      }
+                      onClick={() => setSidebarOpen(false)}
+                      title={item.label}
+                    >
+                      {Icon && <Icon size={18} className="sidebar-nav-icon" style={{ flexShrink: 0 }} />}
+                      <span>{item.label}</span>
+                      {badgeValue > 0 && (
+                        <span className="sidebar-badge badge-amber">
+                          {badgeValue}
+                        </span>
+                      )}
+                    </NavLink>
+                  )
+                })}
+              </div>
+            ))
+          ) : (
+            // Student Nav
+            STUDENT_NAV.map((item) => {
+              const Icon = item.icon
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `sidebar-nav-item ${isActive ? 'active' : ''}`
+                  }
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  {Icon && <Icon size={18} className="sidebar-nav-icon" style={{ flexShrink: 0 }} />}
+                  <span>{item.label}</span>
+                </NavLink>
+              )
+            })
+          )}
+        </nav>
+
+        {/* Student Academic Standing & Quick Support Card */}
+        {role === 'student' && (
+          <div
+            style={{
+              margin: '12px 14px 10px 14px',
+              padding: '14px',
+              background: 'linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%)',
+              borderRadius: '12px',
+              border: '1px solid #DBEAFE',
+              boxShadow: '0 2px 4px rgba(37, 99, 235, 0.04)',
+              flexShrink: 0
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 8,
+                  background: '#DBEAFE',
+                  color: '#2563EB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}
+              >
+                <Award size={16} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#1E293B', lineHeight: 1.2 }}>
+                  Verified Scholar
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 600 }}>
+                  Institute of Tech & AI
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingTop: 8,
+                borderTop: '1px solid #E2E8F0',
+                fontSize: '0.72rem',
+                color: '#64748B'
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981' }} />
+                Academic Track
+              </span>
+              <span style={{ fontWeight: 700, color: '#2563EB' }}>Active</span>
+            </div>
+          </div>
+        )}
+
+        {/* Sidebar Bottom Account Control (Admin & Creator use unified compact account row + upward popover; Student uses standard logout) */}
+        {role === 'admin' || role === 'creator' ? (
+          <SidebarAccountControl
+            user={user}
+            role={role}
+            collapsed={sidebarCollapsed}
+            onLogout={handleLogout}
+          />
+        ) : (
+          <div style={{ marginTop: 'auto', padding: '14px', borderTop: '1px solid var(--color-border, #E2E8F0)' }}>
+            <button
+              type="button"
+              onClick={handleLogout}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                background: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
+                border: `1px solid ${isDark ? 'rgba(239, 68, 68, 0.25)' : '#FECACA'}`,
+                borderRadius: '10px',
+                color: isDark ? '#F87171' : '#DC2626',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                transition: 'background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease',
+                boxShadow: '0 1px 2px rgba(220, 38, 38, 0.05)',
+                boxSizing: 'border-box'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2'
+                e.currentTarget.style.borderColor = isDark ? 'rgba(239, 68, 68, 0.4)' : '#F87171'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2'
+                e.currentTarget.style.borderColor = isDark ? 'rgba(239, 68, 68, 0.25)' : '#FECACA'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    background: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: isDark ? '#F87171' : '#DC2626',
+                    flexShrink: 0,
+                    transition: 'background-color 0.3s ease, color 0.3s ease'
+                  }}
+                >
+                  <LogOut size={15} />
+                </div>
+                <span className="sidebar-logout-text" style={{ letterSpacing: '0.01em' }}>Log Out</span>
+              </div>
+            </button>
+          </div>
+        )}
+      </aside>
+
+      {/* Main content area */}
+      <div className="dashboard-main">
+        {/* Topbar: Use AdminHeader for Admin role; default topbar for student & creator */}
+        {/* Single Topbar: Admin uses specialized AdminHeader; Student and Creator use dashboard-topbar */}
+        {role === 'admin' ? (
+          <AdminHeader
+            onToggleSidebar={handleToggleSidebar}
+            pendingVideosCount={adminMetrics.pendingVideos}
+            pendingRequestsCount={adminMetrics.pendingRequests}
+            recentOrdersCount={adminMetrics.recentOrders}
+          />
+        ) : (
+          <header className="dashboard-topbar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <button
+                type="button"
+                className="btn-ghost mobile-sidebar-toggle"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Toggle Navigation Sidebar"
+              >
+                <Menu size={20} />
+              </button>
+              <h1 className="topbar-title" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)', margin: 0 }}>
+                {roleLabel}
+              </h1>
+            </div>
+            <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <NotificationDropdown />
+              <div style={{ width: 1, height: 22, background: '#E2E8F0' }} />
+              <span className="topbar-session-badge" style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Active Session</span>
+            </div>
+          </header>
+        )}
+
+        {/* Page content */}
+        <div
+          className="dashboard-content"
+          style={
+            role === 'admin' || role === 'creator'
+              ? { padding: '24px 28px', maxWidth: '1680px', width: '100%', boxSizing: 'border-box' }
+              : undefined
+          }
+        >
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  )
+}
