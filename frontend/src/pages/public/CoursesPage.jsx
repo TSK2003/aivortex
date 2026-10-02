@@ -7,6 +7,7 @@ import CourseDetailModal from '../../components/modals/CourseDetailModal'
 import VideoModal from '../../components/modals/VideoModal'
 import PaymentModal from '../../components/modals/PaymentModal'
 import api from '../../services/api'
+import { COURSE_LEVEL_OPTIONS } from '../../data/initialData'
 
 export default function CoursesPage() {
   const { courseId: routeCourseId } = useParams()
@@ -35,8 +36,31 @@ export default function CoursesPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
   const categories = ['All', 'Data Science', 'Machine Learning', 'Artificial Intelligence', 'Web Development', 'Trading', 'Cloud Computing']
-  const levels = ['All', 'Beginner', 'Intermediate', 'Advanced']
-  const languages = ['All', 'English', 'Hindi', 'Tamil']
+  const levels = useMemo(() => {
+    const baseLevels = COURSE_LEVEL_OPTIONS ?? [
+      'All',
+      'Beginner',
+      'Beginner to Intermediate',
+      'Intermediate',
+      'Intermediate to Advanced',
+      'Advanced'
+    ]
+    const dynamicLevels = Array.isArray(courses)
+      ? courses.map((c) => c?.level).filter(Boolean)
+      : []
+    return Array.from(new Set([...baseLevels, ...dynamicLevels]))
+  }, [courses])
+  const languages = [
+    'All',
+    'English',
+    'Tamil',
+    'Thanglish',
+    'Hindi',
+    'Bilingual (English/Tamil)',
+    'Bilingual (English/Hindi)',
+    'Bilingual (Tamil/Thanglish)',
+    'Multilingual'
+  ]
   const priceTypes = ['All', 'Paid Only', 'Free Only']
   const sortOptions = [
     { value: 'popularity', label: 'Most Popular' },
@@ -116,11 +140,13 @@ export default function CoursesPage() {
   }, [courses, routeCourseId, enrollParam, location.key])
 
   const filteredCourses = useMemo(() => {
+    if (!Array.isArray(courses)) return []
     return courses
       .filter((c) => {
+        if (!c) return false
         const matchesSearch =
-          (c.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (c.shortDescription || '').toLowerCase().includes(searchQuery.toLowerCase())
+          (c.title || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+          (c.shortDescription || '').toLowerCase().includes((searchQuery || '').toLowerCase())
         const matchesCategory =
           selectedCategory === 'All' || (c.category || '').toLowerCase() === selectedCategory.toLowerCase()
         const matchesLevel =
@@ -129,16 +155,16 @@ export default function CoursesPage() {
           selectedLanguage === 'All' || (c.language || 'English').toLowerCase() === selectedLanguage.toLowerCase()
         const matchesPrice =
           selectedPriceType === 'All' ||
-          (selectedPriceType === 'Paid Only' && !c.isFree && c.price > 0) ||
+          (selectedPriceType === 'Paid Only' && !c.isFree && (c.price || 0) > 0) ||
           (selectedPriceType === 'Free Only' && (c.isFree || c.price === 0))
 
         return matchesSearch && matchesCategory && matchesLevel && matchesLanguage && matchesPrice
       })
       .sort((a, b) => {
-        if (sortBy === 'rating') return (b.averageRating || 0) - (a.averageRating || 0)
-        if (sortBy === 'price-low') return (a.price || 0) - (b.price || 0)
-        if (sortBy === 'price-high') return (b.price || 0) - (a.price || 0)
-        return (b.studentsCount || 0) - (a.studentsCount || 0)
+        if (sortBy === 'rating') return (b?.averageRating || 0) - (a?.averageRating || 0)
+        if (sortBy === 'price-low') return (a?.price || 0) - (b?.price || 0)
+        if (sortBy === 'price-high') return (b?.price || 0) - (a?.price || 0)
+        return (b?.studentsCount || 0) - (a?.studentsCount || 0)
       })
   }, [courses, searchQuery, selectedCategory, selectedLevel, selectedLanguage, selectedPriceType, sortBy])
 
@@ -167,14 +193,14 @@ export default function CoursesPage() {
           <div
             style={{
               background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%)',
-              borderRadius: 16,
+              borderRadius: 8,
               padding: '16px 24px',
               marginBottom: 32,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               color: '#FFFFFF',
-              boxShadow: '0 10px 25px -5px rgba(67, 56, 202, 0.3)',
+              boxShadow: 'var(--shadow-md)',
               flexWrap: 'wrap',
               gap: 12
             }}
@@ -206,7 +232,7 @@ export default function CoursesPage() {
               style={{
                 background: 'rgba(255,255,255,0.1)',
                 padding: '6px 14px',
-                borderRadius: 20,
+                borderRadius: 6,
                 fontSize: '0.75rem',
                 fontWeight: 700,
                 letterSpacing: '0.04em',
@@ -339,7 +365,7 @@ export default function CoursesPage() {
           <div
             style={{
               padding: '24px',
-              borderRadius: 16,
+              borderRadius: 8,
               background: '#FEF2F2',
               border: '1px solid #FECACA',
               color: '#991B1B',

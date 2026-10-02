@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { GraduationCap, Lock, Mail, ArrowLeft, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Lock, Mail, ArrowLeft, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react'
 import BrandLogo from '../../components/common/BrandLogo'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
@@ -30,7 +30,7 @@ export default function UnifiedLoginPage() {
   const [resetSuccess, setResetSuccess] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
 
-  const { login } = useAuth()
+  const { login, user: existingUser, isAuthenticated } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
 
@@ -39,6 +39,24 @@ export default function UnifiedLoginPage() {
       setMode('reset')
     }
   }, [resetTokenParam])
+
+  // If already authenticated, redirect to appropriate role dashboard or preserved target
+  useEffect(() => {
+    if (isAuthenticated && existingUser && mode === 'login') {
+      const role = (existingUser?.role || '').toLowerCase()
+      if (role === 'creator') {
+        navigate('/creator/dashboard', { replace: true })
+      } else if (role === 'admin') {
+        navigate('/admin/dashboard', { replace: true })
+      } else {
+        if (redirectParam) {
+          navigate(redirectParam + (enrollParam ? '?enroll=true' : ''), { replace: true })
+        } else {
+          navigate('/student/dashboard', { replace: true })
+        }
+      }
+    }
+  }, [isAuthenticated, existingUser, mode, navigate, redirectParam, enrollParam])
 
   const handleLoginSuccess = (user) => {
     const role = (user?.role || '').toLowerCase()
@@ -152,9 +170,9 @@ export default function UnifiedLoginPage() {
           width: '100%',
           maxWidth: 480,
           background: '#FFFFFF',
-          borderRadius: 20,
+          borderRadius: 'var(--radius-lg, 8px)',
           border: '1px solid var(--color-border)',
-          boxShadow: 'var(--shadow-xl)',
+          boxShadow: 'var(--shadow-lg)',
           padding: '36px 32px',
           boxSizing: 'border-box'
         }}
@@ -167,7 +185,7 @@ export default function UnifiedLoginPage() {
                 Sign In to aivortex
               </h1>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
-                Enter your credentials to access your authorized portal (Student, Creator, or Admin).
+                Enter your credentials to access your account.
               </p>
               {redirectParam && (
                 <div

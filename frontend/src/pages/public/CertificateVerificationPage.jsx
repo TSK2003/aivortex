@@ -111,8 +111,8 @@ export default function CertificateVerificationPage() {
             maxWidth: 640,
             margin: '0 auto 28px auto',
             padding: 'clamp(18px, 4vw, 28px)',
-            borderRadius: 16,
-            boxShadow: '0 4px 16px -2px rgba(15, 23, 42, 0.06)',
+            borderRadius: 8,
+            boxShadow: 'var(--shadow-sm)',
             border: '1px solid var(--color-border)',
             background: '#FFFFFF'
           }}
@@ -198,10 +198,10 @@ export default function CertificateVerificationPage() {
               <div
                 style={{
                   background: '#FFFFFF',
-                  borderRadius: 16,
-                  border: '1.5px solid #22C55E',
+                  borderRadius: 8,
+                  border: '1px solid #22C55E',
                   padding: 'clamp(20px, 3vw, 32px)',
-                  boxShadow: '0 8px 30px -4px rgba(34, 197, 94, 0.15)'
+                  boxShadow: 'var(--shadow-md)'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14, marginBottom: 20 }}>
@@ -276,10 +276,10 @@ export default function CertificateVerificationPage() {
               <div
                 style={{
                   background: '#FFFFFF',
-                  borderRadius: 16,
-                  border: '1.5px solid #EF4444',
+                  borderRadius: 8,
+                  border: '1px solid #EF4444',
                   padding: 28,
-                  boxShadow: '0 8px 24px -4px rgba(239, 68, 68, 0.12)'
+                  boxShadow: 'var(--shadow-md)'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

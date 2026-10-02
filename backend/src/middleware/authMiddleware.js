@@ -1,7 +1,8 @@
 import { UnauthorizedError, ForbiddenError } from '../utils/appError.js'
 import { verifyToken } from '../utils/token.js'
+import prisma from '../config/prisma.js'
 
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   try {
     let token = null
 
@@ -15,12 +16,41 @@ export function requireAuth(req, res, next) {
       token = req.headers.authorization.split(' ')[1]
     }
 
+    // 3. Check query param token (useful for streaming uploads / media downloads)
+    if (!token && req.query && req.query.token) {
+      token = req.query.token
+    }
+
     if (!token) {
       throw new UnauthorizedError('Authentication required. Please sign in.')
     }
 
     const decoded = verifyToken(token)
-    req.user = decoded
+
+    // Authoritative check: User must exist and not be suspended/inactive
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, email: true, name: true, role: true, status: true }
+    })
+
+    if (!user) {
+      throw new UnauthorizedError('Account does not exist or has been removed.')
+    }
+
+    if (user.status === 'SUSPENDED') {
+      throw new ForbiddenError('Your account has been suspended. Please contact platform administration.')
+    }
+
+    if (user.status === 'INACTIVE') {
+      throw new ForbiddenError('Your account is currently inactive.')
+    }
+
+    req.user = {
+      ...decoded,
+      role: user.role,
+      status: user.status
+    }
+
     next()
   } catch (err) {
     if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {

@@ -148,9 +148,9 @@ export default function AboutPage() {
                 key={leader.id}
                 style={{
                   background: '#FFFFFF',
-                  borderRadius: 14,
+                  borderRadius: 8,
                   border: '1px solid #E2E8F0',
-                  boxShadow: '0 4px 14px rgba(15, 23, 42, 0.05)',
+                  boxShadow: 'var(--shadow-sm)',
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
@@ -168,7 +168,7 @@ export default function AboutPage() {
                   }}
                 >
                   <img
-                    src={leader.image}
+                    src={leader.image ? `${leader.image}?v=2` : leader.image}
                     alt={leader.name}
                     style={{
                       width: '100%',
@@ -335,10 +335,10 @@ export default function AboutPage() {
             <div
               style={{
                 background: '#FFFFFF',
-                borderRadius: 14,
+                borderRadius: 8,
                 padding: '36px 32px',
                 border: '1px solid #E2E8F0',
-                boxShadow: '0 4px 14px rgba(15, 23, 42, 0.04)',
+                boxShadow: 'var(--shadow-sm)',
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%'
@@ -377,10 +377,10 @@ export default function AboutPage() {
             <div
               style={{
                 background: '#FFFFFF',
-                borderRadius: 14,
+                borderRadius: 8,
                 padding: '36px 32px',
                 border: '1px solid #E2E8F0',
-                boxShadow: '0 4px 14px rgba(15, 23, 42, 0.04)',
+                boxShadow: 'var(--shadow-sm)',
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%'
@@ -515,11 +515,11 @@ export default function AboutPage() {
         <section
           style={{
             background: '#FFFFFF',
-            borderRadius: 14,
+            borderRadius: 8,
             border: '1px solid #E2E8F0',
             padding: '44px 36px',
             marginBottom: 72,
-            boxShadow: '0 4px 14px rgba(15, 23, 42, 0.04)'
+            boxShadow: 'var(--shadow-sm)'
           }}
         >
           <div style={{ marginBottom: 32, borderBottom: '1px solid #F1F5F9', paddingBottom: 16 }}>
@@ -636,10 +636,10 @@ export default function AboutPage() {
                 key={idx}
                 style={{
                   background: '#FFFFFF',
-                  borderRadius: 14,
+                  borderRadius: 8,
                   padding: '32px 28px',
                   border: '1px solid #E2E8F0',
-                  boxShadow: '0 4px 14px rgba(15, 23, 42, 0.04)'
+                  boxShadow: 'var(--shadow-sm)'
                 }}
               >
                 <div
@@ -722,10 +722,10 @@ export default function AboutPage() {
                 key={idx}
                 style={{
                   background: '#FFFFFF',
-                  borderRadius: 12,
+                  borderRadius: 8,
                   padding: '24px 20px',
                   border: '1px solid #E2E8F0',
-                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.03)',
+                  boxShadow: 'var(--shadow-sm)',
                   display: 'flex',
                   flexDirection: 'column'
                 }}
@@ -775,9 +775,9 @@ export default function AboutPage() {
           style={{
             background: '#0F172A',
             color: '#FFFFFF',
-            borderRadius: 14,
+            borderRadius: 8,
             padding: '52px 40px',
-            boxShadow: '0 12px 32px rgba(15, 23, 42, 0.2)'
+            boxShadow: 'var(--shadow-md)'
           }}
         >
           <div style={{ maxWidth: 780, margin: '0 auto', textAlign: 'center' }}>
@@ -823,7 +823,7 @@ export default function AboutPage() {
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link
                 to="/courses"
-                className="btn btn-primary"
+                className="btn btn-secondary"
                 style={{
                   padding: '12px 28px',
                   fontSize: '0.92rem',

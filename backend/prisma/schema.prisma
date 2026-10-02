@@ -34,6 +34,7 @@ enum CourseStatus {
 
 enum VideoStatus {
   DRAFT
+  INCOMPLETE
   UPLOADED
   SUBMITTED_FOR_REVIEW
   RETURNED_FOR_EDIT
@@ -56,6 +57,14 @@ enum CertificateStatus {
 }
 
 enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  EXPIRED
+}
+
+enum ReviewStatus {
   PENDING
   APPROVED
   REJECTED
@@ -114,6 +123,7 @@ model User {
   qaQuestions           QAQuestion[]
   qaAnswers             QAAnswer[]
   videoStatusChanges    VideoStatusHistory[]
+  reviews               CourseReview[]
 
   @@index([email])
   @@index([role])
@@ -170,19 +180,29 @@ model CreatorProfile {
 model ProfileChangeRequest {
   id                String          @id @default(uuid())
   creatorProfileId  String
+  requestType       String          @default("PROFILE_DATA")
+  currentValue      String?
+  requestedValue    String?
+  reason            String?         @db.Text
+  rejectionReason   String?         @db.Text
   requestedBio      String?         @db.Text
   requestedHeadline String?
   supportingUrl     String?
+  verificationToken String?
+  tokenExpiresAt    DateTime?
+  approvalExpiresAt DateTime?
   status            RequestStatus   @default(PENDING)
   adminNote         String?         @db.Text
   reviewedBy        String?
   reviewedAt        DateTime?
+  completedAt       DateTime?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
   creatorProfile    CreatorProfile  @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
 
   @@index([status])
+  @@index([requestType])
 }
 
 // ----------------------------------------------------
@@ -228,6 +248,7 @@ model Course {
   certificates      Certificate[]
   orders            Order[]
   quizzes           Quiz[]
+  reviews           CourseReview[]
 
   @@index([category])
   @@index([status])
@@ -293,14 +314,14 @@ model Lesson {
   creatorId       String?
   title           String
   description     String?       @db.Text
-  duration        String        @default("15:00")
-  durationSeconds Int           @default(900)
-  videoUrl        String
+  duration        String?       @default("")
+  durationSeconds Int           @default(0)
+  videoUrl        String?
   s3Key           String?
   orderIndex      Int           @default(0)
   isPreview       Boolean       @default(false)
   isPublicDemo    Boolean       @default(false)
-  status          VideoStatus   @default(UPLOADED)
+  status          VideoStatus   @default(DRAFT)
   adminFeedback   String?       @db.Text
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -488,8 +509,8 @@ model Certificate {
   verificationUrl String?
   status          CertificateStatus @default(VALID)
 
-  student         User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course          Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student         User              @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  course          Course            @relation(fields: [courseId], references: [id], onDelete: Restrict)
 
   @@index([certificateCode])
   @@index([studentId])
@@ -514,8 +535,8 @@ model Order {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
-  student           User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course            Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student           User          @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  course            Course        @relation(fields: [courseId], references: [id], onDelete: Restrict)
   paymentEvents     PaymentEvent[]
 
   @@index([orderNumber])
@@ -709,40 +730,141 @@ model ContactEnquiry {
 }
 
 // ----------------------------------------------------
-// 12. PRESERVED DOMAIN PROJECTS & LIVE SESSIONS
+// 12. DYNAMIC ADMIN PROJECTS & LIVE SESSIONS
 // ----------------------------------------------------
 
+model ProjectCategory {
+  id          String          @id @default(uuid())
+  name        String          @unique
+  slug        String          @unique
+  description String?         @db.Text
+  orderIndex  Int             @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt @default(now())
+  projects    DomainProject[]
+
+  @@index([slug])
+  @@index([orderIndex])
+  @@index([isActive])
+}
+
 model DomainProject {
-  id          String   @id @default(uuid())
-  title       String
-  slug        String   @unique
-  category    String
-  description String   @db.Text
-  objective   String   @db.Text
-  tools       String   @default("Python, Pandas, PyTorch")
-  datasetUrl  String?
-  githubUrl   String?
-  orderIndex  Int      @default(0)
-  isFeatured  Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id                  String           @id @default(uuid())
+  title               String
+  slug                String           @unique
+  category            String           @default("genai")
+  categoryLabel       String?
+  categoryId          String?
+  categoryRel         ProjectCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  difficulty          String           @default("Advanced") // Beginner, Intermediate, Advanced
+  duration            String           @default("4 Weeks")
+  badge               String?
+  description         String?          @db.Text
+  detailedDescription String?          @db.Text
+  objective           String?          @db.Text
+  architecture        String?          @db.Text
+  tools               String?          @default("Python, PyTorch")
+  tags                String?          @db.Text // JSON string of tags array
+  deliverables        String?          @db.Text // JSON string of deliverables array
+  architectureUrl     String?
+  datasetUrl          String?
+  githubUrl           String?
+  demoUrl             String?
+  thumbnailUrl        String?
+  ctaText             String?          @default("View Architecture & Code")
+  orderIndex          Int              @default(0)
+  status              String           @default("PUBLISHED") // DRAFT, PUBLISHED, HIDDEN
+  isEnabled           Boolean          @default(true)
+  isFeatured          Boolean          @default(false)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt @default(now())
 
   @@index([category])
+  @@index([categoryId])
   @@index([slug])
+  @@index([status])
+  @@index([orderIndex])
+  @@index([isEnabled])
 }
 
 model LiveSession {
-  id              String   @id @default(uuid())
-  title           String
-  description     String?  @db.Text
-  instructorName  String
-  scheduledAt     DateTime
-  durationMinutes Int      @default(90)
-  meetingUrl      String?
-  recordingUrl    String?
-  status          String   @default("UPCOMING") // UPCOMING, LIVE, COMPLETED, CANCELLED
-  createdAt       DateTime @default(now())
+  id                  String            @id @default(uuid())
+  title               String
+  slug                String?
+  sessionDate         String?
+  scheduledAt         DateTime
+  startTime           String?           @default("6:00 PM")
+  endTime             String?           @default("8:30 PM")
+  timezone            String?           @default("IST")
+  duration            String?           @default("2.5 Hours")
+  durationMinutes     Int               @default(150)
+  speakerName         String            @default("Lead AI Architect")
+  speakerRole         String?           @default("Principal AI Architect")
+  speakerPhoto        String?
+  totalSeats          Int               @default(50)
+  registeredSeats     Int               @default(0)
+  shortDescription    String?           @db.Text
+  detailedDescription String?           @db.Text
+  description         String?           @db.Text
+  instructorName      String?
+  agenda              String?           @db.Text // JSON string of agenda items
+  tags                String?           @db.Text // JSON string of tags
+  ctaText             String?           @default("RSVP for Free Live Masterclass")
+  registrationUrl     String?
+  meetingUrl          String?
+  recordingUrl        String?
+  isRegistrationOpen  Boolean           @default(true)
+  orderIndex          Int               @default(0)
+  status              String            @default("UPCOMING") // DRAFT, UPCOMING, REGISTRATION_OPEN, FULL, COMPLETED, CANCELLED, HIDDEN
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt @default(now())
+  rsvps               LiveSessionRsvp[]
 
   @@index([status])
   @@index([scheduledAt])
+  @@index([orderIndex])
+}
+
+model LiveSessionRsvp {
+  id          String      @id @default(uuid())
+  sessionId   String
+  email       String
+  name        String?
+  createdAt   DateTime    @default(now())
+
+  session     LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, email])
+  @@index([sessionId])
+  @@index([email])
+}
+
+// ----------------------------------------------------
+// 12. COURSE REVIEWS & TESTIMONIALS
+// ----------------------------------------------------
+
+model CourseReview {
+  id              String        @id @default(uuid())
+  studentId       String
+  courseId        String
+  rating          Int           @default(5)
+  title           String?
+  reviewText      String        @db.Text
+  status          ReviewStatus  @default(PENDING)
+  isFeatured      Boolean       @default(false)
+  rejectionReason String?       @db.Text
+  approvedAt      DateTime?
+  approvedBy      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  student         User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course          Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([studentId])
+  @@index([status])
+  @@index([isFeatured])
 }
 

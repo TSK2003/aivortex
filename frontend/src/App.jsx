@@ -1,3 +1,4 @@
+import { ThemeProvider } from './contexts/ThemeContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { ToastProvider } from './contexts/ToastContext'
 import AppRoutes from './routes/AppRoutes'
@@ -8,13 +9,15 @@ import IvortexIntro from './components/common/IvortexIntro'
 export default function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <ToastProvider>
-          <ScrollToTop />
-          <IvortexIntro />
-          <AppRoutes />
-        </ToastProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <ScrollToTop />
+            <IvortexIntro />
+            <AppRoutes />
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   )
 }

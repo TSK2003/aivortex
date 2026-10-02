@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   getAnalyticsOverview,
   getCreators,
+  getNextCreatorUserId,
   getCreatorById,
   createCreator,
   updateCreator,
@@ -38,14 +39,55 @@ import {
   getAdminAboutContent,
   updateAdminAboutContent,
   getAdminFooterContent,
-  updateAdminFooterContent
+  updateAdminFooterContent,
+  getAdminSupportTickets,
+  updateAdminSupportTicketStatus,
+  getAdminContactEnquiries,
+  updateAdminContactEnquiryStatus
 } from '../controllers/adminController.js'
+import {
+  getAdminReviews,
+  approveReview,
+  rejectReview,
+  toggleFeatureReview
+} from '../controllers/reviewController.js'
+import {
+  getAdminProjects,
+  getAdminProjectById,
+  createAdminProject,
+  updateAdminProject,
+  deleteAdminProject,
+  togglePublishAdminProject,
+  toggleEnableAdminProject,
+  reorderAdminProjects,
+  getAdminCategories,
+  createAdminCategory,
+  updateAdminCategory,
+  deleteAdminCategory
+} from '../controllers/projectController.js'
+import {
+  getAdminLiveSessions,
+  getAdminLiveSessionById,
+  createAdminLiveSession,
+  updateAdminLiveSession,
+  deleteAdminLiveSession,
+  updateAdminLiveSessionStatus,
+  duplicateAdminLiveSession,
+  reorderAdminLiveSessions
+} from '../controllers/liveSessionController.js'
+import { uploadAdminMedia } from '../controllers/mediaController.js'
 import { requireAuth, requireRole } from '../middleware/authMiddleware.js'
 
 const router = Router()
 
 // All routes require ADMIN role
 router.use(requireAuth, requireRole('ADMIN'))
+
+// Course Reviews & Quality Moderation
+router.get('/reviews', getAdminReviews)
+router.patch('/reviews/:id/approve', approveReview)
+router.patch('/reviews/:id/reject', rejectReview)
+router.patch('/reviews/:id/feature', toggleFeatureReview)
 
 // Analytics & Overview
 router.get('/overview', getAnalyticsOverview)
@@ -56,6 +98,7 @@ router.patch('/profile', updateAdminProfile)
 
 // Creators Management & Provisioning
 router.get('/creators', getCreators)
+router.get('/creators/next-user-id', getNextCreatorUserId)
 router.post('/creators', createCreator)
 router.get('/creators/:id', getCreatorById)
 router.put('/creators/:id', updateCreator)
@@ -97,6 +140,8 @@ router.get('/enrollments', getEnrollments)
 // Creator Profile Change Requests
 router.get('/requests', getRequests)
 router.patch('/requests/:id', reviewRequest)
+router.post('/requests/:id/review', reviewRequest)
+router.patch('/requests/:id/review', reviewRequest)
 
 // Broadcast Announcements
 router.post('/announcements', broadcastAnnouncement)
@@ -116,5 +161,41 @@ router.get('/about', getAdminAboutContent)
 router.put('/about', updateAdminAboutContent)
 router.get('/footer', getAdminFooterContent)
 router.put('/footer', updateAdminFooterContent)
+
+// Projects Management (Full CRUD, Publishing, Toggle Enable, Reorder, Categories)
+router.get('/projects', getAdminProjects)
+router.post('/projects', createAdminProject)
+router.patch('/projects/reorder', reorderAdminProjects)
+router.get('/projects/categories', getAdminCategories)
+router.post('/projects/categories', createAdminCategory)
+router.put('/projects/categories/:id', updateAdminCategory)
+router.patch('/projects/categories/:id', updateAdminCategory)
+router.delete('/projects/categories/:id', deleteAdminCategory)
+router.get('/projects/:id', getAdminProjectById)
+router.put('/projects/:id', updateAdminProject)
+router.patch('/projects/:id', updateAdminProject)
+router.delete('/projects/:id', deleteAdminProject)
+router.patch('/projects/:id/publish', togglePublishAdminProject)
+router.patch('/projects/:id/toggle-enable', toggleEnableAdminProject)
+
+// Live Sessions Management (Full CRUD, Status, Duplication, Reorder)
+router.get('/live-sessions', getAdminLiveSessions)
+router.post('/live-sessions', createAdminLiveSession)
+router.patch('/live-sessions/reorder', reorderAdminLiveSessions)
+router.get('/live-sessions/:id', getAdminLiveSessionById)
+router.put('/live-sessions/:id', updateAdminLiveSession)
+router.patch('/live-sessions/:id', updateAdminLiveSession)
+router.delete('/live-sessions/:id', deleteAdminLiveSession)
+router.patch('/live-sessions/:id/status', updateAdminLiveSessionStatus)
+router.post('/live-sessions/:id/duplicate', duplicateAdminLiveSession)
+
+// Support Tickets & Contact Enquiries Governance
+router.get('/support-tickets', getAdminSupportTickets)
+router.patch('/support-tickets/:id/status', updateAdminSupportTicketStatus)
+router.get('/contact-enquiries', getAdminContactEnquiries)
+router.patch('/contact-enquiries/:id/status', updateAdminContactEnquiryStatus)
+
+// Media Upload (Projects thumbnails, Speaker photos)
+router.post('/media/upload', uploadAdminMedia)
 
 export default router

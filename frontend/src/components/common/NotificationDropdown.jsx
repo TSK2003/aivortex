@@ -41,13 +41,16 @@ function getNotificationIcon(title = '', message = '') {
   if (text.includes('live') || text.includes('cohort') || text.includes('session') || text.includes('schedule')) {
     return <Calendar size={16} style={{ color: '#8B5CF6' }} />
   }
-  if (text.includes('welcome') || text.includes('congratulations') || text.includes('🎉')) {
+  if (text.includes('welcome') || text.includes('congratulations')) {
     return <Sparkles size={16} style={{ color: '#10B981' }} />
   }
   return <Info size={16} style={{ color: '#64748B' }} />
 }
 
+import { useAuth } from '../../contexts/AuthContext'
+
 export default function NotificationDropdown() {
+  const { user, isAuthenticated } = useAuth()
   const [notifications, setNotifications] = useState([])
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -56,6 +59,7 @@ export default function NotificationDropdown() {
   const navigate = useNavigate()
 
   const fetchNotifications = async () => {
+    if (!isAuthenticated || user?.role !== 'STUDENT') return
     try {
       setLoading(true)
       const res = await api.student.getNotifications()
@@ -65,18 +69,24 @@ export default function NotificationDropdown() {
         setNotifications(res.notifications)
       }
     } catch (err) {
-      console.warn('Failed to load notifications:', err.message)
+      // Graceful error logging without spamming
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'STUDENT') return
     fetchNotifications()
-    // Poll every 35 seconds to keep notifications live
-    const interval = setInterval(fetchNotifications, 35000)
+
+    // Poll every 60 seconds only if tab is currently visible
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchNotifications()
+      }
+    }, 60000)
     return () => clearInterval(interval)
-  }, [])
+  }, [isAuthenticated, user?.role])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -233,7 +243,7 @@ export default function NotificationDropdown() {
                     fontSize: '0.72rem',
                     fontWeight: 700,
                     padding: '2px 8px',
-                    borderRadius: 9999,
+                    borderRadius: 6,
                     border: '1px solid #BFDBFE'
                   }}
                 >
@@ -304,7 +314,7 @@ export default function NotificationDropdown() {
                 color: filter === 'all' ? '#FFFFFF' : '#64748B',
                 border: 'none',
                 padding: '4px 12px',
-                borderRadius: 9999,
+                borderRadius: 6,
                 fontSize: '0.75rem',
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -321,7 +331,7 @@ export default function NotificationDropdown() {
                 color: filter === 'unread' ? '#FFFFFF' : '#64748B',
                 border: 'none',
                 padding: '4px 12px',
-                borderRadius: 9999,
+                borderRadius: 6,
                 fontSize: '0.75rem',
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -372,7 +382,7 @@ export default function NotificationDropdown() {
                     style={{
                       width: 34,
                       height: 34,
-                      borderRadius: 10,
+                      borderRadius: 8,
                       background: notif.isRead ? '#F1F5F9' : '#DBEAFE',
                       display: 'flex',
                       alignItems: 'center',

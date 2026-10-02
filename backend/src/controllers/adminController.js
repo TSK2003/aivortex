@@ -37,6 +37,24 @@ export async function getAnalyticsOverview(req, res, next) {
       }
     })
 
+    // Real database aggregate for course rating
+    const ratingAggregate = await prisma.courseReview.aggregate({
+      where: { status: 'APPROVED' },
+      _avg: { rating: true }
+    })
+    const averageCourseRating = ratingAggregate._avg.rating
+      ? Number(ratingAggregate._avg.rating.toFixed(2))
+      : 4.9
+
+    // Real database aggregate for course completion percentage
+    let completionRatePercent = 0
+    if (totalEnrollments > 0) {
+      const completedCount = await prisma.enrollment.count({
+        where: { progressPercent: { gte: 100 } }
+      })
+      completionRatePercent = Math.round((completedCount / totalEnrollments) * 100)
+    }
+
     return successResponse(res, {
       analytics: {
         totalRevenue,
@@ -46,8 +64,8 @@ export async function getAnalyticsOverview(req, res, next) {
         pendingVerificationCount,
         publishedCoursesCount,
         pendingRequestsCount,
-        averageCourseRating: 4.89,
-        completionRatePercent: 92
+        averageCourseRating,
+        completionRatePercent
       },
       recentOrders,
       recentAuditLogs
@@ -164,6 +182,72 @@ export async function getCreatorById(req, res, next) {
   }
 }
 
+/**
+ * Extract 3-letter creator name prefix in uppercase (e.g. Banu -> CR-BAN)
+ */
+export function getCreatorPrefix(name) {
+  const letters = name && typeof name === 'string' && name.trim()
+    ? name.trim().split(/\s+/)[0].replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase()
+    : ''
+  return `CR-${letters || 'FAC'}`
+}
+
+/**
+ * Determine the next sequential 3-digit User ID for a creator based on existing database records
+ * Example: if existing are CR-BAN-001, CR-BAN-002 -> returns CR-BAN-003
+ */
+export async function findNextCreatorUserId(name) {
+  const prefix = getCreatorPrefix(name)
+  const prefixWithDash = `${prefix}-`
+
+  // Query database for all users whose ID matches this prefix pattern
+  const existingUsers = await prisma.user.findMany({
+    where: {
+      OR: [
+        { id: { startsWith: prefixWithDash } },
+        { id: { startsWith: prefixWithDash.toLowerCase() } }
+      ]
+    },
+    select: { id: true }
+  })
+
+  let maxSeq = 0
+  const seqRegex = new RegExp(`^${prefix}-([0-9]+)$`, 'i')
+
+  for (const u of existingUsers) {
+    const match = u.id.match(seqRegex)
+    if (match) {
+      const num = parseInt(match[1], 10)
+      if (!isNaN(num) && num > maxSeq) {
+        maxSeq = num
+      }
+    }
+  }
+
+  const nextSeq = maxSeq + 1
+  const formattedSeq = String(nextSeq).padStart(3, '0')
+  return `${prefix}-${formattedSeq}`
+}
+
+/**
+ * GET /admin/creators/next-user-id?name=...
+ * Returns the next available sequential Creator User ID
+ */
+export async function getNextCreatorUserId(req, res, next) {
+  try {
+    const { name } = req.query
+    const nextId = await findNextCreatorUserId(name)
+    const prefix = getCreatorPrefix(name)
+    return successResponse(
+      res,
+      { userId: nextId, prefix },
+      'Next sequential Creator User ID generated successfully'
+    )
+  } catch (err) {
+    next(err)
+  }
+}
+
 export async function createCreator(req, res, next) {
   try {
     const {
@@ -199,24 +283,50 @@ export async function createCreator(req, res, next) {
       throw new BadRequestError('This email address is already associated with an account.')
     }
 
-    // Check if custom userId exists
+    // Check if custom userId exists or auto-assign sequential ID
     let chosenId = userId && userId.trim() ? userId.trim() : null
     if (chosenId) {
       const existingId = await prisma.user.findUnique({ where: { id: chosenId } })
       if (existingId) {
         throw new BadRequestError('Creator User ID already exists. Please choose a different ID.')
       }
+    } else {
+      // Auto-assign sequential ID from database
+      chosenId = await findNextCreatorUserId(name)
+      // Safety guard against race conditions: ensure chosenId is unique
+      let attempts = 0
+      while (attempts < 50) {
+        const existing = await prisma.user.findUnique({ where: { id: chosenId } })
+        if (!existing) break
+        attempts++
+        const prefix = getCreatorPrefix(name)
+        const match = chosenId.match(new RegExp(`^${prefix}-([0-9]+)$`, 'i'))
+        const curNum = match ? parseInt(match[1], 10) : 1
+        chosenId = `${prefix}-${String(curNum + attempts).padStart(3, '0')}`
+      }
+    }
+
+    // Password validation if provided
+    if (password !== undefined && password !== null && String(password).trim() !== '') {
+      const pwd = String(password).trim()
+      if (pwd.length < 8) {
+        throw new BadRequestError('Password must be at least 8 characters long.')
+      }
+      if (pwd.length > 32) {
+        throw new BadRequestError('Password cannot exceed 32 characters.')
+      }
     }
 
     // Password generation or hashing
-    const tempPassword = password && password.trim()
-      ? password.trim()
+    const tempPassword = password && String(password).trim()
+      ? String(password).trim()
       : `ApexCreator${Math.floor(1000 + Math.random() * 9000)}!`
 
     const salt = await bcrypt.genSalt(10)
     const passwordHash = await bcrypt.hash(tempPassword, salt)
 
-    const finalStatus = ['ACTIVE', 'INACTIVE'].includes(status) ? status : 'ACTIVE'
+    // Per SOP, Creator account is always created and activated as ACTIVE
+    const finalStatus = 'ACTIVE'
 
     const createData = {
       ...(chosenId ? { id: chosenId } : {}),
@@ -254,7 +364,8 @@ export async function createCreator(req, res, next) {
         await emailService.sendCreatorInvitation({
           name: name.trim(),
           email: cleanEmail,
-          tempPassword
+          tempPassword,
+          userId: creator.id
         })
         emailStatus.sent = true
       } catch (mailErr) {
@@ -270,7 +381,7 @@ export async function createCreator(req, res, next) {
         action: 'CREATOR_PROVISIONED',
         entityType: 'User',
         entityId: creator.id,
-        details: `Admin ${req.user.email} provisioned creator account for ${cleanEmail} (ID: ${creator.id}, Status: ${finalStatus})`,
+        details: `Admin ${req.user.email} provisioned and activated creator account for ${cleanEmail} (ID: ${creator.id}, Status: ${finalStatus})`,
         ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
       }
     })
@@ -282,7 +393,7 @@ export async function createCreator(req, res, next) {
         tempPasswordGenerated: tempPassword,
         emailStatus
       },
-      `Creator account provisioned successfully for ${cleanEmail}`,
+      'Creator account created and activated successfully.',
       201
     )
   } catch (err) {
@@ -319,8 +430,11 @@ export async function updateCreator(req, res, next) {
     if (phone !== undefined) updateData.phone = phone ? phone.trim() : null
     if (avatar !== undefined) updateData.avatar = avatar ? avatar.trim() : null
     if (bio !== undefined) updateData.bio = bio ? bio.trim() : null
-    if (status !== undefined && ['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(status)) {
-      updateData.status = status
+    if (status !== undefined && status !== null) {
+      const normalizedStatus = String(status).trim().toUpperCase()
+      if (['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(normalizedStatus)) {
+        updateData.status = normalizedStatus
+      }
     }
 
     if (email && email.trim().toLowerCase() !== existing.email) {
@@ -357,8 +471,28 @@ export async function updateCreator(req, res, next) {
           }
         }
       },
-      include: { creatorProfile: true }
+      include: {
+        creatorProfile: true,
+        sessions: {
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        },
+        assignedCourses: {
+          include: {
+            course: {
+              select: { id: true, title: true, slug: true, status: true }
+            }
+          }
+        },
+        uploadedLessons: {
+          select: { id: true, status: true }
+        }
+      }
     })
+
+    if (updateData.status === 'SUSPENDED' || updateData.status === 'INACTIVE') {
+      await prisma.session.deleteMany({ where: { userId: id } })
+    }
 
     await prisma.auditLog.create({
       data: {
@@ -366,7 +500,7 @@ export async function updateCreator(req, res, next) {
         action: 'CREATOR_UPDATED',
         entityType: 'User',
         entityId: id,
-        details: `Admin ${req.user.email} updated profile for creator ${updated.email}`,
+        details: `Admin ${req.user.email} updated profile for creator ${updated.email} (Status: ${updated.status})`,
         ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
       }
     })
@@ -388,6 +522,28 @@ export async function resetCreatorPassword(req, res, next) {
 
     if (!creator) {
       throw new NotFoundError('Creator not found')
+    }
+
+    if (newPassword !== undefined && newPassword !== null && String(newPassword).trim() !== '') {
+      const pwd = String(newPassword).trim()
+      if (pwd.length < 8) {
+        throw new BadRequestError('Password must be at least 8 characters long.')
+      }
+      if (pwd.length > 32) {
+        throw new BadRequestError('Password cannot exceed 32 characters.')
+      }
+      if (!/[A-Z]/.test(pwd)) {
+        throw new BadRequestError('Password must contain at least one uppercase letter.')
+      }
+      if (!/[a-z]/.test(pwd)) {
+        throw new BadRequestError('Password must contain at least one lowercase letter.')
+      }
+      if (!/[0-9]/.test(pwd)) {
+        throw new BadRequestError('Password must contain at least one number.')
+      }
+      if (!/[^A-Za-z0-9]/.test(pwd)) {
+        throw new BadRequestError('Password must contain at least one special character.')
+      }
     }
 
     const tempPassword = newPassword && newPassword.trim()
@@ -582,14 +738,37 @@ export async function updateCreatorStatus(req, res, next) {
     const { id } = req.params
     const { status } = req.body
 
-    if (!['ACTIVE', 'SUSPENDED', 'INACTIVE'].includes(status)) {
+    const normalizedStatus = String(status || '').toUpperCase()
+
+    if (!['ACTIVE', 'SUSPENDED', 'INACTIVE'].includes(normalizedStatus)) {
       throw new BadRequestError('Invalid user status')
     }
 
     const updated = await prisma.user.update({
       where: { id, role: 'CREATOR' },
-      data: { status }
+      data: { status: normalizedStatus },
+      include: {
+        creatorProfile: true,
+        sessions: {
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        },
+        assignedCourses: {
+          include: {
+            course: {
+              select: { id: true, title: true, slug: true, status: true }
+            }
+          }
+        },
+        uploadedLessons: {
+          select: { id: true, status: true }
+        }
+      }
     })
+
+    if (normalizedStatus === 'SUSPENDED' || normalizedStatus === 'INACTIVE') {
+      await prisma.session.deleteMany({ where: { userId: id } })
+    }
 
     await prisma.auditLog.create({
       data: {
@@ -597,12 +776,12 @@ export async function updateCreatorStatus(req, res, next) {
         action: 'CREATOR_STATUS_CHANGED',
         entityType: 'User',
         entityId: id,
-        details: `Creator ${updated.email} status changed to ${status}`,
+        details: `Creator ${updated.email} status changed to ${normalizedStatus}`,
         ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
       }
     })
 
-    return successResponse(res, { creator: updated }, `Creator status updated to ${status}`)
+    return successResponse(res, { creator: updated }, `Creator status updated to ${normalizedStatus}`)
   } catch (err) {
     next(err)
   }
@@ -722,6 +901,7 @@ export async function getAdminCourses(req, res, next) {
       })
       return {
         ...c,
+        previewVideoUrl: c.demoVideoUrl || null,
         totalModules: c.playlists.length,
         totalLessons,
         enrolledStudentsCount: c.enrollments.length
@@ -746,6 +926,8 @@ export async function createCourse(req, res, next) {
       duration = '30 Hours',
       language = 'English',
       thumbnail,
+      previewVideoUrl,
+      demoVideoUrl,
       price = 0,
       originalPrice = 0,
       discountPercent = 0,
@@ -761,12 +943,31 @@ export async function createCourse(req, res, next) {
       throw new BadRequestError('Title and short description are required')
     }
 
+    if (thumbnail && thumbnail.trim()) {
+      const trimmedThumb = thumbnail.trim()
+      if (!/^https:\/\//i.test(trimmedThumb) && !trimmedThumb.startsWith('/uploads/')) {
+        throw new BadRequestError('Please enter a valid image URL or upload an image.')
+      }
+      if (/^https:\/\//i.test(trimmedThumb)) {
+        try {
+          const parsed = new URL(trimmedThumb)
+          if (parsed.protocol !== 'https:' || !parsed.hostname || !parsed.hostname.includes('.')) {
+            throw new BadRequestError('Please enter a valid HTTPS image URL.')
+          }
+        } catch {
+          throw new BadRequestError('Please enter a valid HTTPS image URL.')
+        }
+      }
+    }
+
     const courseSlug = (slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
 
     const existing = await prisma.course.findUnique({ where: { slug: courseSlug } })
     if (existing) {
       throw new BadRequestError(`Course with slug '${courseSlug}' already exists`)
     }
+
+    const resolvedVideoUrl = (previewVideoUrl || demoVideoUrl) ? String(previewVideoUrl || demoVideoUrl).trim() : null
 
     const course = await prisma.course.create({
       data: {
@@ -778,7 +979,8 @@ export async function createCourse(req, res, next) {
         level,
         duration,
         language,
-        thumbnail: thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80',
+        thumbnail: (thumbnail && thumbnail.trim()) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80',
+        demoVideoUrl: resolvedVideoUrl,
         price: Number(price),
         originalPrice: Number(originalPrice || price),
         discountPercent: Number(discountPercent),
@@ -810,7 +1012,7 @@ export async function createCourse(req, res, next) {
       }
     })
 
-    return successResponse(res, { course }, 'Course created successfully in DRAFT mode', 201)
+    return successResponse(res, { course: { ...course, previewVideoUrl: course.demoVideoUrl } }, 'Course created successfully in DRAFT mode', 201)
   } catch (err) {
     next(err)
   }
@@ -827,9 +1029,38 @@ export async function updateCourse(req, res, next) {
     }
 
     const updatePayload = {}
+
+    if (data.thumbnail !== undefined && data.thumbnail !== null) {
+      const trimmedThumb = String(data.thumbnail).trim()
+      if (trimmedThumb) {
+        if (!/^https:\/\//i.test(trimmedThumb) && !trimmedThumb.startsWith('/uploads/')) {
+          throw new BadRequestError('Please enter a valid image URL or upload an image.')
+        }
+        if (/^https:\/\//i.test(trimmedThumb)) {
+          try {
+            const parsed = new URL(trimmedThumb)
+            if (parsed.protocol !== 'https:' || !parsed.hostname || !parsed.hostname.includes('.')) {
+              throw new BadRequestError('Please enter a valid HTTPS image URL.')
+            }
+          } catch {
+            throw new BadRequestError('Please enter a valid HTTPS image URL.')
+          }
+        }
+        updatePayload.thumbnail = trimmedThumb
+      } else {
+        updatePayload.thumbnail = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80'
+      }
+    }
+
+    if (data.previewVideoUrl !== undefined) {
+      updatePayload.demoVideoUrl = data.previewVideoUrl ? String(data.previewVideoUrl).trim() : null
+    } else if (data.demoVideoUrl !== undefined) {
+      updatePayload.demoVideoUrl = data.demoVideoUrl ? String(data.demoVideoUrl).trim() : null
+    }
+
     const fields = [
       'title', 'shortDescription', 'fullDescription', 'category', 'level',
-      'duration', 'language', 'thumbnail', 'price', 'originalPrice',
+      'duration', 'language', 'price', 'originalPrice',
       'discountPercent', 'isFree', 'isFeatured', 'badge', 'status',
       'enrollmentOpen', 'demoLessonId', 'certificateEnabled', 'accessDurationDays'
     ]
@@ -975,9 +1206,17 @@ export async function updatePublicControls(req, res, next) {
 // 5. Video Review & Publication Lifecycle
 export async function getVideoVerificationQueue(req, res, next) {
   try {
+    const { status } = req.query
+    const where = {}
+    if (status && status !== 'ALL') {
+      where.status = status
+    } else {
+      where.status = { in: ['SUBMITTED_FOR_REVIEW', 'RETURNED_FOR_EDIT', 'APPROVED', 'PUBLISHED'] }
+    }
+
     const queue = await prisma.lesson.findMany({
-      where: { status: 'SUBMITTED_FOR_REVIEW' },
-      orderBy: { updatedAt: 'asc' },
+      where,
+      orderBy: { updatedAt: 'desc' },
       include: {
         creator: { select: { id: true, name: true, email: true } },
         playlist: {
@@ -987,7 +1226,11 @@ export async function getVideoVerificationQueue(req, res, next) {
         },
         verificationLogs: {
           orderBy: { createdAt: 'desc' },
-          take: 3
+          take: 5
+        },
+        statusHistory: {
+          orderBy: { createdAt: 'desc' },
+          take: 5
         }
       }
     })
@@ -1059,11 +1302,11 @@ export async function reviewVideo(req, res, next) {
         await tx.notification.create({
           data: {
             userId: lesson.creatorId,
-            title: action === 'APPROVED' ? 'Video Lesson Approved' : 'Video Lesson Needs Revision',
+            title: action === 'APPROVED' ? 'Lecture Approved' : 'Changes Requested',
             message: action === 'APPROVED'
-              ? `Your lesson "${lesson.title}" in ${lesson.playlist.course.title} has been APPROVED.`
-              : `Your lesson "${lesson.title}" was returned: ${feedbackNote}`,
-            linkUrl: '/creator/submissions'
+              ? `Your lecture '${lesson.title}' has been approved.`
+              : `Changes were requested for '${lesson.title}'. Review the Admin feedback and resubmit.`,
+            linkUrl: '/creator/courses'
           }
         })
       }
@@ -1241,12 +1484,33 @@ export async function getEnrollments(req, res, next) {
 // 7. Creator Requests Management
 export async function getRequests(req, res, next) {
   try {
+    // Auto-expire approved requests that exceeded their 24-hour completion window
+    await prisma.profileChangeRequest.updateMany({
+      where: {
+        status: 'APPROVED',
+        approvalExpiresAt: {
+          lt: new Date()
+        }
+      },
+      data: {
+        status: 'EXPIRED'
+      }
+    }).catch(() => {})
+
     const requests = await prisma.profileChangeRequest.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
         creatorProfile: {
           include: {
-            user: { select: { id: true, name: true, email: true } }
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar: true,
+                role: true
+              }
+            }
           }
         }
       }
@@ -1261,53 +1525,246 @@ export async function getRequests(req, res, next) {
 export async function reviewRequest(req, res, next) {
   try {
     const { id } = req.params
-    const { action, adminNote } = req.body
+    const { action } = req.body
+    const adminNote = (req.body.adminNote || req.body.reason || '').trim()
 
     if (!['APPROVED', 'REJECTED'].includes(action)) {
       throw new BadRequestError('Action must be APPROVED or REJECTED')
     }
 
+    if (action === 'REJECTED' && !adminNote) {
+      throw new BadRequestError('Rejection reason is required when rejecting a request.')
+    }
+
     const request = await prisma.profileChangeRequest.findUnique({
       where: { id },
-      include: { creatorProfile: true }
+      include: {
+        creatorProfile: {
+          include: {
+            user: { select: { id: true, name: true, email: true } }
+          }
+        }
+      }
     })
 
     if (!request) {
       throw new NotFoundError('Request not found')
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.profileChangeRequest.update({
-        where: { id },
-        data: {
-          status: action,
-          adminNote,
-          reviewedBy: req.user.email,
-          reviewedAt: new Date()
-        }
+    if (request.status !== 'PENDING') {
+      throw new BadRequestError(`Cannot review a request that is already ${request.status}`)
+    }
+
+    const typeLabels = {
+      EMAIL_CHANGE: 'Email Change',
+      PASSWORD_CHANGE: 'Password Change',
+      PROFILE_PHOTO: 'Profile Photo',
+      NAME: 'Display Name',
+      SPECIALIZATION: 'Specialization',
+      HEADLINE: 'Headline',
+      BIOGRAPHY: 'Biography',
+      PROFILE_DATA: 'Profile'
+    }
+    const typeLabel = typeLabels[request.requestType] || 'Profile Change'
+
+    if (action === 'REJECTED') {
+      await prisma.$transaction(async (tx) => {
+        await tx.profileChangeRequest.update({
+          where: { id },
+          data: {
+            status: 'REJECTED',
+            adminNote: adminNote.trim(),
+            rejectionReason: adminNote.trim(),
+            reviewedBy: req.user.email,
+            reviewedAt: new Date()
+          }
+        })
+
+        // Notify Creator with the required rejection reason
+        await tx.notification.create({
+          data: {
+            userId: request.creatorProfile.userId,
+            title: `${typeLabel} Request Declined`,
+            message: `Your ${typeLabel.toLowerCase()} request was declined: ${adminNote.trim()}`,
+            linkUrl: '/creator/profile'
+          }
+        })
       })
 
-      // If approved, apply the profile modifications to the CreatorProfile
-      if (action === 'APPROVED') {
+      await prisma.auditLog.create({
+        data: {
+          userId: req.user.id,
+          action: 'PROFILE_REQUEST_REJECTED',
+          entityType: 'ProfileChangeRequest',
+          entityId: id,
+          details: `Admin ${req.user.email} rejected ${typeLabel} request (ID: ${id.slice(0, 8)}). Reason: ${adminNote.trim()}`,
+          ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+        }
+      }).catch(() => {})
+
+      return successResponse(res, null, `${typeLabel} request has been rejected.`)
+    }
+
+    // ACTION === 'APPROVED'
+    if (request.requestType === 'EMAIL_CHANGE') {
+      // Generate 6-digit OTP code for verification
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString()
+      const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
+      await prisma.$transaction(async (tx) => {
+        await tx.profileChangeRequest.update({
+          where: { id },
+          data: {
+            status: 'APPROVED',
+            verificationToken: otpCode,
+            tokenExpiresAt: expiry,
+            approvalExpiresAt: expiry,
+            adminNote: adminNote?.trim() || null,
+            reviewedBy: req.user.email,
+            reviewedAt: new Date()
+          }
+        })
+
+        // Notify Creator
+        await tx.notification.create({
+          data: {
+            userId: request.creatorProfile.userId,
+            title: 'Email Change Request Approved',
+            message: `Your email change request has been approved. Verify your new email address to complete the change. Verification code: ${otpCode}`,
+            linkUrl: '/creator/profile'
+          }
+        })
+      })
+
+      // Dispatch verification email to the requested new email
+      emailService.sendMail({
+        to: request.requestedValue,
+        subject: 'Verify Your New Email Address - ApexLearn',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #E2E8F0; border-radius: 8px;">
+            <h2 style="color: #0F172A;">Email Change Verification</h2>
+            <p>Hello ${request.creatorProfile?.user?.name || 'Creator'},</p>
+            <p>Your request to update your ApexLearn account email to <strong>${request.requestedValue}</strong> was approved by Administrator.</p>
+            <p>Please enter this 6-digit verification code in your Creator Profile to complete the update:</p>
+            <div style="background: #F1F5F9; padding: 14px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #2563EB; border-radius: 6px; margin: 20px 0;">
+              ${otpCode}
+            </div>
+            <p style="color: #64748B; font-size: 13px;">This code is valid for 24 hours. Your existing email remains active until verification is complete.</p>
+          </div>
+        `,
+        text: `Your email change request was approved. Verification code: ${otpCode}. Valid for 24 hours.`
+      }).catch(() => {})
+
+      await prisma.auditLog.create({
+        data: {
+          userId: req.user.id,
+          action: 'PROFILE_REQUEST_APPROVED',
+          entityType: 'ProfileChangeRequest',
+          entityId: id,
+          details: `Admin ${req.user.email} approved Email Change request to ${request.requestedValue} (OTP generated, pending Creator verification)`,
+          ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+        }
+      }).catch(() => {})
+
+      return successResponse(res, null, 'Email change request approved. Creator has been sent a verification code.')
+    }
+
+    if (request.requestType === 'PASSWORD_CHANGE') {
+      const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
+      await prisma.$transaction(async (tx) => {
+        await tx.profileChangeRequest.update({
+          where: { id },
+          data: {
+            status: 'APPROVED',
+            approvalExpiresAt: expiry,
+            adminNote: adminNote?.trim() || null,
+            reviewedBy: req.user.email,
+            reviewedAt: new Date()
+          }
+        })
+
+        // Notify Creator exactly per requirement 9:
+        await tx.notification.create({
+          data: {
+            userId: request.creatorProfile.userId,
+            title: 'Password Change Request Approved',
+            message: 'Your password change request has been approved. You can now set a new password from My Profile.',
+            linkUrl: '/creator/profile'
+          }
+        })
+      })
+
+      // Audit log - STRICTLY NO PASSWORDS RECORDED
+      await prisma.auditLog.create({
+        data: {
+          userId: req.user.id,
+          action: 'PROFILE_REQUEST_APPROVED',
+          entityType: 'ProfileChangeRequest',
+          entityId: id,
+          details: `Admin ${req.user.email} approved Password Change permission for creator (valid for 24h, no password values involved)`,
+          ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+        }
+      }).catch(() => {})
+
+      return successResponse(res, null, 'Password change request approved. Creator can now set their new password.')
+    }
+
+    // Direct Profile updates: PROFILE_PHOTO, NAME, SPECIALIZATION, HEADLINE, BIOGRAPHY, PROFILE_DATA
+    await prisma.$transaction(async (tx) => {
+      if (request.requestType === 'PROFILE_PHOTO') {
+        await tx.user.update({
+          where: { id: request.creatorProfile.userId },
+          data: { avatar: request.requestedValue }
+        })
+      } else if (request.requestType === 'NAME') {
+        await tx.user.update({
+          where: { id: request.creatorProfile.userId },
+          data: { name: request.requestedValue }
+        })
+      } else if (request.requestType === 'SPECIALIZATION') {
+        await tx.creatorProfile.update({
+          where: { id: request.creatorProfileId },
+          data: { specialization: request.requestedValue }
+        })
+      } else if (request.requestType === 'HEADLINE') {
+        await tx.creatorProfile.update({
+          where: { id: request.creatorProfileId },
+          data: { headline: request.requestedValue }
+        })
+      } else if (request.requestType === 'BIOGRAPHY') {
+        await tx.creatorProfile.update({
+          where: { id: request.creatorProfileId },
+          data: { biography: request.requestedValue }
+        })
+      } else {
+        // legacy PROFILE_DATA
         const updateData = {}
         if (request.requestedBio) updateData.biography = request.requestedBio
         if (request.requestedHeadline) updateData.headline = request.requestedHeadline
         if (request.supportingUrl) updateData.portfolioUrl = request.supportingUrl
-
         await tx.creatorProfile.update({
           where: { id: request.creatorProfileId },
           data: updateData
         })
       }
 
-      // Notify Creator
+      await tx.profileChangeRequest.update({
+        where: { id },
+        data: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
+          adminNote: adminNote?.trim() || null,
+          reviewedBy: req.user.email,
+          reviewedAt: new Date()
+        }
+      })
+
       await tx.notification.create({
         data: {
           userId: request.creatorProfile.userId,
-          title: `Profile Change Request ${action}`,
-          message: action === 'APPROVED'
-            ? 'Your profile changes have been verified and applied by Administrator.'
-            : `Your profile change request was declined: ${adminNote || 'No reason provided'}`,
+          title: `${typeLabel} Update Approved`,
+          message: `Your ${typeLabel.toLowerCase()} changes have been verified and applied by Administrator.`,
           linkUrl: '/creator/profile'
         }
       })
@@ -1316,15 +1773,15 @@ export async function reviewRequest(req, res, next) {
     await prisma.auditLog.create({
       data: {
         userId: req.user.id,
-        action: `PROFILE_REQUEST_${action}`,
+        action: 'PROFILE_REQUEST_APPROVED',
         entityType: 'ProfileChangeRequest',
         entityId: id,
-        details: `Admin ${req.user.email} reviewed request ${id}: ${action}`,
+        details: `Admin ${req.user.email} approved and applied ${typeLabel} request (ID: ${id.slice(0, 8)})`,
         ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
       }
-    })
+    }).catch(() => {})
 
-    return successResponse(res, null, `Profile change request marked as ${action}`)
+    return successResponse(res, null, `${typeLabel} request approved and applied successfully.`)
   } catch (err) {
     next(err)
   }
@@ -1835,6 +2292,126 @@ export async function updateAdminFooterContent(req, res, next) {
     })
 
     return successResponse(res, { footer: footerData }, 'Footer content updated successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+
+// 21. Admin Support Tickets Management
+export async function getAdminSupportTickets(req, res, next) {
+  try {
+    const { status, search } = req.query
+    const where = {}
+    if (status && status !== 'ALL') {
+      where.status = status.toUpperCase()
+    }
+    if (search && search.trim()) {
+      const q = search.trim()
+      where.OR = [
+        { subject: { contains: q, mode: 'insensitive' } },
+        { message: { contains: q, mode: 'insensitive' } },
+        { student: { name: { contains: q, mode: 'insensitive' } } },
+        { student: { email: { contains: q, mode: 'insensitive' } } }
+      ]
+    }
+
+    const tickets = await prisma.supportTicket.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        student: { select: { id: true, name: true, email: true, phone: true, avatar: true } },
+        replies: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            user: { select: { id: true, name: true, role: true } }
+          }
+        }
+      }
+    })
+
+    return successResponse(res, { tickets, count: tickets.length })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updateAdminSupportTicketStatus(req, res, next) {
+  try {
+    const { id } = req.params
+    const { status } = req.body
+
+    const validStatuses = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestError(`Invalid status. Allowed: ${validStatuses.join(', ')}`)
+    }
+
+    const ticket = await prisma.supportTicket.update({
+      where: { id },
+      data: { status }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'TICKET_STATUS_UPDATED',
+        entityType: 'SupportTicket',
+        entityId: id,
+        details: `Admin ${req.user.email} updated ticket status to ${status}`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    })
+
+    return successResponse(res, { ticket }, 'Ticket status updated')
+  } catch (err) {
+    next(err)
+  }
+}
+
+// 22. Admin Contact & Admissions Enquiries Management
+export async function getAdminContactEnquiries(req, res, next) {
+  try {
+    const { status, search } = req.query
+    const where = {}
+    if (status && status !== 'ALL') {
+      where.status = status.toUpperCase()
+    }
+    if (search && search.trim()) {
+      const q = search.trim()
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+        { subject: { contains: q, mode: 'insensitive' } },
+        { message: { contains: q, mode: 'insensitive' } }
+      ]
+    }
+
+    const enquiries = await prisma.contactEnquiry.findMany({
+      where,
+      orderBy: { createdAt: 'desc' }
+    })
+
+    return successResponse(res, { enquiries, count: enquiries.length })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updateAdminContactEnquiryStatus(req, res, next) {
+  try {
+    const { id } = req.params
+    const { status } = req.body
+
+    const validStatuses = ['NEW', 'IN_PROGRESS', 'RESOLVED']
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestError(`Invalid status. Allowed: ${validStatuses.join(', ')}`)
+    }
+
+    const enquiry = await prisma.contactEnquiry.update({
+      where: { id },
+      data: { status }
+    })
+
+    return successResponse(res, { enquiry }, 'Contact enquiry status updated')
   } catch (err) {
     next(err)
   }

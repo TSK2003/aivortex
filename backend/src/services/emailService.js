@@ -68,24 +68,26 @@ export const emailService = {
   /**
    * Creator Welcome & Account Invitation Email Template
    */
-  sendCreatorInvitation: async ({ name, creatorName, email, toEmail, tempPassword, setupUrl }) => {
+  sendCreatorInvitation: async ({ name, creatorName, email, toEmail, tempPassword, setupUrl, userId }) => {
     const baseUrl = getAppBaseUrl()
     const targetEmail = email || toEmail
     const targetName = name || creatorName || 'Curriculum Creator'
-    const subject = 'Welcome to ApexLearn Creator Studio — Your Account is Ready'
+    const subject = 'Welcome to ApexLearn Creator Studio — Your Account is Ready & Activated'
     const html = `
       <div style="font-family: 'Plus Jakarta Sans', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #0F172A;">
         <div style="text-align: center; margin-bottom: 24px;">
           <h2 style="color: #2563EB; margin: 0;">ApexLearn Institute</h2>
-          <p style="color: #64748B; font-size: 14px; margin-top: 4px;">CREATOR STUDIO INVITATION</p>
+          <p style="color: #64748B; font-size: 14px; margin-top: 4px;">CREATOR STUDIO ONBOARDING</p>
         </div>
         <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 24px;">
           <p>Hello <strong>${targetName}</strong>,</p>
-          <p>You have been officially provisioned as an authorized Curriculum Creator on the ApexLearn technical learning platform.</p>
+          <p>Your curriculum faculty account has been created and officially activated on the ApexLearn learning platform.</p>
           <div style="background: #EFF6FF; border-left: 4px solid #2563EB; padding: 12px 16px; margin: 20px 0;">
-            <p style="margin: 0; font-size: 14px;"><strong>Your Temporary Credentials:</strong></p>
+            <p style="margin: 0; font-size: 14px;"><strong>Your Account Credentials:</strong></p>
+            ${userId ? `<p style="margin: 4px 0 0 0; font-size: 14px;">Creator User ID: <code>${userId}</code></p>` : ''}
             <p style="margin: 4px 0 0 0; font-size: 14px;">Email: <code>${targetEmail}</code></p>
-            <p style="margin: 4px 0 0 0; font-size: 14px;">Temporary Password: <code>${tempPassword || 'creatorTempPassword2026!'}</code></p>
+            <p style="margin: 4px 0 0 0; font-size: 14px;">Password: <code>${tempPassword || 'creatorTempPassword2026!'}</code></p>
+            <p style="margin: 6px 0 0 0; font-size: 13px; color: #16A34A; font-weight: 600;">Account Status: Active</p>
           </div>
           <p>Please log in to your Creator Portal to build playlists, upload lecture modules, and submit content for review:</p>
           <div style="text-align: center; margin: 24px 0;">

@@ -75,24 +75,117 @@
   --spacing-3xl: 5rem;        /* 80px */
   --spacing-4xl: 7.5rem;      /* 120px */
 
-  /* Radius */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-full: 9999px;
+  /* Radius - Strict Enterprise SaaS Tokens */
+  --radius-xs: 4px;
+  --radius-sm: 6px;           /* Inputs, buttons, dropdowns, badges */
+  --radius-md: 8px;           /* Cards, panels, modals, tables */
+  --radius-lg: 8px;           /* Identical to md — max component radius */
+  --radius-xl: 8px;           /* Locked to 8px — no escalation */
+  --radius-full: 9999px;      /* Avatars ONLY — never for badges/buttons */
 
-  /* Premium White-First Shadows & Glows */
-  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 14px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -1px rgba(15, 23, 42, 0.03);
-  --shadow-lg: 0 12px 28px -4px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
-  --shadow-xl: 0 24px 48px -8px rgba(15, 23, 42, 0.12), 0 8px 20px -4px rgba(15, 23, 42, 0.04);
-  --shadow-card-hover: 0 20px 36px -6px rgba(37, 99, 235, 0.14), 0 8px 16px -4px rgba(15, 23, 42, 0.05);
-  --shadow-blue-glow: 0 10px 30px -5px rgba(37, 99, 235, 0.25);
+  /* Component Dimension Tokens */
+  --height-btn: 36px;
+  --height-btn-sm: 32px;
+  --height-btn-lg: 44px;
+  --height-input: 40px;
+  --height-sidebar-item: 38px;
+  --height-table-row: 52px;
+  --height-topbar: 64px;
+  --width-sidebar: 260px;
+  --width-sidebar-collapsed: 76px;
+  --width-content-max: 1280px;
 
-  /* Transitions */
+  /* Enterprise Subtle Shadows — structure through borders, not elevation */
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 2px 6px -1px rgba(15, 23, 42, 0.06), 0 1px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-xl: 0 6px 12px -3px rgba(15, 23, 42, 0.07), 0 3px 6px -4px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 2px 8px 0 rgba(15, 23, 42, 0.06);
+  --shadow-dropdown: 0 4px 16px -2px rgba(15, 23, 42, 0.1), 0 2px 6px -2px rgba(15, 23, 42, 0.05);
+  --shadow-blue-glow: none;
+
+  /* Transitions - Fast & Usability-first */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Centralized Header, Sidebar, Input Surface tokens for Light Mode */
+  --color-header-bg: #FFFFFF;
+  --color-sidebar-bg: #FFFFFF;
+  --color-input-bg: #FFFFFF;
+  --color-input-border: #CBD5E1;
+  color-scheme: light;
 }
+
+/* ==================================================
+   CENTRALIZED SAAS DARK THEME DESIGN TOKENS
+   Deep charcoal / dark navy palette with blue branding
+================================================== */
+:root[data-theme='dark'],
+[data-theme='dark'],
+.dark-theme {
+  color-scheme: dark;
+  /* Brand Colors - crisp contrast against dark surfaces */
+  --color-primary: #F8FAFC;         /* White / near-white primary text */
+  --color-primary-dark: #FFFFFF;
+  --color-primary-light: #E2E8F0;
+  --color-secondary: #3B82F6;       /* Modern royal/electric blue accent */
+  --color-secondary-hover: #60A5FA;
+  --color-secondary-light: rgba(59, 130, 246, 0.16); /* Soft blue tint */
+  --color-electric: #60A5FA;
+
+  /* Accent & Highlight Colors */
+  --color-accent: #38BDF8;          /* Cyber Teal / Sky Blue */
+  --color-accent-hover: #0EA5E9;
+  --color-accent-light: rgba(56, 189, 248, 0.16);
+  --color-highlight: #F59E0B;       /* Warm Amber */
+  --color-highlight-light: rgba(245, 158, 11, 0.16);
+  --color-gold: #FBBF24;
+
+  /* Surfaces & Backgrounds - Deep charcoal & dark navy SaaS hierarchy */
+  --color-bg: #0A0E17;              /* Deep slate navy page background */
+  --color-bg-alt: #080C15;          /* Grounded dark navy surface */
+  --color-bg-card: #111827;         /* Elevated dark gray/navy surfaces */
+  --color-bg-subtle: #162033;       /* Elevated dark subtle/hover surface */
+  --color-header-bg: #0D1322;       /* Dark header surface */
+  --color-sidebar-bg: #080C14;      /* Grounded dark sidebar surface */
+  --color-input-bg: #0B101D;        /* Dark input field background */
+  --color-input-border: #223047;    /* Subtle dark input border */
+  --color-border: #1C2638;          /* Subtle dark-gray borders */
+  --color-border-hover: #2E3E58;
+
+  /* Typography Colors */
+  --color-text: #F8FAFC;            /* White / near-white primary text */
+  --color-text-secondary: #94A3B8;  /* Muted gray secondary text (5.5:1 contrast) */
+  --color-text-tertiary: #64748B;   /* Slate gray */
+  --color-text-inverse: #0F172A;
+
+  /* Semantic Feedback in Dark Mode - Distinguishable high contrast */
+  --color-success: #34D399;
+  --color-success-bg: rgba(16, 185, 129, 0.16);
+  --color-warning: #FBBF24;
+  --color-warning-bg: rgba(245, 158, 11, 0.16);
+  --color-error: #F87171;
+  --color-error-bg: rgba(239, 68, 68, 0.16);
+
+  /* Elevated Dark Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 2px 4px -1px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
+  --shadow-card-hover: 0 4px 12px 0 rgba(0, 0, 0, 0.6);
+  --shadow-blue-glow: none;
+}
+
+/* Accessibility: Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
 

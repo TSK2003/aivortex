@@ -20,11 +20,23 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
     )
   }
 
-  // Normalize role from context or user object
-  const effectiveRole = (role || user?.role || '').toLowerCase()
+  // Direct localStorage fallback to prevent race condition during router navigation
+  let storedUser = null
+  try {
+    const raw = localStorage.getItem('apex_user')
+    if (raw) storedUser = JSON.parse(raw)
+  } catch {
+    storedUser = null
+  }
+
+  const currentUser = user || storedUser
+  const isAuth = isAuthenticated || Boolean(currentUser)
+
+  // Normalize role from context, user object, or localStorage
+  const effectiveRole = (role || currentUser?.role || '').toLowerCase()
   const normalizedAllowed = allowedRoles.map((r) => r.toLowerCase())
 
-  if (!isAuthenticated || !effectiveRole) {
+  if (!isAuth || !effectiveRole) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 

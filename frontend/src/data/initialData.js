@@ -703,3 +703,12 @@ export const initialCertificates = [
     credentialUrl: 'https://apexlearn.edu/verify/CERT-PYDS-2026-9042'
   }
 ];
+
+export const COURSE_LEVEL_OPTIONS = [
+  'All',
+  'Beginner',
+  'Beginner to Intermediate',
+  'Intermediate',
+  'Intermediate to Advanced',
+  'Advanced'
+];

@@ -20,24 +20,55 @@ export function AuthProvider({ children }) {
       try {
         const token = localStorage.getItem('apex_token')
         if (token) {
+          // Clear any legacy mock demo tokens
+          if (token.startsWith('demo-token-')) {
+            localStorage.removeItem('apex_token')
+            localStorage.removeItem('apex_user')
+            setUser(null)
+            setLoading(false)
+            return
+          }
+
           const res = await api.auth.me()
           if (res?.data?.user) {
             setUser(res.data.user)
             localStorage.setItem('apex_user', JSON.stringify(res.data.user))
-          } else {
-            throw new Error('Session invalid')
           }
         }
       } catch (err) {
-        localStorage.removeItem('apex_token')
-        localStorage.removeItem('apex_user')
-        setUser(null)
+        // Only discard session if explicitly rejected with 401/403 by authoritative server
+        if (err.status === 401 || err.status === 403) {
+          localStorage.removeItem('apex_token')
+          localStorage.removeItem('apex_user')
+          setUser(null)
+        } else {
+          console.warn('Backend session verification note:', err.message)
+        }
       } finally {
         setLoading(false)
       }
     }
 
     restoreSession()
+  }, [])
+
+  const demoLogin = useCallback(async (role = 'student') => {
+    try {
+      const res = await api.auth.demoLogin(role)
+      const userData = res.data?.user
+      const token = res.data?.token
+
+      if (!userData || !token) {
+        throw new Error('Invalid demo authentication response from server.')
+      }
+
+      localStorage.setItem('apex_token', token)
+      localStorage.setItem('apex_user', JSON.stringify(userData))
+      setUser(userData)
+      return { success: true, user: userData }
+    } catch (err) {
+      throw new Error(err.message || 'Demo authentication failed')
+    }
   }, [])
 
   const login = useCallback(async (email, password) => {
@@ -55,66 +86,21 @@ export function AuthProvider({ children }) {
       setUser(userData)
       return { success: true, user: userData }
     } catch (err) {
-      return { success: false, error: err.message }
+      return { success: false, error: err.message || 'Authentication failed' }
     }
   }, [])
 
   const studentLogin = useCallback(async (email, password) => {
-    try {
-      const res = await api.auth.studentLogin(email, password)
-      const userData = res.data?.user
-      const token = res.data?.token
-
-      if (!userData || !token) {
-        throw new Error('Invalid authentication response from server.')
-      }
-
-      localStorage.setItem('apex_token', token)
-      localStorage.setItem('apex_user', JSON.stringify(userData))
-      setUser(userData)
-      return { success: true, user: userData }
-    } catch (err) {
-      return { success: false, error: err.message }
-    }
-  }, [])
+    return login(email, password)
+  }, [login])
 
   const adminLogin = useCallback(async (email, password) => {
-    try {
-      const res = await api.auth.adminLogin(email, password)
-      const userData = res.data?.user
-      const token = res.data?.token
-
-      if (!userData || !token) {
-        throw new Error('Invalid authentication response from server.')
-      }
-
-      localStorage.setItem('apex_token', token)
-      localStorage.setItem('apex_user', JSON.stringify(userData))
-      setUser(userData)
-      return { success: true, user: userData }
-    } catch (err) {
-      return { success: false, error: err.message }
-    }
-  }, [])
+    return login(email, password)
+  }, [login])
 
   const creatorLogin = useCallback(async (email, password) => {
-    try {
-      const res = await api.auth.creatorLogin(email, password)
-      const userData = res.data?.user
-      const token = res.data?.token
-
-      if (!userData || !token) {
-        throw new Error('Invalid authentication response from server.')
-      }
-
-      localStorage.setItem('apex_token', token)
-      localStorage.setItem('apex_user', JSON.stringify(userData))
-      setUser(userData)
-      return { success: true, user: userData }
-    } catch (err) {
-      return { success: false, error: err.message }
-    }
-  }, [])
+    return login(email, password)
+  }, [login])
 
   const signup = useCallback(async (name, email, password) => {
     try {
@@ -163,6 +149,7 @@ export function AuthProvider({ children }) {
     admin: normalizedRole === 'admin' ? user : null,
     loading,
     login,
+    demoLogin,
     studentLogin,
     adminLogin,
     creatorLogin,

@@ -1,4 +1,5 @@
 import express from 'express'
+import path from 'path'
 import cors from 'cors'
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
@@ -54,12 +55,12 @@ app.use(cookieParser(env.COOKIE_SECRET))
 
 // Body Parsing (with rawBody capture for webhook verification)
 app.use(express.json({
-  limit: '10mb',
+  limit: '100mb',
   verify: (req, res, buf) => {
     req.rawBody = buf
   }
 }))
-app.use(express.urlencoded({ extended: true, limit: '10mb' }))
+app.use(express.urlencoded({ extended: true, limit: '100mb' }))
 
 // Request Logging
 if (env.NODE_ENV !== 'test') {
@@ -79,6 +80,9 @@ app.use('/api/creator', creatorRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/payments', paymentRoutes)
 app.use('/api', notificationRoutes)
+
+// Serve Uploaded Media Files Statically
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 
 // 404 Handler for Unmatched API Routes
 app.use('/api', (req, res, next) => {

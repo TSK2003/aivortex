@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import prisma from '../config/prisma.js'
 import { successResponse } from '../utils/responseWrapper.js'
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/appError.js'
@@ -23,6 +24,35 @@ export async function getLessonQuiz(req, res, next) {
 
     if (!quiz) {
       throw new NotFoundError('No assessment quiz configured for this lesson.')
+    }
+
+    return successResponse(res, { quiz })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// 1b. Fetch Quiz directly by Quiz ID (Excludes isCorrect from Client)
+export async function getQuizById(req, res, next) {
+  try {
+    const { quizId } = req.params
+
+    const quiz = await prisma.quiz.findUnique({
+      where: { id: quizId },
+      include: {
+        questions: {
+          orderBy: { orderIndex: 'asc' },
+          include: {
+            options: {
+              select: { id: true, optionText: true }
+            }
+          }
+        }
+      }
+    })
+
+    if (!quiz) {
+      throw new NotFoundError('Assessment quiz not found.')
     }
 
     return successResponse(res, { quiz })
@@ -202,8 +232,8 @@ export async function issueCertificateIfEligible(req, res, next) {
     // 6. Generate Unique Serial & Issue Certificate
     const student = await prisma.user.findUnique({ where: { id: studentId } })
     const year = new Date().getFullYear()
-    const rand = String(Math.floor(100 + Math.random() * 900)).padStart(3, '0')
-    const certificateCode = `AVT-${year}-${rand}`
+    const uniqueSuffix = crypto.randomBytes(4).toString('hex').toUpperCase()
+    const certificateCode = `CERT-${year}-${uniqueSuffix}`
 
     const certificate = await prisma.$transaction(async (tx) => {
       const c = await tx.certificate.create({

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   BookOpen,
   IndianRupee,
@@ -16,14 +16,74 @@ import {
   Award,
   ShieldCheck,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Loader2,
+  Video,
+  Upload,
+  Trash2,
+  Play,
+  Film
 } from 'lucide-react'
 import { useToast } from '../../contexts/ToastContext'
 import api from '../../services/api'
+import CustomSelect from '../../components/common/CustomSelect'
+
+export const COURSE_LANGUAGE_OPTIONS = [
+  {
+    value: 'English',
+    label: 'English',
+    sublabel: 'Course is taught in English.'
+  },
+  {
+    value: 'Tamil',
+    label: 'Tamil',
+    sublabel: 'Course is taught in Tamil.'
+  },
+  {
+    value: 'Thanglish',
+    label: 'Thanglish',
+    sublabel: 'Course is taught using Tamil written in English/Tamil-English mixed style.'
+  },
+  {
+    value: 'Hindi',
+    label: 'Hindi',
+    sublabel: 'Course is taught in Hindi.'
+  },
+  {
+    value: 'Bilingual (English/Tamil)',
+    label: 'Bilingual (English/Tamil)',
+    sublabel: 'Course uses both English and Tamil.'
+  },
+  {
+    value: 'Bilingual (English/Hindi)',
+    label: 'Bilingual (English/Hindi)',
+    sublabel: 'Course uses both English and Hindi.'
+  },
+  {
+    value: 'Bilingual (Tamil/Thanglish)',
+    label: 'Bilingual (Tamil/Thanglish)',
+    sublabel: 'Course uses both Tamil and Thanglish.'
+  },
+  {
+    value: 'Multilingual',
+    label: 'Multilingual',
+    sublabel: 'Course uses more than two supported languages.'
+  }
+]
+
+export const COURSE_LANGUAGE_MAP = COURSE_LANGUAGE_OPTIONS.reduce((acc, item) => {
+  acc[item.value] = item.sublabel
+  return acc
+}, {})
 
 export default function AdminCreateCoursePage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const { courseId: routeCourseId } = useParams()
+  const [searchParams] = useSearchParams()
+  const editCourseId = routeCourseId || searchParams.get('id') || searchParams.get('edit')
+  const isEditMode = Boolean(editCourseId)
+  const [isLoadingCourse, setIsLoadingCourse] = useState(false)
 
   // Form State
   const [title, setTitle] = useState('')
@@ -51,6 +111,13 @@ export default function AdminCreateCoursePage() {
   const [thumbnail, setThumbnail] = useState(
     'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80'
   )
+  const [thumbnailStatus, setThumbnailStatus] = useState('loading') // 'idle' | 'loading' | 'loaded' | 'error'
+  const [thumbnailError, setThumbnailError] = useState(null)
+  const [previewVideoUrl, setPreviewVideoUrl] = useState('')
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false)
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false)
+  const [videoDuration, setVideoDuration] = useState(null)
+  const [videoError, setVideoError] = useState(null)
   const [badge, setBadge] = useState('Bestseller')
   const [isFeatured, setIsFeatured] = useState(false)
 
@@ -82,6 +149,49 @@ export default function AdminCreateCoursePage() {
     }
   }, [])
 
+  // Load existing course data if editing
+  useEffect(() => {
+    if (!editCourseId) return
+    let isMounted = true
+    const loadCourseData = async () => {
+      try {
+        setIsLoadingCourse(true)
+        const res = await api.admin.getCourses()
+        const found = res.data?.courses?.find((c) => c.id === editCourseId || c.slug === editCourseId)
+        if (found && isMounted) {
+          setTitle(found.title || '')
+          setSlug(found.slug || '')
+          setCategory(found.category || 'Data Science')
+          setLevel(found.level || 'Beginner to Intermediate')
+          setDuration(found.duration || '30 Hours')
+          setLanguage(found.language || 'English')
+          setShortDescription(found.shortDescription || '')
+          setFullDescription(found.fullDescription || '')
+          setPrice(found.price ?? 4999)
+          setOriginalPrice(found.originalPrice ?? 9999)
+          setIsFree(Boolean(found.isFree))
+          setAccessDurationDays(found.accessDurationDays || 365)
+          setCertificateEnabled(found.certificateEnabled !== false)
+          setThumbnail(found.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80')
+          setPreviewVideoUrl(found.previewVideoUrl || found.demoVideoUrl || '')
+          setBadge(found.badge || 'Bestseller')
+          setIsFeatured(Boolean(found.isFeatured))
+          if (found.creators && found.creators.length > 0) {
+            setCreatorId(found.creators[0].creatorId || found.creators[0].creator?.id || '')
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load course for editing:', err.message)
+      } finally {
+        if (isMounted) setIsLoadingCourse(false)
+      }
+    }
+    loadCourseData()
+    return () => {
+      isMounted = false
+    }
+  }, [editCourseId])
+
   // Auto-generate URL slug when title changes (if slug not manually edited)
   const handleTitleChange = (e) => {
     const val = e.target.value
@@ -112,6 +222,185 @@ export default function AdminCreateCoursePage() {
     return creators.find((c) => c.id === creatorId) || null
   }, [creators, creatorId])
 
+  // Helper to validate thumbnail URL format
+  const validateThumbnailUrl = (url) => {
+    if (!url || !url.trim()) return null
+    const trimmed = url.trim()
+    if (trimmed.startsWith('/uploads/')) return null
+    if (!/^https:\/\//i.test(trimmed)) {
+      return 'Please enter a valid HTTPS image URL or upload an image.'
+    }
+    try {
+      const parsed = new URL(trimmed)
+      if (parsed.protocol !== 'https:' || !parsed.hostname || !parsed.hostname.includes('.')) {
+        return 'Please enter a valid HTTPS image URL.'
+      }
+      return null
+    } catch {
+      return 'Please enter a valid HTTPS image URL.'
+    }
+  }
+
+  // Handle Thumbnail File Upload
+  const handleThumbnailUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (JPG, PNG, or WebP).', 'error')
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('Image size exceeds 10MB limit.', 'error')
+      return
+    }
+
+    setIsUploadingThumbnail(true)
+    const reader = new FileReader()
+    reader.onload = async () => {
+      try {
+        const base64Data = reader.result
+        const res = await api.admin.uploadMedia({
+          imageBase64: base64Data,
+          folder: 'courses',
+          fileName: file.name
+        })
+        if (res?.data?.url) {
+          setThumbnail(res.data.url)
+          setThumbnailStatus('loaded')
+          setThumbnailError(null)
+          if (errors.thumbnail) {
+            setErrors((prev) => ({ ...prev, thumbnail: undefined }))
+          }
+          showToast('Course thumbnail uploaded successfully!', 'success')
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to upload thumbnail.', 'error')
+      } finally {
+        setIsUploadingThumbnail(false)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Handle Preview Video File Upload
+  const handleVideoUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const validTypes = ['video/mp4', 'video/webm']
+    const isMp4OrWebm = validTypes.includes(file.type) || file.name.endsWith('.mp4') || file.name.endsWith('.webm')
+
+    if (!isMp4OrWebm) {
+      showToast('Only MP4 and WebM formats are supported for Course Preview Video.', 'error')
+      return
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      showToast('Video size exceeds 50MB limit. Please upload a short preview video (15–60s).', 'error')
+      return
+    }
+
+    // Client-side duration detection using HTML5 video
+    const tempUrl = URL.createObjectURL(file)
+    const tempVideo = document.createElement('video')
+    tempVideo.preload = 'metadata'
+    tempVideo.src = tempUrl
+    tempVideo.onloadedmetadata = () => {
+      URL.revokeObjectURL(tempUrl)
+      const durationSecs = Math.round(tempVideo.duration)
+      setVideoDuration(durationSecs)
+      if (durationSecs > 90) {
+        showToast(`Video duration is ${durationSecs}s. Recommended duration is 15s to 60s for card preview.`, 'warning')
+      }
+    }
+
+    setIsUploadingVideo(true)
+    setVideoError(null)
+
+    const reader = new FileReader()
+    reader.onload = async () => {
+      try {
+        const base64Data = reader.result
+        const res = await api.admin.uploadMedia({
+          videoBase64: base64Data,
+          folder: 'courses',
+          fileName: file.name
+        })
+        if (res?.data?.url) {
+          setPreviewVideoUrl(res.data.url)
+          showToast('Course Preview Video uploaded successfully!', 'success')
+        }
+      } catch (err) {
+        setVideoError(err.message || 'Failed to upload preview video.')
+        showToast(err.message || 'Failed to upload preview video.', 'error')
+      } finally {
+        setIsUploadingVideo(false)
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveThumbnail = () => {
+    setThumbnail('')
+    setThumbnailStatus('idle')
+    setThumbnailError(null)
+    showToast('Course thumbnail removed.', 'info')
+  }
+
+  const handleRemoveVideo = () => {
+    setPreviewVideoUrl('')
+    setVideoDuration(null)
+    setVideoError(null)
+    showToast('Course Preview Video removed.', 'info')
+  }
+
+  // Pre-load and verify thumbnail image URL
+  useEffect(() => {
+    const trimmed = thumbnail?.trim()
+    if (!trimmed) {
+      setThumbnailStatus('idle')
+      setThumbnailError(null)
+      return
+    }
+
+    const formatErr = validateThumbnailUrl(trimmed)
+    if (formatErr) {
+      setThumbnailStatus('error')
+      setThumbnailError(formatErr)
+      return
+    }
+
+    setThumbnailStatus('loading')
+    setThumbnailError(null)
+
+    let isMounted = true
+    const img = new Image()
+
+    img.onload = () => {
+      if (isMounted) {
+        setThumbnailStatus('loaded')
+        setThumbnailError(null)
+      }
+    }
+
+    img.onerror = () => {
+      if (isMounted) {
+        setThumbnailStatus('error')
+        setThumbnailError('Unable to load this image. Please check the URL or use another image.')
+      }
+    }
+
+    img.src = trimmed
+
+    return () => {
+      isMounted = false
+      img.onload = null
+      img.onerror = null
+    }
+  }, [thumbnail])
+
   // Form Validation
   const validateForm = () => {
     const errs = {}
@@ -133,6 +422,13 @@ export default function AdminCreateCoursePage() {
       }
       if (originalPrice !== '' && Number(originalPrice) < Number(price)) {
         errs.originalPrice = 'Original price cannot be lower than the offer price'
+      }
+    }
+
+    if (thumbnail && thumbnail.trim()) {
+      const thumbErr = validateThumbnailUrl(thumbnail)
+      if (thumbErr) {
+        errs.thumbnail = thumbErr
       }
     }
 
@@ -160,6 +456,7 @@ export default function AdminCreateCoursePage() {
         duration: duration.trim() || '30 Hours',
         language: language.trim() || 'English',
         thumbnail: thumbnail.trim(),
+        previewVideoUrl: previewVideoUrl ? previewVideoUrl.trim() : null,
         price: isFree ? 0 : Number(price),
         originalPrice: isFree ? 0 : Number(originalPrice || price),
         discountPercent: isFree ? 100 : discountPercent,
@@ -174,18 +471,23 @@ export default function AdminCreateCoursePage() {
         creatorIds: creatorId ? [creatorId] : []
       }
 
-      const res = await api.admin.createCourse(payload)
-      const createdTitle = res.data?.course?.title || title.trim()
-
-      if (targetStatus === 'PUBLISHED') {
-        showToast(`Course "${createdTitle}" created and published successfully!`, 'success')
+      if (isEditMode) {
+        await api.admin.updateCourse(editCourseId, payload)
+        showToast(`Course "${payload.title}" updated successfully!`, 'success')
       } else {
-        showToast(`Course "${createdTitle}" saved as DRAFT successfully!`, 'success')
+        const res = await api.admin.createCourse(payload)
+        const createdTitle = res.data?.course?.title || title.trim()
+
+        if (targetStatus === 'PUBLISHED') {
+          showToast(`Course "${createdTitle}" created and published successfully!`, 'success')
+        } else {
+          showToast(`Course "${createdTitle}" saved as DRAFT successfully!`, 'success')
+        }
       }
 
       navigate('/admin/courses')
     } catch (err) {
-      showToast(err.message || 'Failed to create course. Please review the inputs.', 'error')
+      showToast(err.message || 'Failed to save course. Please review the inputs.', 'error')
     } finally {
       setIsSubmitting(false)
       setSubmittingAction(null)
@@ -247,7 +549,9 @@ export default function AdminCreateCoursePage() {
             <span>Course Management</span>
           </Link>
           <ChevronRight size={14} style={{ color: '#CBD5E1' }} />
-          <span style={{ color: '#0F172A', fontWeight: 700 }}>Create Course</span>
+          <span style={{ color: '#0F172A', fontWeight: 700 }}>
+            {isEditMode ? 'Edit Course' : 'Create Course'}
+          </span>
         </nav>
 
         {/* Header Title */}
@@ -266,10 +570,12 @@ export default function AdminCreateCoursePage() {
               margin: '0 0 6px 0'
             }}
           >
-            Create New Course
+            {isEditMode ? 'Edit Academic Course' : 'Create New Course'}
           </h1>
           <p style={{ color: '#64748B', fontSize: '0.9375rem', margin: 0 }}>
-            Create and configure a new academic course for the platform curriculum.
+            {isEditMode
+              ? 'Update curriculum parameters, instruction language, pricing tiers, and assigned faculty instructors.'
+              : 'Create and configure a new academic course for the platform curriculum.'}
           </p>
         </div>
       </div>
@@ -293,10 +599,10 @@ export default function AdminCreateCoursePage() {
           <section
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: '28px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div
@@ -445,19 +751,39 @@ export default function AdminCreateCoursePage() {
                 </div>
 
                 <div className="form-field-group">
-                  <label htmlFor="select-course-language" className="form-label" style={{ fontWeight: 700 }}>
+                  <label htmlFor="select-course-language" className="form-label" style={{ fontWeight: 700, display: 'block', marginBottom: 6 }}>
                     Instruction Language
                   </label>
-                  <select
+                  <CustomSelect
                     id="select-course-language"
-                    className="form-input"
+                    options={COURSE_LANGUAGE_OPTIONS}
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                  >
-                    <option value="English">English</option>
-                    <option value="Hindi">Hindi</option>
-                    <option value="Bilingual (English/Hindi)">Bilingual (English/Hindi)</option>
-                  </select>
+                    buttonStyle={{
+                      height: 42,
+                      borderRadius: 8,
+                      borderColor: '#CBD5E1',
+                      fontSize: '0.875rem'
+                    }}
+                    menuStyle={{
+                      minWidth: '100%',
+                      width: '100%',
+                      maxWidth: '380px'
+                    }}
+                  />
+                  {COURSE_LANGUAGE_MAP[language] && (
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: '0.75rem',
+                        color: '#64748B',
+                        marginTop: 5,
+                        lineHeight: 1.35
+                      }}
+                    >
+                      {COURSE_LANGUAGE_MAP[language]}
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-field-group">
@@ -533,10 +859,10 @@ export default function AdminCreateCoursePage() {
           <section
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: '28px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div
@@ -818,10 +1144,10 @@ export default function AdminCreateCoursePage() {
           <section
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: '28px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div
@@ -924,7 +1250,7 @@ export default function AdminCreateCoursePage() {
                         fontSize: '0.6875rem',
                         fontWeight: 700,
                         padding: '1px 8px',
-                        borderRadius: 9999,
+                        borderRadius: 6,
                         border: '1px solid #A7F3D0'
                       }}
                     >
@@ -946,10 +1272,10 @@ export default function AdminCreateCoursePage() {
           <section
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: '28px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div
@@ -1018,19 +1344,20 @@ export default function AdminCreateCoursePage() {
           <section
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: '28px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
+            {/* Header: Section 5 — COURSE MEDIA */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                marginBottom: 20,
-                paddingBottom: 16,
+                marginBottom: 24,
+                paddingBottom: 14,
                 borderBottom: '1px solid #F1F5F9'
               }}
             >
@@ -1049,45 +1376,386 @@ export default function AdminCreateCoursePage() {
                 <Sparkles size={20} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-                  Section 5 — Media & Catalog Discovery
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-0.02em' }}>
+                  COURSE MEDIA
                 </h2>
                 <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>
-                  Thumbnail banner, promotional catalog badge, and homepage featuring.
+                  Upload and manage promotional Course Thumbnail and Course Preview Video for the public catalog.
                 </span>
               </div>
             </div>
 
-            {/* Thumbnail URL input & quick presets */}
-            <div className="form-field-group" style={{ marginBottom: 20 }}>
-              <label htmlFor="input-thumbnail-url" className="form-label" style={{ fontWeight: 700 }}>
-                Course Thumbnail Asset URL
-              </label>
-              <input
-                id="input-thumbnail-url"
-                type="url"
-                className="form-input"
-                placeholder="https://images.unsplash.com/..."
-                value={thumbnail}
-                onChange={(e) => setThumbnail(e.target.value)}
-                style={{ marginBottom: 8 }}
-              />
+            {/* Hidden File Inputs for Thumbnail & Video */}
+            <input
+              id="thumbnail-file-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleThumbnailUpload}
+              style={{ display: 'none' }}
+            />
+            <input
+              id="video-file-input"
+              type="file"
+              accept="video/mp4,video/webm"
+              onChange={handleVideoUpload}
+              style={{ display: 'none' }}
+            />
 
-              {/* Quick Presets */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>Quick presets:</span>
-                {thumbnailPresets.map((p) => (
+            {/* FIELD 1: COURSE THUMBNAIL */}
+            <div
+              style={{
+                marginBottom: 26,
+                padding: 20,
+                background: '#F8FAFC',
+                borderRadius: 8,
+                border: '1px solid #E2E8F0'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                    <ImageIcon size={18} style={{ color: '#2563EB' }} />
+                    Course Thumbnail
+                  </label>
+                  <div style={{ fontSize: '0.8125rem', color: '#64748B', marginTop: 2 }}>
+                    Default cover image displayed across the public courses directory and course cards.
+                  </div>
+                </div>
+
+                {/* Thumbnail Action Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <button
-                    key={p.label}
                     type="button"
-                    className="btn btn-outline btn-sm"
-                    style={{ padding: '2px 10px', fontSize: '0.75rem' }}
-                    onClick={() => setThumbnail(p.url)}
+                    className="btn btn-outline-blue btn-sm"
+                    onClick={() => document.getElementById('thumbnail-file-input')?.click()}
+                    disabled={isUploadingThumbnail}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', padding: '6px 12px' }}
                   >
-                    {p.label}
+                    {isUploadingThumbnail ? (
+                      <>
+                        <Loader2 size={14} className="spinner-spin" /> Uploading...
+                      </>
+                    ) : thumbnail ? (
+                      <>
+                        <Upload size={14} /> Replace Thumbnail
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={14} /> Upload Thumbnail
+                      </>
+                    )}
                   </button>
-                ))}
+
+                  {thumbnail && (
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={handleRemoveThumbnail}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: '0.8125rem',
+                        padding: '6px 12px',
+                        color: '#EF4444',
+                        borderColor: '#FECACA'
+                      }}
+                    >
+                      <Trash2 size={14} /> Remove
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {/* Thumbnail Preview Area */}
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: 480,
+                  height: 200,
+                  borderRadius: 10,
+                  overflow: 'hidden',
+                  position: 'relative',
+                  background: '#0F172A',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid #CBD5E1',
+                  marginBottom: 14
+                }}
+              >
+                {thumbnailStatus === 'loading' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: '#94A3B8' }}>
+                    <Loader2 size={30} className="spinner-spin" style={{ color: '#38BDF8' }} />
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Loading image preview...</span>
+                  </div>
+                )}
+
+                {thumbnailStatus === 'loaded' && thumbnail && (
+                  <img
+                    src={thumbnail}
+                    alt="Course Thumbnail Asset Preview"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                )}
+
+                {thumbnailStatus === 'error' && (
+                  <div style={{ padding: '0 20px', textAlign: 'center', color: '#F87171' }}>
+                    <AlertCircle size={32} style={{ margin: '0 auto 8px', color: '#EF4444' }} />
+                    <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, lineHeight: 1.4 }}>
+                      {thumbnailError || 'Unable to load this image. Please check the URL or upload another image.'}
+                    </p>
+                  </div>
+                )}
+
+                {thumbnailStatus === 'idle' && (
+                  <div
+                    onClick={() => document.getElementById('thumbnail-file-input')?.click()}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 8,
+                      color: '#64748B',
+                      cursor: 'pointer',
+                      padding: 20,
+                      textAlign: 'center'
+                    }}
+                  >
+                    <Upload size={32} style={{ color: '#94A3B8' }} />
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#2563EB' }}>Click to upload a course thumbnail image</span>
+                    <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>PNG, JPG, or WebP up to 10MB</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Direct URL input / Quick Presets */}
+              <div style={{ marginTop: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>Quick presets:</span>
+                  {thumbnailPresets.map((p) => {
+                    const isSelected = thumbnail === p.url
+                    return (
+                      <button
+                        key={p.label}
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        style={{
+                          padding: '3px 10px',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          borderRadius: 6,
+                          borderColor: isSelected ? '#2563EB' : undefined,
+                          backgroundColor: isSelected ? '#EFF6FF' : undefined,
+                          color: isSelected ? '#1D4ED8' : undefined,
+                          fontWeight: isSelected ? 700 : 500
+                        }}
+                        onClick={() => {
+                          setThumbnail(p.url)
+                          if (errors.thumbnail) {
+                            setErrors((prev) => ({ ...prev, thumbnail: undefined }))
+                          }
+                        }}
+                      >
+                        {p.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* FIELD 2: COURSE PREVIEW VIDEO */}
+            <div
+              style={{
+                marginBottom: 24,
+                padding: 20,
+                background: '#F8FAFC',
+                borderRadius: 8,
+                border: '1px solid #E2E8F0'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                    <Film size={18} style={{ color: '#8B5CF6' }} />
+                    Course Preview Video
+                  </label>
+                  <div style={{ fontSize: '0.8125rem', color: '#64748B', marginTop: 2 }}>
+                    Short marketing/promo overview video (15s – 60s) played on course card hover.
+                  </div>
+                </div>
+
+                {/* Video Action Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline-blue btn-sm"
+                    onClick={() => document.getElementById('video-file-input')?.click()}
+                    disabled={isUploadingVideo}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8125rem', padding: '6px 12px' }}
+                  >
+                    {isUploadingVideo ? (
+                      <>
+                        <Loader2 size={14} className="spinner-spin" /> Uploading Video...
+                      </>
+                    ) : previewVideoUrl ? (
+                      <>
+                        <Upload size={14} /> Replace Video
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={14} /> Upload Preview Video
+                      </>
+                    )}
+                  </button>
+
+                  {previewVideoUrl && (
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={handleRemoveVideo}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: '0.8125rem',
+                        padding: '6px 12px',
+                        color: '#EF4444',
+                        borderColor: '#FECACA'
+                      }}
+                    >
+                      <Trash2 size={14} /> Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Admin Helper Text Prompt Requirement 4 & 21 */}
+              <div
+                style={{
+                  background: '#EFF6FF',
+                  border: '1px solid #BFDBFE',
+                  borderRadius: 8,
+                  padding: '10px 14px',
+                  marginBottom: 16,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 10
+                }}
+              >
+                <Sparkles size={16} style={{ color: '#2563EB', marginTop: 2, flexShrink: 0 }} />
+                <div style={{ fontSize: '0.8125rem', color: '#1E40AF', lineHeight: 1.5 }}>
+                  <strong>Admin Guidance:</strong> Upload a short course preview video. This video will play when users hover over the course card on the public Courses page.
+                  <div style={{ fontSize: '0.75rem', color: '#3B82F6', marginTop: 2 }}>
+                    Supported formats: <strong>MP4</strong>, <strong>WebM</strong> • Recommended duration: <strong>15s – 60s</strong> • Maximum size: <strong>50MB</strong>.
+                    <br />
+                    <em>(Notice: This is a promotional preview video only — separate from protected student course lecture videos).</em>
+                  </div>
+                </div>
+              </div>
+
+              {/* Video Preview Player (Section 19) */}
+              {previewVideoUrl ? (
+                <div>
+                  <div
+                    style={{
+                      width: '100%',
+                      maxWidth: 480,
+                      height: 240,
+                      borderRadius: 10,
+                      overflow: 'hidden',
+                      position: 'relative',
+                      background: '#0B0F19',
+                      border: '1px solid #CBD5E1',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <video
+                      src={previewVideoUrl}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain'
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, flexWrap: 'wrap' }}>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        color: '#16A34A',
+                        background: '#DCFCE7',
+                        padding: '3px 10px',
+                        borderRadius: 6
+                      }}
+                    >
+                      <CheckCircle2 size={13} /> Preview Video Configured
+                    </span>
+
+                    {videoDuration && (
+                      <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>
+                        Duration: ~{videoDuration} seconds
+                      </span>
+                    )}
+
+                    <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>
+                      Stored at: {previewVideoUrl.length > 40 ? previewVideoUrl.slice(0, 40) + '...' : previewVideoUrl}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => document.getElementById('video-file-input')?.click()}
+                  style={{
+                    width: '100%',
+                    maxWidth: 480,
+                    height: 160,
+                    borderRadius: 10,
+                    border: '2px dashed #CBD5E1',
+                    background: '#FFFFFF',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    gap: 8,
+                    padding: 20,
+                    textAlign: 'center',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {isUploadingVideo ? (
+                    <>
+                      <Loader2 size={32} className="spinner-spin" style={{ color: '#8B5CF6' }} />
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569' }}>
+                        Uploading preview video to server...
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Please wait</span>
+                    </>
+                  ) : (
+                    <>
+                      <Film size={34} style={{ color: '#94A3B8' }} />
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#2563EB' }}>
+                        Click to select and upload a Course Preview Video
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                        MP4 or WebM • 15s to 60s promo overview • Max 50MB
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Badge & Featured Toggle */}
@@ -1154,10 +1822,10 @@ export default function AdminCreateCoursePage() {
           <div
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               overflow: 'hidden',
-              boxShadow: '0 4px 12px rgba(15, 23, 42, 0.05)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div
@@ -1189,15 +1857,34 @@ export default function AdminCreateCoursePage() {
 
             {/* Thumbnail Box */}
             <div style={{ position: 'relative', width: '100%', height: 160, background: '#1E293B', overflow: 'hidden' }}>
-              <img
-                src={thumbnail}
-                alt="Course Preview"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                onError={(e) => {
-                  e.currentTarget.src =
-                    'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80'
-                }}
-              />
+              {thumbnailStatus === 'loading' && (
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0F172A', color: '#94A3B8' }}>
+                  <Loader2 size={24} className="spinner-spin" style={{ color: '#38BDF8', marginBottom: 6 }} />
+                  <span style={{ fontSize: '0.6875rem', fontWeight: 600 }}>Loading preview...</span>
+                </div>
+              )}
+
+              {thumbnailStatus === 'loaded' && thumbnail && (
+                <img
+                  src={thumbnail}
+                  alt={title || 'Course Preview'}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+              )}
+
+              {thumbnailStatus === 'error' && (
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0F172A', color: '#94A3B8', padding: 12, textAlign: 'center' }}>
+                  <AlertCircle size={24} style={{ color: '#EF4444', marginBottom: 6 }} />
+                  <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#F87171' }}>Image unavailable</span>
+                </div>
+              )}
+
+              {thumbnailStatus === 'idle' && (
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#1E293B', color: '#94A3B8' }}>
+                  <ImageIcon size={26} style={{ color: '#64748B', marginBottom: 4 }} />
+                  <span style={{ fontSize: '0.6875rem' }}>No thumbnail provided</span>
+                </div>
+              )}
               {badge && (
                 <div
                   style={{
@@ -1215,6 +1902,27 @@ export default function AdminCreateCoursePage() {
                   }}
                 >
                   {badge}
+                </div>
+              )}
+              {previewVideoUrl && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 10,
+                    left: 10,
+                    background: 'rgba(139, 92, 246, 0.9)',
+                    backdropFilter: 'blur(4px)',
+                    color: '#FFFFFF',
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 6,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                >
+                  <Play size={10} fill="#FFFFFF" /> Video Preview
                 </div>
               )}
               <div
@@ -1237,7 +1945,7 @@ export default function AdminCreateCoursePage() {
 
             {/* Content Details */}
             <div style={{ padding: '18px 20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
                 <span
                   style={{
                     fontSize: '0.6875rem',
@@ -1249,6 +1957,19 @@ export default function AdminCreateCoursePage() {
                   }}
                 >
                   {category}
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 600,
+                    color: '#0D9488',
+                    background: '#F0FDFA',
+                    border: '1px solid #CCFBF1',
+                    padding: '2px 8px',
+                    borderRadius: 6
+                  }}
+                >
+                  {language || 'English'}
                 </span>
                 <span style={{ fontSize: '0.6875rem', color: '#64748B' }}>• {level}</span>
               </div>
@@ -1335,10 +2056,10 @@ export default function AdminCreateCoursePage() {
           <div
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: '20px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <h4 style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0F172A', margin: '0 0 12px 0' }}>
@@ -1404,7 +2125,7 @@ export default function AdminCreateCoursePage() {
             }}
           />
           <span style={{ fontSize: '0.8125rem', color: '#475569', fontWeight: 600 }}>
-            Creating Academic Course in {submittingAction === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT'} mode
+            {isEditMode ? 'Editing' : 'Creating'} Academic Course in {submittingAction === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT'} mode
           </span>
         </div>
 
@@ -1450,7 +2171,11 @@ export default function AdminCreateCoursePage() {
               boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
             }}
           >
-            <span>{submittingAction === 'PUBLISHED' ? 'Creating Course...' : 'Create Course'}</span>
+            <span>
+              {submittingAction === 'PUBLISHED'
+                ? (isEditMode ? 'Updating Course...' : 'Creating Course...')
+                : (isEditMode ? 'Save & Update' : 'Create Course')}
+            </span>
           </button>
         </div>
       </div>

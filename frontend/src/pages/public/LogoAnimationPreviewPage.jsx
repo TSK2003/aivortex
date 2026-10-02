@@ -56,15 +56,13 @@ export default function LogoAnimationPreviewPage() {
                 color: '#FFFFFF',
                 border: 'none',
                 padding: '12px 24px',
-                borderRadius: 12,
+                borderRadius: 8,
                 fontSize: '0.9375rem',
                 fontWeight: 700,
                 cursor: 'pointer',
-                boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.25)',
-                transition: 'transform 0.15s ease, background 0.15s ease'
+                boxShadow: 'var(--shadow-sm)',
+                transition: 'background 0.15s ease'
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
             >
               <Play size={18} fill="#FFFFFF" />
               <span>Play Fullscreen Page Opening Animation</span>
@@ -83,7 +81,7 @@ export default function LogoAnimationPreviewPage() {
                 color: '#475569',
                 border: '1px solid #CBD5E1',
                 padding: '12px 20px',
-                borderRadius: 12,
+                borderRadius: 8,
                 fontSize: '0.875rem',
                 fontWeight: 600,
                 cursor: 'pointer'
@@ -96,7 +94,7 @@ export default function LogoAnimationPreviewPage() {
         </div>
 
         {/* SECTION 1: Navbar Logo Opening Animation Tester */}
-        <div style={{ background: '#FFFFFF', borderRadius: 20, border: '1px solid #E2E8F0', padding: 28, boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.05)', marginBottom: 36 }}>
+        <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', padding: 28, boxShadow: 'var(--shadow-sm)', marginBottom: 36 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <Compass size={22} color="#2563EB" />
@@ -183,7 +181,7 @@ export default function LogoAnimationPreviewPage() {
           <div
             style={{
               padding: '24px 32px',
-              borderRadius: 14,
+              borderRadius: 8,
               border: previewTheme === 'dark' ? '1px solid #1E293B' : '1px solid #E2E8F0',
               background: previewTheme === 'dark' ? '#090D16' : '#FFFFFF',
               display: 'flex',
@@ -234,7 +232,7 @@ export default function LogoAnimationPreviewPage() {
         {/* SECTION 2: Reference Verification */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 20 }}>
           {/* Card 1 */}
-          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 20 }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', padding: 20, boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Symbol Geometry
@@ -252,7 +250,7 @@ export default function LogoAnimationPreviewPage() {
           </div>
 
           {/* Card 2 */}
-          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 20 }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', padding: 20, boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Wordmark Typography
@@ -270,7 +268,7 @@ export default function LogoAnimationPreviewPage() {
           </div>
 
           {/* Card 3 */}
-          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 20 }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', padding: 20, boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Tagline Positioning

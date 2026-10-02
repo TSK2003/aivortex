@@ -47,7 +47,7 @@ export default function ContactPage() {
             24/7 Academic & Technical Support
           </div>
           <h1 style={{ fontSize: 'clamp(1.6rem, 5.5vw, 2.5rem)', fontWeight: 800, color: 'var(--color-primary)', marginBottom: 16 }}>
-            Connect with Our Academic Counselors
+            Connect with Us
           </h1>
           <p style={{ fontSize: '1.05rem', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
             Have questions about syllabus depth, corporate enrollment, creator partnerships, or system access? Our engineering advisory team is here to assist.
@@ -59,7 +59,7 @@ export default function ContactPage() {
           <div
             className="card"
             style={{
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 'clamp(20px, 4vw, 36px)',
               background: '#FFFFFF',
               border: '1px solid var(--color-border)',
@@ -79,10 +79,10 @@ export default function ContactPage() {
                     <MapPin size={20} />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)' }}>Institute Headquarters</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)' }}>Headquarters</div>
                     <div style={{ fontSize: '0.88rem', color: 'var(--color-text-secondary)', lineHeight: 1.5, marginTop: 4 }}>
-                      Apex Tower, Cyber City Innovation Corridor<br />
-                      Bengaluru, Karnataka 560103, India
+                      Indiranagar<br />
+                      Bangalore, Karnataka, India
                     </div>
                   </div>
                 </div>
@@ -93,9 +93,23 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)' }}>Direct Inquiries</div>
-                    <div style={{ fontSize: '0.88rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>
-                      admissions@apexlearn.edu<br />
-                      support@apexlearn.edu
+                    <div style={{ fontSize: '0.88rem', color: 'var(--color-text-secondary)', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <a
+                        href="mailto:support@aivortex.in"
+                        style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s ease' }}
+                        onMouseOver={(e) => { e.currentTarget.style.color = '#2563EB' }}
+                        onMouseOut={(e) => { e.currentTarget.style.color = 'inherit' }}
+                      >
+                        support@aivortex.in
+                      </a>
+                      <a
+                        href="mailto:aivortexgroup@gmail.com"
+                        style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s ease' }}
+                        onMouseOver={(e) => { e.currentTarget.style.color = '#2563EB' }}
+                        onMouseOut={(e) => { e.currentTarget.style.color = 'inherit' }}
+                      >
+                        aivortexgroup@gmail.com
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -105,10 +119,17 @@ export default function ContactPage() {
                     <Phone size={20} />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)' }}>Advisory Hotline</div>
-                    <div style={{ fontSize: '0.88rem', color: 'var(--color-text-secondary)', marginTop: 4 }}>
-                      +91 (080) 4122-8900<br />
-                      Mon - Sat, 9:00 AM - 8:00 PM IST
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)' }}>Hotline</div>
+                    <div style={{ fontSize: '0.88rem', color: 'var(--color-text-secondary)', marginTop: 4, lineHeight: 1.5 }}>
+                      <a
+                        href="tel:+918904656669"
+                        style={{ color: 'inherit', textDecoration: 'none', display: 'block', transition: 'color 0.2s ease' }}
+                        onMouseOver={(e) => { e.currentTarget.style.color = '#2563EB' }}
+                        onMouseOut={(e) => { e.currentTarget.style.color = 'inherit' }}
+                      >
+                        +91 8904656669
+                      </a>
+                      <div>24/7 Availability</div>
                     </div>
                   </div>
                 </div>
@@ -127,14 +148,14 @@ export default function ContactPage() {
           <div
             className="card"
             style={{
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 'clamp(20px, 4vw, 36px)',
               background: '#FFFFFF',
               border: '1px solid var(--color-border)',
             }}
           >
             <h3 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--color-primary)', marginBottom: 20 }}>
-              Send an Academic Query
+              Write us a Query
             </h3>
 
             {submitted ? (
@@ -231,7 +252,7 @@ export default function ContactPage() {
                   ) : (
                     <>
                       <Send size={16} style={{ marginRight: 8 }} />
-                      <span>Submit Query to Counselors</span>
+                      <span>Submit Query</span>
                     </>
                   )}
                 </button>
