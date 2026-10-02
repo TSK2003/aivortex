@@ -226,7 +226,7 @@ export default function AdminCreateCoursePage() {
   const validateThumbnailUrl = (url) => {
     if (!url || !url.trim()) return null
     const trimmed = url.trim()
-    if (trimmed.startsWith('/uploads/')) return null
+    if (trimmed.startsWith('/uploads/') || trimmed.startsWith('/api/media/')) return null
     if (!/^https:\/\//i.test(trimmed)) {
       return 'Please enter a valid HTTPS image URL or upload an image.'
     }

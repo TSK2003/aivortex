@@ -245,10 +245,16 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ courseId, lessonId })
       }),
-    heartbeatVideoSession: (sessionId, lessonId, currentPositionSec, watchSecondsDelta) =>
+    heartbeatVideoSession: (sessionId, lessonId, positionSeconds, watchSecondsDelta) =>
       request('/student/video-session/heartbeat', {
         method: 'POST',
-        body: JSON.stringify({ sessionId, lessonId, currentPositionSec, watchSecondsDelta })
+        body: JSON.stringify({
+          sessionId,
+          lessonId,
+          positionSeconds,
+          currentPositionSec: positionSeconds,
+          watchSecondsDelta
+        })
       }),
     getNote: (lessonId) => request(`/student/lessons/${lessonId}/notes`),
     saveNote: (lessonId, noteText) =>

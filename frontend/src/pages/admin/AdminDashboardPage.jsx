@@ -539,6 +539,49 @@ export default function AdminDashboardPage() {
   const [offerDiscountPercent, setOfferDiscountPercent] = useState(25)
   const [offerMaxUses, setOfferMaxUses] = useState(100)
   const [offerDaysValid, setOfferDaysValid] = useState(30)
+  const [offerCourseId, setOfferCourseId] = useState('')
+
+  // Course Public Controls & Demo Modal State (Task 2.8 Real Admin UI)
+  const [publicControlsModal, setPublicControlsModal] = useState({
+    open: false,
+    course: null,
+    status: 'PUBLISHED',
+    isFeatured: false,
+    enrollmentOpen: true,
+    demoLessonId: '',
+    saving: false
+  })
+
+  const openPublicControlsModal = (course) => {
+    setPublicControlsModal({
+      open: true,
+      course,
+      status: course.status || 'PUBLISHED',
+      isFeatured: Boolean(course.isFeatured),
+      enrollmentOpen: course.enrollmentOpen !== false,
+      demoLessonId: course.demoLessonId || '',
+      saving: false
+    })
+  }
+
+  const handleSavePublicControls = async () => {
+    if (!publicControlsModal.course) return
+    try {
+      setPublicControlsModal(prev => ({ ...prev, saving: true }))
+      await api.admin.updatePublicControls(publicControlsModal.course.id, {
+        status: publicControlsModal.status,
+        isFeatured: publicControlsModal.isFeatured,
+        enrollmentOpen: publicControlsModal.enrollmentOpen,
+        demoLessonId: publicControlsModal.demoLessonId ? publicControlsModal.demoLessonId : null
+      })
+      showToast('Course public controls updated successfully', 'success')
+      setPublicControlsModal({ open: false, course: null, status: 'PUBLISHED', isFeatured: false, enrollmentOpen: true, demoLessonId: '', saving: false })
+      loadAdminData()
+    } catch (err) {
+      showToast(err.message || 'Failed to update public controls', 'error')
+      setPublicControlsModal(prev => ({ ...prev, saving: false }))
+    }
+  }
 
   // Pricing Edit State
   const [priceEditingCourseId, setPriceEditingCourseId] = useState(null)
@@ -1487,6 +1530,7 @@ export default function AdminDashboardPage() {
       await api.admin.createOffer({
         title: offerTitle.trim(),
         code: offerCode.trim().toUpperCase(),
+        courseId: offerCourseId ? offerCourseId : null,
         discountPercent: Number(offerDiscountPercent),
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
@@ -1498,6 +1542,7 @@ export default function AdminDashboardPage() {
       setIsOfferModalOpen(false)
       setOfferTitle('')
       setOfferCode('')
+      setOfferCourseId('')
       loadAdminData()
     } catch (err) {
       showToast(err.message || 'Failed to create offer', 'error')
@@ -3638,11 +3683,24 @@ export default function AdminDashboardPage() {
                       <div style={{ fontSize: '0.8rem', color: '#6B6D73', marginTop: 2 }}>
                         Status: <strong style={{ color: c.status === 'PUBLISHED' ? '#2D2F33' : '#4B4D52' }}>{c.status}</strong> •
                         Enrollment: <strong>{c.enrollmentOpen !== false ? 'OPEN' : 'CLOSED'}</strong> •
-                        Featured: <strong>{c.isFeatured ? 'YES' : 'NO'}</strong>
+                        Featured: <strong>{c.isFeatured ? 'YES' : 'NO'}</strong> •
+                        Demo Lesson: <strong style={{ color: c.demoLessonId ? '#2D2F33' : '#8A8C92' }}>
+                          {c.demoLessonId ? (c.playlists?.flatMap(p => p.lessons || []).find(l => l.id === c.demoLessonId)?.title || 'Assigned') : 'None'}
+                        </strong>
                       </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }}
+                        onClick={() => openPublicControlsModal(c)}
+                      >
+                        <Video size={14} />
+                        <span>Public Demo & Controls</span>
+                      </button>
+
                       <select
                         value={c.status}
                         className="form-input"
@@ -6329,7 +6387,7 @@ export default function AdminDashboardPage() {
                                     </div>
                                   </div>
                                   <div style={{ fontSize: '0.72rem', color: '#6B6D73', marginTop: 4 }}>
-                                    🔒 Existing email stays active until Admin approval and OTP verification complete.
+                                    Existing email stays active until Admin approval and OTP verification complete.
                                   </div>
                                 </div>
                               ) : isPasswordChange ? (
@@ -7405,6 +7463,20 @@ export default function AdminDashboardPage() {
               </div>
 
               <div className="form-field-group">
+                <label className="form-label">Applicable Course</label>
+                <select
+                  className="form-input"
+                  value={offerCourseId}
+                  onChange={(e) => setOfferCourseId(e.target.value)}
+                >
+                  <option value="">All Courses (Platform-Wide Promotion)</option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>{c.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-field-group">
                 <label className="form-label">Coupon Code (Uppercase) *</label>
                 <input
                   type="text"
@@ -7475,6 +7547,147 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: COURSE PUBLIC CONTROLS & PUBLIC DEMO SELECTOR (TASK 2.8) */}
+      {/* ========================================================================= */}
+      {publicControlsModal.open && publicControlsModal.course && (() => {
+        const course = publicControlsModal.course
+        const allLessons = (course.playlists || []).flatMap(p =>
+          (p.lessons || []).map(l => ({ ...l, playlistTitle: p.title }))
+        )
+        const eligibleLessons = allLessons.filter(l => ['APPROVED', 'PUBLISHED'].includes(l.status))
+
+        return (
+          <div className="razorpay-modal-overlay" onClick={() => setPublicControlsModal(prev => ({ ...prev, open: false }))}>
+            <div
+              className="razorpay-modal"
+              style={{ maxWidth: 580 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div className="razorpay-modal-icon" style={{ background: '#F4F4F5', color: '#2D2F33' }}>
+                    <Video size={20} />
+                  </div>
+                  <div>
+                    <h3 className="razorpay-modal-title" style={{ fontSize: '1.15rem', margin: 0 }}>Course Public Controls</h3>
+                    <div style={{ fontSize: '0.75rem', color: '#6B6D73' }}>{course.title}</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => setPublicControlsModal(prev => ({ ...prev, open: false }))}
+                  style={{ padding: 6, borderRadius: '50%' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="razorpay-modal-body" style={{ padding: '20px' }}>
+                {/* 1. Visibility Status */}
+                <div className="form-field-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Catalog Visibility Status</label>
+                  <select
+                    className="form-input"
+                    value={publicControlsModal.status}
+                    onChange={(e) => setPublicControlsModal(prev => ({ ...prev, status: e.target.value }))}
+                  >
+                    <option value="PUBLISHED">PUBLISHED (Publicly visible in course catalog)</option>
+                    <option value="DRAFT">DRAFT (Hidden from public catalog)</option>
+                    <option value="ARCHIVED">ARCHIVED (Restricted to existing enrolled students)</option>
+                  </select>
+                  <div style={{ fontSize: '0.72rem', color: '#8A8C92', marginTop: 4 }}>
+                    Only published courses appear on the public marketplace and search.
+                  </div>
+                </div>
+
+                {/* 2. Featured and Enrollment checkboxes */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, margin: '16px 0' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.875rem', cursor: 'pointer', color: '#15171A' }}>
+                    <input
+                      type="checkbox"
+                      checked={publicControlsModal.isFeatured}
+                      onChange={(e) => setPublicControlsModal(prev => ({ ...prev, isFeatured: e.target.checked }))}
+                    />
+                    <span>Feature on Homepage</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.875rem', cursor: 'pointer', color: '#15171A' }}>
+                    <input
+                      type="checkbox"
+                      checked={publicControlsModal.enrollmentOpen}
+                      onChange={(e) => setPublicControlsModal(prev => ({ ...prev, enrollmentOpen: e.target.checked }))}
+                    />
+                    <span>Open Enrollment</span>
+                  </label>
+                </div>
+
+                {/* 3. Public Demo Video Selector */}
+                <div className="form-field-group" style={{ marginTop: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <label className="form-label" style={{ fontWeight: 600, margin: 0 }}>Public Demo Lecture</label>
+                    {publicControlsModal.demoLessonId && (
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-xs"
+                        style={{ fontSize: '0.72rem', height: 26, padding: '0 8px' }}
+                        onClick={() => setPublicControlsModal(prev => ({ ...prev, demoLessonId: '' }))}
+                      >
+                        Clear Demo
+                      </button>
+                    )}
+                  </div>
+
+                  {eligibleLessons.length === 0 ? (
+                    <div style={{ padding: '12px 14px', borderRadius: 8, background: '#F8F8F8', border: '1px solid #E2E8F0', fontSize: '0.8rem', color: '#6B6D73' }}>
+                      No approved or published lectures found in this course. Lessons in DRAFT, SUBMITTED_FOR_REVIEW, or RETURNED_FOR_EDIT cannot be designated as a public demo.
+                    </div>
+                  ) : (
+                    <div>
+                      <select
+                        className="form-input"
+                        value={publicControlsModal.demoLessonId}
+                        onChange={(e) => setPublicControlsModal(prev => ({ ...prev, demoLessonId: e.target.value }))}
+                      >
+                        <option value="">-- No Public Demo Selected (Disabled) --</option>
+                        {eligibleLessons.map((l) => (
+                          <option key={l.id} value={l.id}>
+                            {l.playlistTitle ? `${l.playlistTitle} › ` : ''}{l.title} ({l.status})
+                          </option>
+                        ))}
+                      </select>
+                      <div style={{ fontSize: '0.72rem', color: '#8A8C92', marginTop: 4 }}>
+                        Public visitors can stream this designated demo video on the course detail page without enrollment.
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Footer Actions */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24, paddingTop: 16, borderTop: '1px solid #E2E8F0' }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setPublicControlsModal(prev => ({ ...prev, open: false }))}
+                    disabled={publicControlsModal.saving}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleSavePublicControls}
+                    disabled={publicControlsModal.saving}
+                  >
+                    {publicControlsModal.saving ? 'Saving...' : 'Save Public Controls'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ========================================================================= */}
       {/* MODAL 3: VIEW CREATOR PROFILE MODAL */}

@@ -51,6 +51,45 @@ export async function getAssignedCourses(req, res, next) {
   }
 }
 
+// 1b. Get Single Assigned Course for Creator (Object-level IDOR protection)
+export async function getAssignedCourseById(req, res, next) {
+  try {
+    const creatorId = req.user.id
+    const { courseId } = req.params
+
+    if (req.user.role !== 'ADMIN') {
+      const assignment = await prisma.courseCreator.findUnique({
+        where: { courseId_creatorId: { courseId, creatorId } }
+      })
+      if (!assignment) {
+        throw new ForbiddenError('You are not authorized to view this course')
+      }
+    }
+
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        playlists: {
+          orderBy: { orderIndex: 'asc' },
+          include: {
+            lessons: {
+              orderBy: { orderIndex: 'asc' }
+            }
+          }
+        }
+      }
+    })
+
+    if (!course) {
+      throw new NotFoundError('Course not found')
+    }
+
+    return successResponse(res, { course })
+  } catch (err) {
+    next(err)
+  }
+}
+
 // 2. Create Playlist / Section (Object-Level Authorization Check)
 export async function createPlaylist(req, res, next) {
   try {
@@ -200,6 +239,10 @@ export async function uploadVideo(req, res, next) {
       throw new BadRequestError('Section ID and lecture title are required')
     }
 
+    if (status === 'APPROVED' || status === 'PUBLISHED') {
+      throw new ForbiddenError('Lessons cannot be created directly in APPROVED or PUBLISHED status')
+    }
+
     // Verify playlist belongs to a course assigned to creator
     const playlist = await prisma.playlist.findUnique({
       where: { id: playlistId },
@@ -317,6 +360,16 @@ export async function updateLesson(req, res, next) {
       : lesson.videoUrl
     const effectiveS3Key = s3Key !== undefined ? s3Key : lesson.s3Key
     const hasVideo = Boolean(cleanVideoUrl || effectiveS3Key)
+
+    // Disallow illegal status transitions
+    if (status) {
+      if (req.user.role !== 'ADMIN' && (status === 'APPROVED' || status === 'PUBLISHED')) {
+        throw new ForbiddenError('Creators are not permitted to set APPROVED or PUBLISHED status')
+      }
+      if (status === 'PUBLISHED' && lesson.status !== 'APPROVED') {
+        throw new BadRequestError(`Only APPROVED lessons can be transitioned to PUBLISHED. Current status: ${lesson.status}`)
+      }
+    }
 
     // Cannot submit for review if no video
     if (status === 'SUBMITTED_FOR_REVIEW' && !hasVideo) {
@@ -462,6 +515,23 @@ export async function submitVideoForReview(req, res, next) {
         ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
       }
     })
+
+    // Notify Administrators of pending review item
+    try {
+      const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } })
+      for (const a of admins) {
+        await prisma.notification.create({
+          data: {
+            userId: a.id,
+            title: 'Lesson Submitted for Review',
+            message: `Creator submitted lecture "${lesson.title}" for review`,
+            linkUrl: '/admin/video-verification'
+          }
+        })
+      }
+    } catch (notifErr) {
+      console.warn('Admin notification warning on video submission:', notifErr.message)
+    }
 
     return successResponse(res, { lesson: updated }, 'Video submitted to Admin review queue')
   } catch (err) {

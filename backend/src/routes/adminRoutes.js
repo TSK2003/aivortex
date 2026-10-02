@@ -16,6 +16,7 @@ import {
   getAdminCourses,
   createCourse,
   updateCourse,
+  assignCreatorToCourse,
   updatePricing,
   updatePublicControls,
   getVideoVerificationQueue,
@@ -117,6 +118,7 @@ router.patch('/students/:id/enrollments/:enrollmentId/status', updateStudentEnro
 router.get('/courses', getAdminCourses)
 router.post('/courses', createCourse)
 router.patch('/courses/:courseId', updateCourse)
+router.post('/courses/:courseId/assign', assignCreatorToCourse)
 router.patch('/courses/:courseId/pricing', updatePricing)
 router.patch('/courses/:courseId/public-controls', updatePublicControls)
 

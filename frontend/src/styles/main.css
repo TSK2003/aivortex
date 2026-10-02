@@ -214,128 +214,120 @@ button svg {
   font-size: var(--font-size-sm);
 }
 
-/* Primary Button: Deep Navy with Crisp White text in Light Mode, Crisp Off-White with Dark Navy text in Dark Mode */
+/* Universal High-Contrast Button System — Light & Dark Mode */
 .btn-primary {
-  background-color: var(--color-primary, #0F172A);
+  background-color: #2563EB !important;
   color: #FFFFFF !important;
-  border-color: var(--color-primary, #0F172A);
+  border: 1px solid #2563EB !important;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2);
 }
 
-.btn-primary:hover {
-  background-color: var(--color-primary-light, #1E293B);
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  background-color: #1D4ED8 !important;
   color: #FFFFFF !important;
-  border-color: var(--color-primary-light, #1E293B);
+  border-color: #1D4ED8 !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+
+.btn-primary:active {
+  background-color: #1E40AF !important;
+  color: #FFFFFF !important;
+  border-color: #1E40AF !important;
 }
 
 :root[data-theme='dark'] .btn-primary,
 [data-theme='dark'] .btn-primary,
 .dark-theme .btn-primary {
-  background-color: #F8FAFC !important;
-  color: #0F172A !important;
-  border-color: #F8FAFC !important;
-  font-weight: 700;
+  background-color: #3B82F6 !important;
+  color: #FFFFFF !important;
+  border-color: #3B82F6 !important;
 }
 
 :root[data-theme='dark'] .btn-primary:hover,
 [data-theme='dark'] .btn-primary:hover,
 .dark-theme .btn-primary:hover {
-  background-color: #FFFFFF !important;
-  color: #020617 !important;
-  border-color: #FFFFFF !important;
-  background-color: var(--color-primary);
-  color: var(--color-text-inverse);
+  background-color: #2563EB !important;
+  color: #FFFFFF !important;
+  border-color: #2563EB !important;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
 }
 
-.btn-primary:hover {
-  background-color: var(--color-primary-light);
-  color: var(--color-text-inverse);
-}
-
-/* Secondary Button: Vivid Royal Blue with Pure White text ALWAYS */
+/* Secondary Button: Deep Slate Charcoal */
 .btn-secondary {
-  background-color: var(--color-secondary, #2563EB) !important;
+  background-color: #0F172A !important;
   color: #FFFFFF !important;
-  border: 1px solid var(--color-secondary, #2563EB) !important;
+  border: 1px solid #0F172A !important;
 }
 
-.btn-secondary:hover {
-  background-color: var(--color-secondary-hover, #1D4ED8) !important;
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+  background-color: #1E293B !important;
   color: #FFFFFF !important;
-  border-color: var(--color-secondary-hover, #1D4ED8) !important;
+  border-color: #1E293B !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
 }
 
 :root[data-theme='dark'] .btn-secondary,
 [data-theme='dark'] .btn-secondary,
 .dark-theme .btn-secondary {
-  background-color: #2563EB !important;
-  color: #FFFFFF !important;
-  border-color: #3B82F6 !important;
-  background-color: var(--color-secondary);
-  color: var(--color-text-inverse);
-}
-
-.btn-secondary:hover {
-  background-color: var(--color-secondary-hover);
-  color: var(--color-text-inverse);
+  background-color: #1E293B !important;
+  color: #F8FAFC !important;
+  border-color: #334155 !important;
 }
 
 :root[data-theme='dark'] .btn-secondary:hover,
 [data-theme='dark'] .btn-secondary:hover,
 .dark-theme .btn-secondary:hover {
-  background-color: #1D4ED8 !important;
+  background-color: #334155 !important;
   color: #FFFFFF !important;
-  border-color: #60A5FA !important;
+  border-color: #475569 !important;
 }
 
-/* Outline Button: Clean neutral outline with high-contrast text */
+/* Outline Button: Clean neutral with high-contrast text */
 .btn-outline {
-  background-color: var(--color-bg, #FFFFFF);
+  background-color: #FFFFFF !important;
   color: #0F172A !important;
-  border: 1px solid var(--color-border, #CBD5E1);
+  border: 1.5px solid #CBD5E1 !important;
 }
 
-.btn-outline:hover {
-  border-color: #0F172A;
-  background-color: var(--color-bg-alt, #F8FAFC);
+.btn-outline:hover,
+.btn-outline:focus-visible {
+  border-color: #64748B !important;
+  background-color: #F8FAFC !important;
   color: #0F172A !important;
-  background-color: var(--color-bg);
-  color: var(--color-primary);
-  border: 1px solid var(--color-border);
-}
-
-.btn-outline:hover {
-  border-color: var(--color-primary);
-  background-color: var(--color-bg-alt);
-  color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 :root[data-theme='dark'] .btn-outline,
 [data-theme='dark'] .btn-outline,
 .dark-theme .btn-outline {
-  background-color: var(--color-bg-card, #111827) !important;
+  background-color: #111827 !important;
   color: #F8FAFC !important;
-  border: 1px solid var(--color-border, #2E3E58) !important;
+  border: 1.5px solid #374151 !important;
 }
 
 :root[data-theme='dark'] .btn-outline:hover,
 [data-theme='dark'] .btn-outline:hover,
 .dark-theme .btn-outline:hover {
-  background-color: var(--color-bg-subtle, #1A2640) !important;
+  background-color: #1F2937 !important;
   color: #FFFFFF !important;
-  border-color: #3B82F6 !important;
+  border-color: #60A5FA !important;
 }
 
-/* Outline Blue Button: Blue border & text, solid blue with white text on hover */
+/* Outline Blue Button: Vivid Royal Blue outline, filled blue with white text on hover */
 .btn-outline-blue {
-  background-color: transparent;
+  background-color: transparent !important;
   color: #2563EB !important;
-  border: 1.5px solid #2563EB;
+  border: 1.5px solid #2563EB !important;
 }
 
-.btn-outline-blue:hover {
+.btn-outline-blue:hover,
+.btn-outline-blue:focus-visible {
   background-color: #2563EB !important;
   color: #FFFFFF !important;
   border-color: #2563EB !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 
 :root[data-theme='dark'] .btn-outline-blue,
@@ -352,6 +344,7 @@ button svg {
   background-color: #3B82F6 !important;
   color: #FFFFFF !important;
   border-color: #3B82F6 !important;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
 }
 
 /* Outline White Button: Used on dark sections & hero cards */
@@ -622,4 +615,84 @@ button:disabled {
     max-width: 100%;
   }
 }
+
+/* ==================================================
+   ACCESSIBILITY & FOCUS VISIBILITY (Section 5.25 & 5.33)
+   WCAG 2.2 AA compliant visible focus indicator
+================================================== */
+:focus-visible {
+  outline: 2px solid var(--color-primary, #4F46E5) !important;
+  outline-offset: 2px !important;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-primary, #4F46E5) !important;
+  outline-offset: 2px !important;
+}
+
+/* Screen Reader Only Utility */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Data Table Typography & Alignment (Section 5.12) */
+.table-enterprise {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  color: var(--color-text-primary, #0F172A);
+}
+
+.table-enterprise th {
+  padding: 10px 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted, #64748B);
+  background: var(--color-surface-subtle, #F8FAFC);
+  border-bottom: 1px solid var(--color-border, #E2E8F0);
+  text-align: left;
+}
+
+.table-enterprise td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border, #E2E8F0);
+  vertical-align: middle;
+}
+
+.table-enterprise tr:hover td {
+  background-color: var(--color-surface-subtle, #F8FAFC);
+}
+
+/* Enterprise Shell & Responsive Containers (Section 5.7 & 5.26) */
+.content-container {
+  width: 100%;
+  max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-4, 16px);
+  padding-right: var(--space-4, 16px);
+}
+
+@media (max-width: 768px) {
+  .content-container {
+    padding-left: var(--space-3, 12px);
+    padding-right: var(--space-3, 12px);
+  }
+}
+
 

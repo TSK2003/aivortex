@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="xgbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0068C7"/>
+      <stop offset="100%" stop-color="#2887D7"/>
+    </linearGradient>
+  </defs>
+  <!-- Tree network branch above (official DMLC mark) -->
+  <g stroke="#00A3FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <line x1="44" y1="36" x2="28" y2="48"/>
+    <line x1="44" y1="36" x2="60" y2="48"/>
+    <line x1="28" y1="48" x2="20" y2="62"/>
+    <line x1="28" y1="48" x2="36" y2="62"/>
+    <line x1="60" y1="48" x2="52" y2="62"/>
+    <line x1="60" y1="48" x2="68" y2="62"/>
+  </g>
+  <g fill="#00A3FF">
+    <circle cx="44" cy="36" r="5"/>
+    <circle cx="28" cy="48" r="4.5"/>
+    <circle cx="60" cy="48" r="4.5"/>
+    <circle cx="20" cy="62" r="3.5"/>
+    <circle cx="36" cy="62" r="3.5"/>
+    <circle cx="52" cy="62" r="3.5"/>
+    <circle cx="68" cy="62" r="3.5"/>
+  </g>
+  <!-- Rocket spark on right -->
+  <path d="M102 24c4 4 10 16 6 22-6 6-18 2-22-2 4-8 12-16 16-20z" fill="#00A3FF" opacity="0.85"/>
+  <path d="M104 22l6-4m-12 18l-5 5m14-5l5 5" stroke="#00A3FF" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Iconic bold tilted 'X' -->
+  <g transform="translate(14, 28)">
+    <path d="M22 42l16 18-16 18h14l9-11 9 11h14L62 60l16-18H64l-9 11-9-11H22z" fill="url(#xgbGrad)"/>
+    <!-- Boost energetic rays around X -->
+    <line x1="12" y1="46" x2="4" y2="44" stroke="#00A3FF" stroke-width="3" stroke-linecap="round"/>
+    <line x1="12" y1="60" x2="3" y2="60" stroke="#00A3FF" stroke-width="3" stroke-linecap="round"/>
+    <line x1="12" y1="74" x2="4" y2="76" stroke="#00A3FF" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</svg>

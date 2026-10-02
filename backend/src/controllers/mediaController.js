@@ -72,7 +72,7 @@ export async function uploadAdminMedia(req, res) {
 
     await fs.promises.writeFile(targetFilePath, buffer)
 
-    const relativeUrl = `/uploads/${safeFolder}/${uniqueName}`
+    const relativeUrl = `/api/media/stream/${safeFolder}/${uniqueName}`
 
     return res.status(201).json({
       success: true,

@@ -249,6 +249,7 @@ model Course {
   orders            Order[]
   quizzes           Quiz[]
   reviews           CourseReview[]
+  offers            Offer[]
 
   @@index([category])
   @@index([status])
@@ -546,6 +547,7 @@ model Order {
 
 model Offer {
   id              String    @id @default(uuid())
+  courseId        String?
   title           String
   code            String    @unique
   discountPercent Int?
@@ -557,7 +559,10 @@ model Offer {
   usedCount       Int       @default(0)
   createdAt       DateTime  @default(now())
 
+  course          Course?   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
   @@index([code])
+  @@index([courseId])
 }
 
 // ----------------------------------------------------

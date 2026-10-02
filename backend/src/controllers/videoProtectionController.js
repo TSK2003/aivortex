@@ -46,35 +46,50 @@ export async function startVideoSession(req, res, next) {
     }
 
     // 3. Backend-Enforced Sequential Learning Unlock Check
-    // If not first lesson in first playlist, verify earlier lessons completed
-    const earlierLessons = await prisma.lesson.findMany({
+    const earlierPlaylists = await prisma.playlist.findMany({
+      where: {
+        courseId,
+        orderIndex: { lt: lesson.playlist.orderIndex }
+      },
+      include: {
+        lessons: {
+          where: { status: 'PUBLISHED' },
+          include: { quizzes: true }
+        }
+      }
+    })
+
+    const earlierLessonsInSamePlaylist = await prisma.lesson.findMany({
       where: {
         playlistId: lesson.playlistId,
         orderIndex: { lt: lesson.orderIndex },
         status: 'PUBLISHED'
       },
-      include: {
-        quizzes: true
-      }
+      include: { quizzes: true }
     })
 
-    if (earlierLessons.length > 0) {
+    const allEarlierLessons = [
+      ...earlierPlaylists.flatMap((p) => p.lessons),
+      ...earlierLessonsInSamePlaylist
+    ]
+
+    if (allEarlierLessons.length > 0) {
       const completedProgress = await prisma.lessonProgress.findMany({
         where: {
           enrollmentId: enrollment.id,
-          lessonId: { in: earlierLessons.map((l) => l.id) },
+          lessonId: { in: allEarlierLessons.map((l) => l.id) },
           isCompleted: true
         }
       })
 
-      if (completedProgress.length < earlierLessons.length) {
+      if (completedProgress.length < allEarlierLessons.length) {
         throw new ForbiddenError(
           'Sequential learning rule enforced: You must complete earlier lessons before unlocking this lecture.'
         )
       }
 
       // Check required quizzes for earlier lessons
-      for (const earlierLesson of earlierLessons) {
+      for (const earlierLesson of allEarlierLessons) {
         if (earlierLesson.quizzes && earlierLesson.quizzes.length > 0) {
           const quizIds = earlierLesson.quizzes.map((q) => q.id)
           const passedAttempt = await prisma.quizAttempt.findFirst({
@@ -153,15 +168,21 @@ export async function startVideoSession(req, res, next) {
       }
     })
 
+    const resumePosition = savedProgress ? savedProgress.lastPositionSec : 0
+
     return successResponse(
       res,
       {
         sessionId: newSessionId,
         streamUrl,
+        videoUrl: streamUrl,
         watermark,
-        resumePositionSec: savedProgress ? savedProgress.lastPositionSec : 0,
+        resumePositionSec: resumePosition,
+        lastPositionSec: resumePosition,
+        durationSeconds: lesson.durationSeconds,
+        expiresAt: new Date(Date.now() + 7200 * 1000).toISOString(),
         maxSeekAllowedSeconds: 300,
-        heartbeatIntervalMs: 30000
+        heartbeatIntervalMs: 20000
       },
       'Video session authorized'
     )
@@ -173,10 +194,15 @@ export async function startVideoSession(req, res, next) {
 export async function heartbeatVideoSession(req, res, next) {
   try {
     const studentId = req.user.id
-    const { sessionId, positionSeconds = 0 } = req.body
+    const { sessionId, positionSeconds, currentPositionSec, watchSecondsDelta } = req.body
+    const rawPos = positionSeconds ?? currentPositionSec ?? 0
 
     if (!sessionId) {
       throw new BadRequestError('Session ID is required for heartbeat')
+    }
+
+    if (typeof rawPos !== 'number' || isNaN(rawPos) || rawPos < 0) {
+      throw new BadRequestError('Invalid position: must be a non-negative number')
     }
 
     const activeSession = await prisma.activeVideoSession.findUnique({
@@ -219,6 +245,8 @@ export async function heartbeatVideoSession(req, res, next) {
     // Update server-authoritative lesson progress for enrolled student
     const courseId = activeSession.lesson?.playlist?.courseId
     let lessonCompleted = false
+    let currentWatchSeconds = 0
+    let currentPos = 0
 
     if (courseId) {
       const enrollment = await prisma.enrollment.findUnique({
@@ -236,11 +264,14 @@ export async function heartbeatVideoSession(req, res, next) {
           }
         })
 
-        const currentWatchSeconds = (existingProgress?.watchSeconds || 0) + elapsedSeconds
-        const currentPos = Math.max(0, Math.floor(positionSeconds))
+        currentWatchSeconds = (existingProgress?.watchSeconds || 0) + elapsedSeconds
+        currentPos = Math.min(lesson.durationSeconds, Math.max(0, Math.floor(rawPos)))
 
-        // Check if video content requirement is satisfied
-        const videoFinished = currentPos >= (lesson.durationSeconds - 5) || currentWatchSeconds >= lesson.durationSeconds
+        // Check if video content requirement is genuinely satisfied (prevent seek-to-end cheating)
+        const requiredWatchSeconds = Math.min(lesson.durationSeconds, Math.floor(lesson.durationSeconds * 0.8))
+        const videoFinished =
+          lesson.durationSeconds <= 0 ||
+          (currentWatchSeconds >= requiredWatchSeconds && (currentPos >= (lesson.durationSeconds - 15) || currentWatchSeconds >= lesson.durationSeconds))
 
         // Check if quizzes are required and passed
         let allQuizzesPassed = true
@@ -289,7 +320,11 @@ export async function heartbeatVideoSession(req, res, next) {
             where: { playlist: { courseId, status: 'PUBLISHED' }, status: 'PUBLISHED' }
           })
           const completedCount = await prisma.lessonProgress.count({
-            where: { enrollmentId: enrollment.id, isCompleted: true }
+            where: {
+              enrollmentId: enrollment.id,
+              lesson: { playlist: { courseId, status: 'PUBLISHED' }, status: 'PUBLISHED' },
+              isCompleted: true
+            }
           })
           const progressPercent = Math.min(100, Math.round((completedCount / (totalPublished || 1)) * 100))
 
@@ -304,7 +339,17 @@ export async function heartbeatVideoSession(req, res, next) {
       }
     }
 
-    return successResponse(res, { active: true, lessonCompleted }, 'Session heartbeat acknowledged')
+    return successResponse(
+      res,
+      {
+        active: true,
+        lessonCompleted,
+        currentPositionSec: currentPos,
+        positionSeconds: currentPos,
+        watchSeconds: currentWatchSeconds
+      },
+      'Session heartbeat acknowledged'
+    )
   } catch (err) {
     next(err)
   }

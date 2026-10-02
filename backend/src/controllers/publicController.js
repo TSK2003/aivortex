@@ -2,6 +2,7 @@ import prisma from '../config/prisma.js'
 import { successResponse } from '../utils/responseWrapper.js'
 import { NotFoundError, BadRequestError } from '../utils/appError.js'
 import s3Service from '../services/s3Service.js'
+import paymentService from '../services/paymentService.js'
 
 // 1. Public Courses Catalog with Multi-Filters & Sorting
 export async function getCourses(req, res, next) {
@@ -22,6 +23,10 @@ export async function getCourses(req, res, next) {
 
     if (isFree !== undefined && isFree !== 'all') {
       where.isFree = isFree === 'true' || isFree === true
+    }
+
+    if (req.query.featured !== undefined) {
+      where.isFeatured = req.query.featured === 'true' || req.query.featured === true
     }
 
     if (search && search.trim()) {
@@ -134,7 +139,16 @@ export async function getCourseBySlug(req, res, next) {
                 id: true,
                 name: true,
                 avatar: true,
-                creatorProfile: true
+                creatorProfile: {
+                  select: {
+                    headline: true,
+                    specialization: true,
+                    biography: true,
+                    linkedinUrl: true,
+                    portfolioUrl: true,
+                    isVerified: true
+                  }
+                }
               }
             }
           }
@@ -194,12 +208,16 @@ export async function getCourseBySlug(req, res, next) {
       }
     }
 
+    const effectivePricing = await paymentService.calculateEffectivePrice(course.id)
+
     return successResponse(res, {
       course: {
         ...course,
         previewVideoUrl: course.demoVideoUrl || null,
         thumbnailUrl: course.thumbnail,
-        demoVideo
+        demoVideo,
+        effectivePrice: effectivePricing.effectivePrice,
+        activeOffer: effectivePricing.appliedOffer
       }
     })
   } catch (err) {
@@ -347,53 +365,43 @@ export async function validateOfferCode(req, res, next) {
     const cleanCode = code.trim().toUpperCase()
     const now = new Date()
 
-    const offer = await prisma.offer.findUnique({
-      where: { code: cleanCode }
-    })
-
-    if (!offer || !offer.isActive || offer.startDate > now || offer.endDate < now) {
-      throw new BadRequestError('Invalid or expired coupon code')
-    }
-
-    if (offer.maxUses && offer.usedCount >= offer.maxUses) {
-      throw new BadRequestError('This coupon code has reached its maximum redemptions')
-    }
-
-    let originalPrice = 0
-    let finalPrice = 0
-
-    if (courseId) {
-      const course = await prisma.course.findUnique({
-        where: { id: courseId },
-        select: { id: true, price: true, isFree: true }
+    if (!courseId) {
+      const offer = await prisma.offer.findUnique({
+        where: { code: cleanCode }
       })
 
-      if (!course) {
-        throw new NotFoundError('Course not found')
+      if (!offer || !offer.isActive || offer.startDate > now || offer.endDate < now) {
+        throw new BadRequestError('Invalid or expired coupon code')
       }
 
-      originalPrice = course.price
-      finalPrice = course.price
+      if (offer.maxUses && offer.usedCount >= offer.maxUses) {
+        throw new BadRequestError('This coupon code has reached its maximum redemptions')
+      }
 
-      if (!course.isFree) {
-        if (offer.discountPercent) {
-          finalPrice = Math.max(0, originalPrice * (1 - offer.discountPercent / 100))
-        } else if (offer.discountAmount) {
-          finalPrice = Math.max(0, originalPrice - offer.discountAmount)
+      return successResponse(res, {
+        valid: true,
+        offer: {
+          id: offer.id,
+          title: offer.title,
+          code: offer.code,
+          discountPercent: offer.discountPercent,
+          discountAmount: offer.discountAmount
         }
-      }
+      }, 'Coupon code is valid')
     }
+
+    const pricing = await paymentService.calculateEffectivePrice(courseId, cleanCode)
 
     return successResponse(res, {
       valid: true,
       offer: {
-        id: offer.id,
-        title: offer.title,
-        code: offer.code,
-        discountPercent: offer.discountPercent,
-        discountAmount: offer.discountAmount,
-        originalPrice,
-        finalPrice: Math.round(finalPrice * 100) / 100
+        id: pricing.appliedOffer?.id,
+        title: pricing.appliedOffer?.title,
+        code: pricing.appliedOffer?.code,
+        discountPercent: pricing.appliedOffer?.discountPercent,
+        discountAmount: pricing.appliedOffer?.discountAmount,
+        originalPrice: pricing.basePrice,
+        finalPrice: pricing.effectivePrice
       }
     }, 'Coupon code applied successfully')
   } catch (err) {

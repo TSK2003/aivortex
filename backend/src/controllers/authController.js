@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
-import { UnauthorizedError, ConflictError, BadRequestError, NotFoundError } from '../utils/appError.js'
+import { UnauthorizedError, ConflictError, BadRequestError, NotFoundError, ForbiddenError } from '../utils/appError.js'
 import { successResponse } from '../utils/responseWrapper.js'
 import { generateToken, setAuthCookie, clearAuthCookie } from '../utils/token.js'
 import prisma from '../config/prisma.js'
@@ -9,23 +9,27 @@ import emailService from '../services/emailService.js'
 
 export async function login(req, res, next) {
   try {
-    const { email, password } = req.body
+    const { password } = req.body
+    const identifier = (req.body.identifier || req.body.email || req.body.creatorId || '').trim()
 
-    if (!email || !password) {
-      throw new BadRequestError('Email and password are required')
+    if (!identifier || !password) {
+      throw new BadRequestError('Email or Creator ID and password are required')
     }
 
-    const cleanEmail = email.trim().toLowerCase()
-
-    const user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier.toLowerCase() },
+          { id: identifier }
+        ]
+      },
       include: {
         creatorProfile: true
       }
     })
 
     if (!user) {
-      throw new UnauthorizedError('Invalid email or password credentials')
+      throw new UnauthorizedError('Invalid credentials')
     }
 
     const isValidPassword = await bcrypt.compare(password, user.passwordHash)
@@ -184,7 +188,11 @@ export async function demoLogin(req, res, next) {
 
 export async function register(req, res, next) {
   try {
-    const { name, email, password, phone } = req.body
+    const { name, email, password, phone, role } = req.body
+
+    if (role && role !== 'STUDENT') {
+      throw new ForbiddenError('Self-registration as Creator or Admin is not permitted. Accounts must be provisioned by Administrator.')
+    }
 
     if (!name || !email || !password) {
       throw new BadRequestError('Name, email, and password are required')
@@ -489,7 +497,7 @@ export async function forgotPassword(req, res, next) {
           token: resetToken
         })
       } catch (mailErr) {
-        console.warn('⚠️ SMTP password reset dispatch error:', mailErr.message)
+        console.warn('[WARN] SMTP password reset dispatch error:', mailErr.message)
       }
     }
 

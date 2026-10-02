@@ -36,22 +36,22 @@ export const formatPercentage = (value) => {
  * International Country Codes & Phone Configuration
  */
 export const INTERNATIONAL_COUNTRY_CODES = [
-  { code: 'IN', dialCode: '+91', name: 'India', flag: '🇮🇳', minDigits: 10, maxDigits: 10, startsWithRegex: /^[6-9]/, placeholder: '98765 00002' },
-  { code: 'US', dialCode: '+1', name: 'United States', flag: '🇺🇸', minDigits: 10, maxDigits: 10, startsWithRegex: /^[2-9]/, placeholder: '987 654 3210' },
-  { code: 'GB', dialCode: '+44', name: 'United Kingdom', flag: '🇬🇧', minDigits: 10, maxDigits: 11, startsWithRegex: null, placeholder: '7911 123456' },
-  { code: 'CA', dialCode: '+1', name: 'Canada', flag: '🇨🇦', minDigits: 10, maxDigits: 10, startsWithRegex: /^[2-9]/, placeholder: '987 654 3210' },
-  { code: 'AU', dialCode: '+61', name: 'Australia', flag: '🇦🇺', minDigits: 9, maxDigits: 9, startsWithRegex: null, placeholder: '412 345 678' },
-  { code: 'SG', dialCode: '+65', name: 'Singapore', flag: '🇸🇬', minDigits: 8, maxDigits: 8, startsWithRegex: /^[689]/, placeholder: '8123 4567' },
-  { code: 'AE', dialCode: '+971', name: 'United Arab Emirates', flag: '🇦🇪', minDigits: 9, maxDigits: 9, startsWithRegex: null, placeholder: '50 123 4567' },
-  { code: 'DE', dialCode: '+49', name: 'Germany', flag: '🇩🇪', minDigits: 10, maxDigits: 11, startsWithRegex: null, placeholder: '151 23456789' },
-  { code: 'FR', dialCode: '+33', name: 'France', flag: '🇫🇷', minDigits: 9, maxDigits: 9, startsWithRegex: null, placeholder: '6 12 34 56 78' },
-  { code: 'JP', dialCode: '+81', name: 'Japan', flag: '🇯🇵', minDigits: 10, maxDigits: 10, startsWithRegex: null, placeholder: '90 1234 5678' },
-  { code: 'SA', dialCode: '+966', name: 'Saudi Arabia', flag: '🇸🇦', minDigits: 9, maxDigits: 9, startsWithRegex: null, placeholder: '50 123 4567' },
-  { code: 'NZ', dialCode: '+64', name: 'New Zealand', flag: '🇳🇿', minDigits: 8, maxDigits: 10, startsWithRegex: null, placeholder: '21 123 4567' },
-  { code: 'MY', dialCode: '+60', name: 'Malaysia', flag: '🇲🇾', minDigits: 9, maxDigits: 10, startsWithRegex: null, placeholder: '12 345 6789' },
-  { code: 'ZA', dialCode: '+27', name: 'South Africa', flag: '🇿🇦', minDigits: 9, maxDigits: 9, startsWithRegex: null, placeholder: '71 123 4567' },
-  { code: 'BR', dialCode: '+55', name: 'Brazil', flag: '🇧🇷', minDigits: 10, maxDigits: 11, startsWithRegex: null, placeholder: '11 98765 4321' },
-  { code: 'OTHER', dialCode: '+', name: 'Other (International)', flag: '🌐', minDigits: 7, maxDigits: 15, startsWithRegex: null, placeholder: '1234567890' }
+  { code: 'IN', dialCode: '+91', name: 'India', flag: 'IN', minDigits: 10, maxDigits: 10, startsWithRegex: /^[6-9]/, placeholder: '98765 00002' },
+  { code: 'US', dialCode: '+1', name: 'United States', flag: 'US', minDigits: 10, maxDigits: 10, startsWithRegex: /^[2-9]/, placeholder: '987 654 3210' },
+  { code: 'GB', dialCode: '+44', name: 'United Kingdom', flag: 'GB', minDigits: 10, maxDigits: 11, startsWithRegex: null, placeholder: '7911 123456' },
+  { code: 'CA', dialCode: '+1', name: 'Canada', flag: 'CA', minDigits: 10, maxDigits: 10, startsWithRegex: /^[2-9]/, placeholder: '987 654 3210' },
+  { code: 'AU', dialCode: '+61', name: 'Australia', flag: 'AU', minDigits: 9, maxDigits: 9, startsWithRegex: null, placeholder: '412 345 678' },
+  { code: 'SG', dialCode: '+65', name: 'Singapore', flag: 'SG', minDigits: 8, maxDigits: 8, startsWithRegex: /^[689]/, placeholder: '8123 4567' },
+  { code: 'AE', dialCode: '+971', name: 'United Arab Emirates', flag: 'AE', minDigits: 9, maxDigits: 9, startsWithRegex: null, placeholder: '50 123 4567' },
+  { code: 'DE', dialCode: '+49', name: 'Germany', flag: 'DE', minDigits: 10, maxDigits: 11, startsWithRegex: null, placeholder: '151 23456789' },
+  { code: 'FR', dialCode: '+33', name: 'France', flag: 'FR', minDigits: 9, maxDigits: 9, startsWithRegex: null, placeholder: '6 12 34 56 78' },
+  { code: 'JP', dialCode: '+81', name: 'Japan', flag: 'JP', minDigits: 10, maxDigits: 10, startsWithRegex: null, placeholder: '90 1234 5678' },
+  { code: 'SA', dialCode: '+966', name: 'Saudi Arabia', flag: 'SA', minDigits: 9, maxDigits: 9, startsWithRegex: null, placeholder: '50 123 4567' },
+  { code: 'NZ', dialCode: '+64', name: 'New Zealand', flag: 'NZ', minDigits: 8, maxDigits: 10, startsWithRegex: null, placeholder: '21 123 4567' },
+  { code: 'MY', dialCode: '+60', name: 'Malaysia', flag: 'MY', minDigits: 9, maxDigits: 10, startsWithRegex: null, placeholder: '12 345 6789' },
+  { code: 'ZA', dialCode: '+27', name: 'South Africa', flag: 'ZA', minDigits: 9, maxDigits: 9, startsWithRegex: null, placeholder: '71 123 4567' },
+  { code: 'BR', dialCode: '+55', name: 'Brazil', flag: 'BR', minDigits: 10, maxDigits: 11, startsWithRegex: null, placeholder: '11 98765 4321' },
+  { code: 'OTHER', dialCode: '+', name: 'Other (International)', flag: 'INT', minDigits: 7, maxDigits: 15, startsWithRegex: null, placeholder: '1234567890' }
 ]
 
 /**
