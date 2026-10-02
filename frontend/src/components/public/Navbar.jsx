@@ -168,21 +168,7 @@ export default function Navbar() {
 
           {/* Authenticated vs Guest Actions */}
           {isAuthenticated ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Link
-                to={getDashboardPath()}
-                className="btn btn-primary btn-sm"
-                id="header-btn-dashboard"
-                style={{
-                  padding: scrolled ? '6px 14px' : '7px 14px',
-                  borderRadius: scrolled ? 9999 : 6,
-                  transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)'
-                }}
-              >
-                <LayoutDashboard size={14} style={{ marginRight: 5 }} />
-                <span>Dashboard</span>
-              </Link>
-
+            <div style={{ display: 'flex', alignItems: 'center' }}>
               {/* User Dropdown Avatar */}
               <div ref={userRef} style={{ position: 'relative' }}>
                 <button
