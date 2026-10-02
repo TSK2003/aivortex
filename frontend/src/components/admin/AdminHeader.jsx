@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom'
+﻿import { useLocation } from 'react-router-dom'
 import {
   Menu,
   Sun,
@@ -109,12 +109,12 @@ export default function AdminHeader({
 
           {getPageTitle() !== 'Admin Portal' && (
             <span className="admin-header-breadcrumb" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: '#CBD5E1', fontSize: '0.875rem' }}>/</span>
+              <span style={{ color: '#D5D5D8', fontSize: '0.875rem' }}>/</span>
               <span
                 style={{
                   fontSize: '0.875rem',
                   fontWeight: 600,
-                  color: '#475569'
+                  color: '#5A5C62'
                 }}
               >
                 {getPageTitle()}
@@ -128,13 +128,13 @@ export default function AdminHeader({
               display: 'inline-flex',
               alignItems: 'center',
               gap: 5,
-              background: 'var(--color-success-bg, #ECFDF5)',
-              color: 'var(--color-success, #059669)',
+              background: '#F4F4F5',
+              color: '#15171A',
               fontSize: '0.6875rem',
               fontWeight: 700,
               padding: '3px 8px',
               borderRadius: '9999px',
-              border: '1px solid var(--color-success, #A7F3D0)',
+              border: '1px solid #E4E4E7',
               lineHeight: 1,
               transition: 'background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease'
             }}
@@ -144,8 +144,8 @@ export default function AdminHeader({
                 width: 6,
                 height: 6,
                 borderRadius: '50%',
-                background: '#10B981',
-                boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.2)'
+                background: '#15171A',
+                boxShadow: '0 0 0 2px rgba(21, 23, 26, 0.15)'
               }}
             />
             LIVE

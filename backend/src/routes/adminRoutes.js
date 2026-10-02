@@ -12,6 +12,7 @@ import {
   updateCreatorStatus,
   getStudents,
   updateStudentStatus,
+  updateStudentEnrollmentStatus,
   getAdminCourses,
   createCourse,
   updateCourse,
@@ -110,6 +111,7 @@ router.post('/creators/invite', inviteCreator)
 // Students Management
 router.get('/students', getStudents)
 router.patch('/students/:id/status', updateStudentStatus)
+router.patch('/students/:id/enrollments/:enrollmentId/status', updateStudentEnrollmentStatus)
 
 // Course Management (Full CRUD)
 router.get('/courses', getAdminCourses)

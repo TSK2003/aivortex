@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+﻿import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Bell,
@@ -51,8 +51,8 @@ export default function NotificationMenu({
     items.push({
       id: 'pending-videos',
       icon: Video,
-      iconBg: '#FEF3C7',
-      iconColor: '#D97706',
+      iconBg: '#EFEFEF',
+      iconColor: '#4B4D52',
       title: 'Video Verification Queue',
       message: `${pendingVideosCount} lecture video${pendingVideosCount > 1 ? 's' : ''} submitted for admin quality review.`,
       time: 'Action Required',
@@ -65,8 +65,8 @@ export default function NotificationMenu({
     items.push({
       id: 'pending-requests',
       icon: UserCheck,
-      iconBg: '#EFF6FF',
-      iconColor: '#2563EB',
+      iconBg: '#F4F4F5',
+      iconColor: '#15171A',
       title: 'Creator Profile Requests',
       message: `${pendingRequestsCount} creator change request${pendingRequestsCount > 1 ? 's' : ''} awaiting approval.`,
       time: 'Action Required',
@@ -79,8 +79,8 @@ export default function NotificationMenu({
     items.push({
       id: 'recent-orders',
       icon: CreditCard,
-      iconBg: '#ECFDF5',
-      iconColor: '#059669',
+      iconBg: '#F4F4F5',
+      iconColor: '#2D2F33',
       title: 'Course Enrollments',
       message: `${recentOrdersCount} new successful enrollment payment${recentOrdersCount > 1 ? 's' : ''} recorded.`,
       time: 'Live Audit',
@@ -94,8 +94,8 @@ export default function NotificationMenu({
     items.push({
       id: n.id || `notif-${idx}`,
       icon: Radio,
-      iconBg: '#F3E8FF',
-      iconColor: '#9333EA',
+      iconBg: '#EFEFEF',
+      iconColor: '#2D2F33',
       title: n.title || 'Platform Announcement',
       message: n.message || n.body || '',
       time: n.createdAt ? new Date(n.createdAt).toLocaleDateString() : 'Recent',
@@ -109,8 +109,8 @@ export default function NotificationMenu({
     items.push({
       id: 'all-clear',
       icon: CheckCircle2,
-      iconBg: '#ECFDF5',
-      iconColor: '#059669',
+      iconBg: '#F4F4F5',
+      iconColor: '#2D2F33',
       title: 'All Systems Operational',
       message: 'All video reviews and profile requests have been processed.',
       time: 'Just now',
@@ -175,7 +175,7 @@ export default function NotificationMenu({
               position: 'absolute',
               top: -3,
               right: -3,
-              background: '#EF4444',
+              background: '#2D2F33',
               color: '#FFFFFF',
               fontSize: '0.6875rem',
               fontWeight: 800,
@@ -187,7 +187,7 @@ export default function NotificationMenu({
               justifyContent: 'center',
               padding: '0 4px',
               border: '2px solid var(--color-header-bg, #FFFFFF)',
-              boxShadow: '0 1px 3px rgba(239, 68, 68, 0.4)',
+              boxShadow: '0 1px 3px rgba(21, 23, 26, 0.4)',
               transition: 'border-color 0.3s ease'
             }}
           >
@@ -237,12 +237,12 @@ export default function NotificationMenu({
                 <span
                   style={{
                     fontSize: '0.75rem',
-                    background: isDark ? 'rgba(59, 130, 246, 0.2)' : '#EFF6FF',
-                    color: isDark ? '#60A5FA' : '#2563EB',
+                    background: isDark ? 'rgba(21, 23, 26, 0.2)' : '#F4F4F5',
+                    color: isDark ? '#9B9DA3' : '#15171A',
                     fontWeight: 700,
                     padding: '2px 8px',
                     borderRadius: '9999px',
-                    border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.35)' : '#BFDBFE'}`,
+                    border: `1px solid ${isDark ? 'rgba(21, 23, 26, 0.35)' : '#E4E4E7'}`,
                     transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease'
                   }}
                 >
@@ -268,7 +268,7 @@ export default function NotificationMenu({
                   padding: 0,
                   transition: 'color 0.3s ease'
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#3B82F6')}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#4B4D52')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-secondary, #64748B)')}
               >
                 <Check size={14} />
@@ -294,12 +294,12 @@ export default function NotificationMenu({
                     gap: 12,
                     borderBottom: '1px solid var(--color-border, #F1F5F9)',
                     cursor: 'pointer',
-                    background: isDark ? (isRead ? '#111827' : '#141E30') : (isRead ? '#FFFFFF' : '#F8FAFC'),
+                    background: isDark ? (isRead ? '#111827' : '#141E30') : (isRead ? '#FFFFFF' : '#F8F8F8'),
                     transition: 'background-color 0.3s ease, border-color 0.3s ease'
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? '#162032' : '#F1F5F9')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? '#162032' : '#F2F2F2')}
                   onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = isDark ? (isRead ? '#111827' : '#141E30') : (isRead ? '#FFFFFF' : '#F8FAFC'))
+                    (e.currentTarget.style.background = isDark ? (isRead ? '#111827' : '#141E30') : (isRead ? '#FFFFFF' : '#F8F8F8'))
                   }
                 >
                   <div
@@ -307,8 +307,8 @@ export default function NotificationMenu({
                       width: 36,
                       height: 36,
                       borderRadius: '10px',
-                      background: isDark ? 'rgba(59, 130, 246, 0.15)' : item.iconBg,
-                      color: isDark ? '#60A5FA' : item.iconColor,
+                      background: isDark ? 'rgba(21, 23, 26, 0.15)' : item.iconBg,
+                      color: isDark ? '#9B9DA3' : item.iconColor,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -372,7 +372,7 @@ export default function NotificationMenu({
                         width: 7,
                         height: 7,
                         borderRadius: '50%',
-                        background: '#3B82F6',
+                        background: '#4B4D52',
                         marginTop: 8,
                         flexShrink: 0
                       }}
@@ -387,7 +387,7 @@ export default function NotificationMenu({
           <div
             style={{
               padding: '10px 18px',
-              borderTop: `1px solid ${isDark ? '#1E293B' : '#E2E8F0'}`,
+              borderTop: `1px solid ${isDark ? '#2D2F33' : '#E4E4E7'}`,
               background: isDark ? '#0D1424' : '#FFFFFF',
               textAlign: 'center'
             }}
@@ -401,7 +401,7 @@ export default function NotificationMenu({
               style={{
                 background: 'none',
                 border: 'none',
-                color: isDark ? '#60A5FA' : '#2563EB',
+                color: isDark ? '#9B9DA3' : '#15171A',
                 fontSize: '0.8125rem',
                 fontWeight: 700,
                 cursor: 'pointer',

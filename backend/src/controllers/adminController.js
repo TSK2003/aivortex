@@ -807,9 +807,52 @@ export async function getStudents(req, res, next) {
       where,
       orderBy: { createdAt: 'desc' },
       include: {
-        enrollments: {
+        sessions: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { expiresAt: true, createdAt: true }
+        },
+        activeVideoSessions: {
+          orderBy: { lastHeartbeatAt: 'desc' },
+          take: 1,
+          select: { lastHeartbeatAt: true, lesson: { select: { id: true, title: true } } }
+        },
+        lessonProgress: {
+          orderBy: { updatedAt: 'desc' },
           include: {
-            course: { select: { id: true, title: true } }
+            lesson: {
+              select: {
+                id: true,
+                title: true,
+                playlist: {
+                  select: {
+                    course: {
+                      select: {
+                        id: true,
+                        title: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        enrollments: {
+          orderBy: { enrolledAt: 'desc' },
+          include: {
+            course: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                thumbnail: true,
+                category: true,
+                level: true,
+                price: true,
+                duration: true
+              }
+            }
           }
         },
         orders: {
@@ -822,18 +865,90 @@ export async function getStudents(req, res, next) {
       }
     })
 
-    const formatted = students.map((s) => ({
-      id: s.id,
-      name: s.name,
-      email: s.email,
-      phone: s.phone,
-      status: s.status,
-      createdAt: s.createdAt,
-      enrolledCount: s.enrollments.length,
-      enrollments: s.enrollments,
-      totalSpent: s.orders.reduce((sum, o) => sum + o.amount, 0),
-      certificates: s.certificates
-    }))
+    const formatStudyDuration = (seconds) => {
+      if (!seconds || seconds <= 0) return '0m'
+      const hours = Math.floor(seconds / 3600)
+      const minutes = Math.floor((seconds % 3600) / 60)
+      if (hours > 0) {
+        return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
+      }
+      return `${minutes}m`
+    }
+
+    const now = new Date()
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000)
+    const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000)
+
+    const formatted = students.map((s) => {
+      const completedCount = s.enrollments.filter(e => (e.progressPercent >= 100) || e.completedAt).length
+
+      const totalWatchSeconds = (s.lessonProgress || []).reduce((sum, lp) => sum + (lp.watchSeconds || 0), 0)
+      const thisWeekWatchSeconds = (s.lessonProgress || [])
+        .filter(lp => lp.updatedAt && new Date(lp.updatedAt) >= sevenDaysAgo)
+        .reduce((sum, lp) => sum + (lp.watchSeconds || 0), 0)
+
+      // Course-wise time spent
+      const enrichedEnrollments = s.enrollments.map((enr) => {
+        const courseWatchSeconds = (s.lessonProgress || [])
+          .filter(lp => lp.enrollmentId === enr.id)
+          .reduce((sum, lp) => sum + (lp.watchSeconds || 0), 0)
+        return {
+          ...enr,
+          timeSpentSeconds: courseWatchSeconds,
+          timeSpentFormatted: formatStudyDuration(courseWatchSeconds)
+        }
+      })
+
+      // Last course accessed & last lesson viewed
+      const lastProgress = s.lessonProgress && s.lessonProgress.length > 0 ? s.lessonProgress[0] : null
+      const lastLessonViewed = lastProgress?.lesson?.title || null
+      const lastCourseAccessed = lastProgress?.lesson?.playlist?.course?.title || s.enrollments[0]?.course?.title || null
+      const lastAccessedAt = lastProgress?.updatedAt || null
+
+      // Determine Last Active timestamp
+      const candidateDates = [
+        s.activeVideoSessions?.[0]?.lastHeartbeatAt,
+        lastProgress?.updatedAt,
+        s.sessions?.[0]?.createdAt,
+        s.updatedAt
+      ].filter(Boolean)
+      const lastActiveAt = candidateDates.length > 0
+        ? new Date(Math.max(...candidateDates.map(d => new Date(d).getTime())))
+        : s.createdAt
+
+      // Determine Current Session Status (Active / Offline)
+      const isOnline = Boolean(
+        (s.activeVideoSessions?.[0]?.lastHeartbeatAt && new Date(s.activeVideoSessions[0].lastHeartbeatAt) > fifteenMinsAgo) ||
+        (lastProgress?.updatedAt && new Date(lastProgress.updatedAt) > fifteenMinsAgo) ||
+        (s.sessions?.[0] && new Date(s.sessions[0].expiresAt) > now && lastActiveAt && new Date(lastActiveAt) > thirtyMinsAgo)
+      )
+
+      return {
+        id: s.id,
+        name: s.name,
+        email: s.email,
+        phone: s.phone,
+        status: s.status,
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
+        lastActiveAt,
+        sessionStatus: isOnline ? 'ACTIVE' : 'OFFLINE',
+        isOnline,
+        totalLearningTimeSeconds: totalWatchSeconds,
+        totalLearningTimeFormatted: formatStudyDuration(totalWatchSeconds),
+        thisWeekStudyTimeSeconds: thisWeekWatchSeconds,
+        thisWeekStudyTimeFormatted: formatStudyDuration(thisWeekWatchSeconds),
+        lastCourseAccessed,
+        lastLessonViewed,
+        lastAccessedAt,
+        enrolledCount: s.enrollments.length,
+        completedCount,
+        enrollments: enrichedEnrollments,
+        totalSpent: s.orders.reduce((sum, o) => sum + o.amount, 0),
+        certificates: s.certificates
+      }
+    })
 
     return successResponse(res, { students: formatted, count: formatted.length })
   } catch (err) {
@@ -867,6 +982,63 @@ export async function updateStudentStatus(req, res, next) {
     })
 
     return successResponse(res, { student: updated }, `Student account ${status.toLowerCase()}`)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function updateStudentEnrollmentStatus(req, res, next) {
+  try {
+    const { id, enrollmentId } = req.params
+    const { status } = req.body
+
+    if (!['ACTIVE', 'SUSPENDED'].includes(status)) {
+      throw new BadRequestError('Invalid enrollment status')
+    }
+
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+      include: {
+        course: { select: { id: true, title: true } },
+        student: { select: { id: true, email: true, name: true } }
+      }
+    })
+
+    if (!enrollment || enrollment.studentId !== id) {
+      throw new NotFoundError('Enrollment record not found for this student')
+    }
+
+    const updated = await prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: { status },
+      include: {
+        course: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            thumbnail: true,
+            category: true,
+            level: true,
+            price: true,
+            duration: true
+          }
+        }
+      }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'STUDENT_ENROLLMENT_STATUS_CHANGED',
+        entityType: 'Enrollment',
+        entityId: enrollmentId,
+        details: `Enrollment in "${enrollment.course?.title}" for student ${enrollment.student?.email} updated to ${status}`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    }).catch(() => {})
+
+    return successResponse(res, { enrollment: updated }, `Course activation status updated to ${status.toLowerCase()}`)
   } catch (err) {
     next(err)
   }
