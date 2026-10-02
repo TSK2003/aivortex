@@ -1522,10 +1522,6 @@ export default function AdminProjectsManager({ showToast }) {
                   className="btn btn-danger"
                   onClick={handleConfirmDeleteProject}
                   disabled={deleteConfirmModal.isSubmitting}
-                  style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                  className="btn"
-                  onClick={handleConfirmDeleteProject}
-                  disabled={deleteConfirmModal.isSubmitting}
                   style={{ background: '#15171A', color: '#FFFFFF', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
                   {deleteConfirmModal.isSubmitting ? <RefreshCw size={14} className="spin" /> : null}
