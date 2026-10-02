@@ -8,16 +8,17 @@ export async function getCourseReviews(req, res) {
   try {
     const { courseId } = req.params
 
-    // Find course by ID or slug
+    // Find course by ID or slug - must be publicly published
     const course = await prisma.course.findFirst({
       where: {
-        OR: [{ id: courseId }, { slug: courseId }]
+        OR: [{ id: courseId }, { slug: courseId }],
+        status: 'PUBLISHED'
       },
       select: { id: true, title: true, slug: true, averageRating: true, reviewsCount: true }
     })
 
     if (!course) {
-      return res.status(404).json({ success: false, error: 'Course not found' })
+      return res.status(404).json({ success: false, error: 'Course not found or is not currently published' })
     }
 
     const reviews = await prisma.courseReview.findMany({

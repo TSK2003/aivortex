@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="dbTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="dbTierGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1D4ED8"/>
+      <stop offset="25%" stop-color="#3B82F6"/>
+      <stop offset="75%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1E40AF"/>
+    </linearGradient>
+    <linearGradient id="dbTierGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1E40AF"/>
+      <stop offset="25%" stop-color="#2563EB"/>
+      <stop offset="75%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#172554"/>
+    </linearGradient>
+    <linearGradient id="dbTierGrad3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#172554"/>
+      <stop offset="25%" stop-color="#1E40AF"/>
+      <stop offset="75%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+  </defs>
+  <!-- Tier 1 (Top) -->
+  <path d="M16 28v20c0 10.5 21.5 19 48 19s48-8.5 48-19V28" fill="url(#dbTierGrad1)"/>
+  <ellipse cx="64" cy="28" rx="48" ry="18" fill="url(#dbTopGrad)"/>
+  <ellipse cx="64" cy="26" rx="43" ry="14" fill="#93C5FD" opacity="0.4"/>
+  <!-- Status light 1 -->
+  <circle cx="34" cy="40" r="3.5" fill="#67E8F9"/>
+
+  <!-- Tier 2 (Middle) -->
+  <path d="M16 57v20c0 10.5 21.5 19 48 19s48-8.5 48-19V57" fill="url(#dbTierGrad2)"/>
+  <ellipse cx="64" cy="57" rx="48" ry="18" fill="url(#dbTopGrad)"/>
+  <ellipse cx="64" cy="55" rx="43" ry="14" fill="#93C5FD" opacity="0.3"/>
+  <!-- Status light 2 -->
+  <circle cx="34" cy="69" r="3.5" fill="#67E8F9"/>
+
+  <!-- Tier 3 (Bottom) -->
+  <path d="M16 86v22c0 10.5 21.5 19 48 19s48-8.5 48-19V86" fill="url(#dbTierGrad3)"/>
+  <ellipse cx="64" cy="86" rx="48" ry="18" fill="url(#dbTopGrad)"/>
+  <ellipse cx="64" cy="84" rx="43" ry="14" fill="#93C5FD" opacity="0.25"/>
+  <!-- Status light 3 -->
+  <circle cx="34" cy="98" r="3.5" fill="#67E8F9"/>
+</svg>

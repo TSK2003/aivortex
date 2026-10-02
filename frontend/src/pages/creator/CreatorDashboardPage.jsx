@@ -6197,7 +6197,7 @@ export default function CreatorDashboardPage() {
                 </div>
 
                 <div style={{ fontSize: '0.75rem', color: '#64748B', background: '#EFF6FF', padding: '10px 12px', borderRadius: 6, border: '1px solid #DBEAFE' }}>
-                  🔒 <strong>Active Email Safety:</strong> Your current email remains active for account access until you successfully submit this verification code.
+                  <strong>Active Email Safety:</strong> Your current email remains active for account access until you successfully submit this verification code.
                 </div>
               </div>
 
@@ -6249,7 +6249,7 @@ export default function CreatorDashboardPage() {
               <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div style={{ background: '#F5F3FF', border: '1px solid #DDD6FE', padding: '12px 14px', borderRadius: 8 }}>
                   <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#5B21B6', marginBottom: 2 }}>
-                    🔒 Admin Zero-Knowledge Security Policy
+                    Admin Zero-Knowledge Security Policy
                   </div>
                   <p style={{ fontSize: '0.78rem', color: '#6D28D9', margin: 0, lineHeight: 1.45 }}>
                     Admin approved your request and granted 24-hour permission to update your password.

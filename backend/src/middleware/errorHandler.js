@@ -22,7 +22,7 @@ export function errorHandler(err, req, res, next) {
   }
 
   // Unexpected runtime errors
-  console.error('💥 Unhandled Exception:', err)
+  console.error('[ERROR] Unhandled Exception:', err)
   const message = process.env.NODE_ENV === 'production' ? 'An unexpected server error occurred' : err.message
   return errorResponse(res, 500, 'INTERNAL_SERVER_ERROR', message)
 }

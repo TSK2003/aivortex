@@ -62,6 +62,7 @@ export default function StudentDashboardPage() {
   const [projectsList, setProjectsList] = useState(initialProjects)
   const [liveSessionsList, setLiveSessionsList] = useState(initialLiveSessions)
   const [notifFilter, setNotifFilter] = useState('all')
+  const [courseFilter, setCourseFilter] = useState('ALL')
   const [selectedCertForModal, setSelectedCertForModal] = useState(null)
 
   // Profile form state
@@ -227,7 +228,7 @@ export default function StudentDashboardPage() {
             {activeTab === 'notifications' && 'Notifications & Alerts'}
             {activeTab === 'support' && 'Support & Queries'}
             {activeTab === 'profile' && 'Account Profile Settings'}
-            {activeTab === 'overview' && `Welcome back, ${currentStudent?.name || 'Scholar'} 👋`}
+            {activeTab === 'overview' && `Welcome back, ${currentStudent?.name || 'Scholar'}`}
           </h1>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
             {activeTab === 'courses' && `Access your enrolled masterclasses. You are currently pursuing ${enrolledCourses.length} technical programs.`}
@@ -350,53 +351,133 @@ export default function StudentDashboardPage() {
       )}
 
       {/* Tab 2: My Courses */}
-      {activeTab === 'courses' && (
-        <>
-          {enrolledCourses.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 20 }}>
-              {enrolledCourses.map((course) => (
-                <div
-                  key={course.id}
-                  style={{
-                    background: '#FFFFFF',
-                    borderRadius: 'var(--radius-lg)',
-                    border: '1px solid var(--color-border)',
-                    padding: 20,
-                    boxShadow: 'var(--shadow-sm)'
-                  }}
-                >
-                  <img
-                    src={course.thumbnail}
-                    alt={course.title}
-                    style={{ width: '100%', height: 180, objectFit: 'cover', borderRadius: 'var(--radius-md)', marginBottom: 16 }}
-                  />
-                  <span className="badge badge-popular" style={{ marginBottom: 8, display: 'inline-block' }}>
-                    {course.category}
-                  </span>
-                  <h3 style={{ fontSize: '1.2rem', marginBottom: 8 }}>{course.title}</h3>
-                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', marginBottom: 16 }}>
-                    {course.shortDescription}
-                  </p>
-                  <Link to={`/student/courses/${course.id}/learn`} className="btn btn-primary" style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}>
-                    <span>Open Learning Player</span>
-                  </Link>
-                </div>
-              ))}
+      {activeTab === 'courses' && (() => {
+        const inProgressCourses = enrolledCourses.filter((c) => (c.progressPercent || 0) > 0 && (c.progressPercent || 0) < 100)
+        const completedCourses = enrolledCourses.filter((c) => (c.progressPercent || 0) >= 100)
+        const filteredCourses = enrolledCourses.filter((c) => {
+          const p = c.progressPercent || 0
+          if (courseFilter === 'IN_PROGRESS') return p > 0 && p < 100
+          if (courseFilter === 'COMPLETED') return p >= 100
+          return true
+        })
+
+        return (
+          <>
+            {/* Filter Pills */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+              <button
+                className={`btn btn-sm ${courseFilter === 'ALL' ? 'btn-primary' : 'btn-outline'}`}
+                onClick={() => setCourseFilter('ALL')}
+              >
+                All Courses ({enrolledCourses.length})
+              </button>
+              <button
+                className={`btn btn-sm ${courseFilter === 'IN_PROGRESS' ? 'btn-primary' : 'btn-outline'}`}
+                onClick={() => setCourseFilter('IN_PROGRESS')}
+              >
+                In Progress ({inProgressCourses.length})
+              </button>
+              <button
+                className={`btn btn-sm ${courseFilter === 'COMPLETED' ? 'btn-primary' : 'btn-outline'}`}
+                onClick={() => setCourseFilter('COMPLETED')}
+              >
+                Completed ({completedCourses.length})
+              </button>
             </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '60px 20px', background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
-              <BookOpen style={{ width: 48, height: 48, color: '#94A3B8', margin: '0 auto 12px auto' }} />
-              <h3 style={{ fontSize: '1.25rem', marginBottom: 8 }}>No Course Enrollments Found</h3>
-              <p style={{ color: 'var(--color-text-secondary)', marginBottom: 20 }}>
-                Browse our course catalog to find free or specialized technical courses.
-              </p>
-              <Link to="/courses" className="btn btn-primary btn-sm">
-                Browse Courses
-              </Link>
-            </div>
-          )}
-        </>
-      )}
+
+            {filteredCourses.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 20 }}>
+                {filteredCourses.map((course) => {
+                  const p = course.progressPercent || 0
+                  const isDone = p >= 100
+                  const isStarted = p > 0
+
+                  return (
+                    <div
+                      key={course.id}
+                      style={{
+                        background: '#FFFFFF',
+                        borderRadius: 'var(--radius-lg)',
+                        border: '1px solid var(--color-border)',
+                        padding: 20,
+                        boxShadow: 'var(--shadow-sm)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <div>
+                        <img
+                          src={course.thumbnail}
+                          alt={course.title}
+                          style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 'var(--radius-md)', marginBottom: 14 }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                          <span className="badge badge-popular">{course.category}</span>
+                          <span
+                            style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              padding: '2px 8px',
+                              borderRadius: 4,
+                              background: isDone ? '#DCFCE7' : (isStarted ? '#DBEAFE' : '#F1F5F9'),
+                              color: isDone ? '#166534' : (isStarted ? '#1E40AF' : '#475569')
+                            }}
+                          >
+                            {isDone ? 'Completed' : (isStarted ? 'In Progress' : 'Not Started')}
+                          </span>
+                        </div>
+                        <h3 style={{ fontSize: '1.15rem', marginBottom: 8 }}>{course.title}</h3>
+                        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginBottom: 14 }}>
+                          {course.shortDescription}
+                        </p>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: 6 }}>
+                          <span>Curriculum Progress</span>
+                          <strong style={{ color: isDone ? '#16A34A' : 'var(--color-secondary)' }}>{p}%</strong>
+                        </div>
+                        <div style={{ width: '100%', height: 6, background: '#E2E8F0', borderRadius: 4, marginBottom: 16 }}>
+                          <div
+                            style={{
+                              width: `${p}%`,
+                              height: '100%',
+                              background: isDone ? '#16A34A' : 'var(--color-secondary)',
+                              borderRadius: 4
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <Link
+                        to={`/student/courses/${course.id}/learn`}
+                        className={`btn ${isDone ? 'btn-outline' : (isStarted ? 'btn-primary' : 'btn-secondary')}`}
+                        style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}
+                      >
+                        <span>{isDone ? 'Review Course' : (isStarted ? 'Continue Learning' : 'Start Course')}</span>
+                      </Link>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '60px 20px', background: '#FFFFFF', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
+                <BookOpen style={{ width: 48, height: 48, color: '#94A3B8', margin: '0 auto 12px auto' }} />
+                <h3 style={{ fontSize: '1.25rem', marginBottom: 8 }}>No Courses Found in this View</h3>
+                <p style={{ color: 'var(--color-text-secondary)', marginBottom: 20 }}>
+                  {courseFilter === 'COMPLETED'
+                    ? 'You have not completed any courses yet. Keep learning to earn certifications!'
+                    : (courseFilter === 'IN_PROGRESS'
+                      ? 'You have no courses currently in progress. Start one from your catalog.'
+                      : 'Browse our course catalog to find free or specialized technical courses.')}
+                </p>
+                <button className="btn btn-outline btn-sm" onClick={() => setCourseFilter('ALL')}>
+                  View All Enrolled Courses
+                </button>
+              </div>
+            )}
+          </>
+        )
+      })()}
 
       {/* Tab 3: Assigned Projects */}
       {activeTab === 'projects' && (

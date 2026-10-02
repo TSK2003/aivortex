@@ -48,7 +48,7 @@ export const emailService = {
     const client = getTransporter()
 
     if (!checkIsConfigured() || !client) {
-      console.log(`\n📧 [Mock Email Dispatch]`)
+      console.log(`\n[Mock Email Dispatch]`)
       console.log(`To: ${to}`)
       console.log(`Subject: ${subject}`)
       console.log(`HTML Body Preview: ${html.slice(0, 180)}...\n`)
@@ -57,10 +57,10 @@ export const emailService = {
 
     try {
       const info = await client.sendMail({ from, to, subject, html, text })
-      console.log(`✅ [Email Dispatched] To: ${to} | ID: ${info.messageId}`)
+      console.log(`[Email Dispatched] To: ${to} | ID: ${info.messageId}`)
       return info
     } catch (err) {
-      console.error(`❌ [Email Dispatch Failed] To: ${to}:`, err.message)
+      console.error(`[Email Dispatch Failed] To: ${to}:`, err.message)
       throw err
     }
   },

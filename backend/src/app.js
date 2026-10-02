@@ -1,5 +1,4 @@
 import express from 'express'
-import path from 'path'
 import cors from 'cors'
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
@@ -18,6 +17,7 @@ import creatorRoutes from './routes/creatorRoutes.js'
 import adminRoutes from './routes/adminRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
 import notificationRoutes from './routes/notificationRoutes.js'
+import mediaRoutes from './routes/mediaRoutes.js'
 
 const app = express()
 
@@ -81,8 +81,8 @@ app.use('/api/admin', adminRoutes)
 app.use('/api/payments', paymentRoutes)
 app.use('/api', notificationRoutes)
 
-// Serve Uploaded Media Files Statically
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
+// Authenticated Media Delivery (replaces insecure express.static('/uploads'))
+app.use('/api/media', mediaRoutes)
 
 // 404 Handler for Unmatched API Routes
 app.use('/api', (req, res, next) => {

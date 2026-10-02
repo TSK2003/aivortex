@@ -5,21 +5,21 @@ import { env } from './config/env.js'
 const PORT = parseInt(env.PORT, 10) || 3001
 
 const server = app.listen(PORT, () => {
-  console.log(`🚀 ApexLearn API Server running on port ${PORT} [${env.NODE_ENV}]`)
-  console.log(`📡 Health Check: http://localhost:${PORT}/api/health`)
+  console.log(`[INFO] ApexLearn API Server running on port ${PORT} [${env.NODE_ENV}]`)
+  console.log(`[INFO] Health Check: http://localhost:${PORT}/api/health`)
 })
 
 // Graceful Shutdown
 function handleShutdown(signal) {
-  console.log(`\n🛑 Received ${signal}. Shutting down ApexLearn server gracefully...`)
+  console.log(`\n[INFO] Received ${signal}. Shutting down ApexLearn server gracefully...`)
   server.close(() => {
-    console.log('✅ HTTP server closed. Process terminating clean.')
+    console.log('[INFO] HTTP server closed. Process terminating clean.')
     process.exit(0)
   })
 
   // Force close after 10s if connections remain stuck
   setTimeout(() => {
-    console.error('⚠️ Forcefully terminating open connections after timeout.')
+    console.error('[WARN] Forcefully terminating open connections after timeout.')
     process.exit(1)
   }, 10000)
 }

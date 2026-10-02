@@ -188,62 +188,6 @@ export default function CoursesPage() {
   return (
     <div style={{ paddingTop: 32, paddingBottom: 64 }}>
       <div className="container">
-        {/* Promotional Offers Banner if active offers exist */}
-        {activeOffers.length > 0 && (
-          <div
-            style={{
-              background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%)',
-              borderRadius: 8,
-              padding: '16px 24px',
-              marginBottom: 32,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              color: '#FFFFFF',
-              boxShadow: 'var(--shadow-md)',
-              flexWrap: 'wrap',
-              gap: 12
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 10,
-                  background: 'rgba(255,255,255,0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <Tag size={20} style={{ color: '#FDE047' }} />
-              </div>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.01em' }}>
-                  {activeOffers[0].title}
-                </div>
-                <div style={{ fontSize: '0.8rem', color: '#E0E7FF' }}>
-                  Use code <strong style={{ color: '#FDE047', letterSpacing: '0.05em' }}>{activeOffers[0].code}</strong> at checkout for {activeOffers[0].discountPercent ? `${activeOffers[0].discountPercent}% OFF` : `₹${activeOffers[0].discountAmount} OFF`}
-                </div>
-              </div>
-            </div>
-            <div
-              style={{
-                background: 'rgba(255,255,255,0.1)',
-                padding: '6px 14px',
-                borderRadius: 6,
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                border: '1px solid rgba(255,255,255,0.2)'
-              }}
-            >
-              LIMITED TIME PROMOTION
-            </div>
-          </div>
-        )}
-
         {/* Page Header */}
         <div className="section-header text-center" style={{ marginBottom: 32, maxWidth: 760, margin: '0 auto 32px auto' }}>
           <h1 className="section-title" style={{ fontSize: 'clamp(1.6rem, 5.5vw, 2.25rem)', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 10 }}>

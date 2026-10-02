@@ -5,16 +5,33 @@ import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/appErro
 export async function createTicket(req, res, next) {
   try {
     const studentId = req.user.id
-    const { subject, message, priority = 'MEDIUM' } = req.body
+    const { subject, message, priority = 'MEDIUM', courseId } = req.body
 
     if (!subject || !message) {
       throw new BadRequestError('Ticket subject and message are required')
     }
 
+    // If courseId is provided, verify active enrollment to prevent unauthorized ticket creation
+    let verifiedCourseTitle = ''
+    if (courseId) {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: { studentId_courseId: { studentId, courseId } },
+        include: { course: { select: { title: true } } }
+      })
+      if (!enrollment || enrollment.status !== 'ACTIVE') {
+        throw new ForbiddenError('You can only report issues for courses in which you have an active enrollment.')
+      }
+      verifiedCourseTitle = enrollment.course?.title || ''
+    }
+
+    const finalSubject = verifiedCourseTitle && !subject.includes(verifiedCourseTitle)
+      ? `[${verifiedCourseTitle}] ${subject.trim()}`
+      : subject.trim()
+
     const ticket = await prisma.supportTicket.create({
       data: {
         studentId,
-        subject: subject.trim(),
+        subject: finalSubject,
         message: message.trim(),
         priority,
         status: 'OPEN'
@@ -102,6 +119,16 @@ export async function replyToTicket(req, res, next) {
           where: { id: ticketId },
           data: { status: 'IN_PROGRESS' }
         })
+
+        // Notify student about Admin reply
+        await tx.notification.create({
+          data: {
+            userId: ticket.studentId,
+            title: 'Support Ticket Reply',
+            message: `Administrator replied to your ticket: "${ticket.subject}"`,
+            linkUrl: '/student/support'
+          }
+        }).catch(() => {})
       }
 
       return r

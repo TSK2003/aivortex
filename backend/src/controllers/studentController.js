@@ -211,10 +211,7 @@ export async function getCourseCurriculum(req, res, next) {
     }
 
     const playlists = await prisma.playlist.findMany({
-      where: {
-        courseId: course.id,
-        ...(req.user.role === 'ADMIN' ? {} : { status: 'PUBLISHED' })
-      },
+      where: { courseId: course.id },
       orderBy: { orderIndex: 'asc' },
       include: {
         lessons: {
@@ -237,6 +234,7 @@ export async function getCourseCurriculum(req, res, next) {
       })
     }
 
+    let previousLessonCompleted = true
     const enrichedPlaylists = playlists.map((pl) => ({
       id: pl.id,
       title: pl.title,
@@ -244,6 +242,10 @@ export async function getCourseCurriculum(req, res, next) {
       orderIndex: pl.orderIndex,
       lessons: pl.lessons.map((les) => {
         const prog = progressMap.get(les.id)
+        const isCompleted = prog?.isCompleted || false
+        const isLocked = !previousLessonCompleted
+        // Update condition for subsequent lesson
+        previousLessonCompleted = isCompleted
         return {
           id: les.id,
           title: les.title,
@@ -252,11 +254,20 @@ export async function getCourseCurriculum(req, res, next) {
           durationSeconds: les.durationSeconds,
           orderIndex: les.orderIndex,
           isPreview: les.isPreview,
-          isCompleted: prog?.isCompleted || false,
+          isCompleted,
+          isLocked,
           lastPositionSec: prog?.lastPositionSec || 0,
           watchSeconds: prog?.watchSeconds || 0,
           quizzes: les.quizzes,
-          resources: les.resources
+          resources: les.resources.map((r) => ({
+            id: r.id,
+            title: r.title,
+            fileName: r.fileName,
+            fileType: r.fileType,
+            fileUrl: r.fileUrl,
+            fileSizeBytes: r.fileSizeBytes != null ? Number(r.fileSizeBytes) : null,
+            orderIndex: r.orderIndex
+          }))
         }
       })
     }))
@@ -286,6 +297,10 @@ export async function toggleLessonProgress(req, res, next) {
     const { isCompleted, watchSeconds = 0, lastPositionSec = 0 } = req.body
     const studentId = req.user.id
 
+    if (!courseId || !lessonId) {
+      throw new BadRequestError('Course ID and Lesson ID are required')
+    }
+
     // Verify enrollment
     const enrollment = await prisma.enrollment.findUnique({
       where: {
@@ -293,7 +308,7 @@ export async function toggleLessonProgress(req, res, next) {
       }
     })
 
-    if (!enrollment) {
+    if (!enrollment || enrollment.status !== 'ACTIVE') {
       throw new ForbiddenError('You must be enrolled in this course to record progress')
     }
 
@@ -304,36 +319,94 @@ export async function toggleLessonProgress(req, res, next) {
     // 1. Fetch lesson to verify duration & attached quizzes
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
-      include: { playlist: true, quizzes: true }
+      include: {
+        playlist: {
+          include: {
+            course: true
+          }
+        },
+        quizzes: true
+      }
     })
 
     if (!lesson || lesson.playlist.courseId !== courseId) {
       throw new NotFoundError('Lesson not found or does not belong to this course')
     }
 
-    // 2. Fetch existing verified progress
-    const existingProgress = await prisma.lessonProgress.findUnique({
-      where: {
-        enrollmentId_lessonId: {
-          enrollmentId: enrollment.id,
-          lessonId
-        }
-      }
-    })
+    if (lesson.status !== 'PUBLISHED' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenError('This lesson has not been published for student learning yet.')
+    }
 
     let targetCompleted = Boolean(isCompleted)
 
     if (targetCompleted) {
-      // Server-authoritative check: video content requirement
-      const currentPos = Math.max(existingProgress?.lastPositionSec || 0, Number(lastPositionSec || 0))
+      // 2. Server-authoritative check: video content requirement
+      const existingProgress = await prisma.lessonProgress.findUnique({
+        where: {
+          enrollmentId_lessonId: {
+            enrollmentId: enrollment.id,
+            lessonId
+          }
+        }
+      })
+
       const totalWatch = existingProgress?.watchSeconds || 0
-      const isVideoWatched = currentPos >= (lesson.durationSeconds - 5) || totalWatch >= lesson.durationSeconds
+      const currentPos = Math.max(existingProgress?.lastPositionSec || 0, Number(lastPositionSec || 0))
+      const requiredWatch = Math.min(lesson.durationSeconds, Math.floor(lesson.durationSeconds * 0.8))
+
+      const isVideoWatched =
+        lesson.durationSeconds <= 0 ||
+        (totalWatch >= requiredWatch && (currentPos >= (lesson.durationSeconds - 15) || totalWatch >= lesson.durationSeconds))
 
       if (!isVideoWatched && !existingProgress?.isCompleted) {
         throw new BadRequestError('Required lesson video content must be completed before marking as complete.')
       }
 
-      // Server-authoritative check: required quizzes
+      // 3. Sequential learning rule: Check all earlier lessons across curriculum
+      const earlierPlaylists = await prisma.playlist.findMany({
+        where: {
+          courseId,
+          orderIndex: { lt: lesson.playlist.orderIndex }
+        },
+        include: {
+          lessons: {
+            where: { status: 'PUBLISHED' },
+            select: { id: true, title: true }
+          }
+        }
+      })
+
+      const earlierLessonsInSamePlaylist = await prisma.lesson.findMany({
+        where: {
+          playlistId: lesson.playlistId,
+          orderIndex: { lt: lesson.orderIndex },
+          status: 'PUBLISHED'
+        },
+        select: { id: true, title: true }
+      })
+
+      const allPrerequisiteLessonIds = [
+        ...earlierPlaylists.flatMap((p) => p.lessons.map((l) => l.id)),
+        ...earlierLessonsInSamePlaylist.map((l) => l.id)
+      ]
+
+      if (allPrerequisiteLessonIds.length > 0) {
+        const completedPrereqs = await prisma.lessonProgress.findMany({
+          where: {
+            enrollmentId: enrollment.id,
+            lessonId: { in: allPrerequisiteLessonIds },
+            isCompleted: true
+          }
+        })
+
+        if (completedPrereqs.length < allPrerequisiteLessonIds.length) {
+          throw new ForbiddenError(
+            'Sequential learning rule enforced: You must complete earlier lessons before unlocking this lecture.'
+          )
+        }
+      }
+
+      // 4. Server-authoritative check: required quizzes
       if (lesson.quizzes && lesson.quizzes.length > 0) {
         const quizIds = lesson.quizzes.map((q) => q.id)
         const passedAttempts = await prisma.quizAttempt.findMany({
@@ -351,6 +424,16 @@ export async function toggleLessonProgress(req, res, next) {
         }
       }
     }
+
+    // Fetch existing verified progress
+    const existingProgress = await prisma.lessonProgress.findUnique({
+      where: {
+        enrollmentId_lessonId: {
+          enrollmentId: enrollment.id,
+          lessonId
+        }
+      }
+    })
 
     // Upsert validated lesson progress
     await prisma.lessonProgress.upsert({
@@ -384,30 +467,32 @@ export async function toggleLessonProgress(req, res, next) {
       },
       select: { id: true }
     })
+    const publishedLessonIds = allPublishedLessons.map((l) => l.id)
 
     const completedProgresses = await prisma.lessonProgress.findMany({
       where: {
         enrollmentId: enrollment.id,
+        lessonId: { in: publishedLessonIds },
         isCompleted: true
       },
       select: { id: true }
     })
 
-    const totalCount = allPublishedLessons.length || 1
+    const totalCount = publishedLessonIds.length || 1
     const completedCount = completedProgresses.length
     const progressPercent = Math.min(100, Math.round((completedCount / totalCount) * 100))
 
-    const updatedEnrollment = await prisma.enrollment.update({
+    await prisma.enrollment.update({
       where: { id: enrollment.id },
       data: {
         progressPercent,
-        completedAt: progressPercent === 100 ? new Date() : null
+        completedAt: progressPercent === 100 ? (enrollment.completedAt || new Date()) : null
       }
     })
 
     return successResponse(res, {
       progressPercent,
-      isCompleted: Boolean(isCompleted),
+      isCompleted: targetCompleted,
       completedCount,
       totalCount,
       courseCompleted: progressPercent === 100
@@ -422,6 +507,26 @@ export async function getNote(req, res, next) {
   try {
     const studentId = req.user.id
     const { lessonId } = req.params
+
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: { playlist: true }
+    })
+
+    if (!lesson) {
+      throw new NotFoundError('Lesson not found')
+    }
+
+    // Verify enrollment
+    const enrollment = await prisma.enrollment.findUnique({
+      where: {
+        studentId_courseId: { studentId, courseId: lesson.playlist.courseId }
+      }
+    })
+
+    if (!enrollment || enrollment.status !== 'ACTIVE') {
+      throw new ForbiddenError('You must be enrolled in this course to access notes')
+    }
 
     const note = await prisma.studentNote.findUnique({
       where: {
@@ -441,6 +546,26 @@ export async function saveNote(req, res, next) {
     const { lessonId } = req.params
     const { noteText } = req.body
 
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: { playlist: true }
+    })
+
+    if (!lesson) {
+      throw new NotFoundError('Lesson not found')
+    }
+
+    // Verify enrollment
+    const enrollment = await prisma.enrollment.findUnique({
+      where: {
+        studentId_courseId: { studentId, courseId: lesson.playlist.courseId }
+      }
+    })
+
+    if (!enrollment || enrollment.status !== 'ACTIVE') {
+      throw new ForbiddenError('You must be enrolled in this course to save notes')
+    }
+
     const note = await prisma.studentNote.upsert({
       where: {
         studentId_lessonId: { studentId, lessonId }
@@ -456,6 +581,103 @@ export async function saveNote(req, res, next) {
     })
 
     return successResponse(res, { note }, 'Private note synchronized')
+  } catch (err) {
+    next(err)
+  }
+}
+
+// 4b. Lesson Resources
+export async function getLessonResources(req, res, next) {
+  try {
+    const studentId = req.user.id
+    const { lessonId } = req.params
+
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: {
+        playlist: true,
+        resources: {
+          orderBy: { orderIndex: 'asc' }
+        }
+      }
+    })
+
+    if (!lesson) {
+      throw new NotFoundError('Lesson not found')
+    }
+
+    if (lesson.status !== 'PUBLISHED' && req.user.role !== 'ADMIN') {
+      throw new ForbiddenError('Lesson resources unavailable.')
+    }
+
+    const enrollment = await prisma.enrollment.findUnique({
+      where: {
+        studentId_courseId: { studentId, courseId: lesson.playlist.courseId }
+      }
+    })
+
+    if (!enrollment || enrollment.status !== 'ACTIVE') {
+      throw new ForbiddenError('Active course enrollment required to access lesson resources.')
+    }
+
+    const resources = lesson.resources.map((r) => ({
+      id: r.id,
+      title: r.title,
+      fileName: r.fileName,
+      fileType: r.fileType,
+      fileUrl: r.fileUrl,
+      fileSizeBytes: r.fileSizeBytes != null ? Number(r.fileSizeBytes) : null,
+      orderIndex: r.orderIndex
+    }))
+
+    return successResponse(res, { resources })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function downloadLessonResource(req, res, next) {
+  try {
+    const studentId = req.user.id
+    const { resourceId } = req.params
+
+    const resource = await prisma.lessonResource.findUnique({
+      where: { id: resourceId },
+      include: {
+        lesson: {
+          include: { playlist: true }
+        }
+      }
+    })
+
+    if (!resource) {
+      throw new NotFoundError('Resource not found')
+    }
+
+    const courseId = resource.lesson.playlist.courseId
+    const enrollment = await prisma.enrollment.findUnique({
+      where: {
+        studentId_courseId: { studentId, courseId }
+      }
+    })
+
+    if (!enrollment || enrollment.status !== 'ACTIVE') {
+      throw new ForbiddenError('Active course enrollment required to download lesson resources.')
+    }
+
+    return successResponse(
+      res,
+      {
+        resource: {
+          id: resource.id,
+          title: resource.title,
+          fileName: resource.fileName,
+          fileType: resource.fileType,
+          downloadUrl: resource.fileUrl
+        }
+      },
+      'Resource download authorized'
+    )
   } catch (err) {
     next(err)
   }

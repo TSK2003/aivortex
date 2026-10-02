@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import {
   getAssignedCourses,
+  getAssignedCourseById,
   createPlaylist,
   updatePlaylist,
   deletePlaylist,
@@ -26,6 +27,7 @@ router.use(requireAuth, requireRole('CREATOR', 'ADMIN'))
 
 // Assigned Courses & Playlists (Sections)
 router.get('/courses', getAssignedCourses)
+router.get('/courses/:courseId', getAssignedCourseById)
 router.post('/playlists', createPlaylist)
 router.patch('/playlists/:playlistId', updatePlaylist)
 router.delete('/playlists/:playlistId', deletePlaylist)

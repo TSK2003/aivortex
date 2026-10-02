@@ -4,6 +4,19 @@ import { successResponse } from '../utils/responseWrapper.js'
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/appError.js'
 import emailService from '../services/emailService.js'
 
+/**
+ * Sanitizes user records to ensure sensitive attributes like passwordHash are never leaked.
+ */
+export function sanitizeUser(user) {
+  if (!user) return user
+  if (Array.isArray(user)) {
+    return user.map((u) => sanitizeUser(u))
+  }
+  const sanitized = { ...user }
+  delete sanitized.passwordHash
+  return sanitized
+}
+
 // 1. Overview & Platform Metrics
 export async function getAnalyticsOverview(req, res, next) {
   try {
@@ -132,7 +145,7 @@ export async function getCreators(req, res, next) {
       }
     })
 
-    return successResponse(res, { creators })
+    return successResponse(res, { creators: sanitizeUser(creators) })
   } catch (err) {
     next(err)
   }
@@ -176,7 +189,7 @@ export async function getCreatorById(req, res, next) {
       throw new NotFoundError('Creator account not found')
     }
 
-    return successResponse(res, { creator })
+    return successResponse(res, { creator: sanitizeUser(creator) })
   } catch (err) {
     next(err)
   }
@@ -369,7 +382,7 @@ export async function createCreator(req, res, next) {
         })
         emailStatus.sent = true
       } catch (mailErr) {
-        console.warn('⚠️ SMTP invitation delivery warning:', mailErr.message)
+        console.warn('[WARN] SMTP invitation delivery warning:', mailErr.message)
         emailStatus.error = mailErr.message
       }
     }
@@ -389,8 +402,7 @@ export async function createCreator(req, res, next) {
     return successResponse(
       res,
       {
-        creator,
-        tempPasswordGenerated: tempPassword,
+        creator: sanitizeUser(creator),
         emailStatus
       },
       'Creator account created and activated successfully.',
@@ -505,7 +517,7 @@ export async function updateCreator(req, res, next) {
       }
     })
 
-    return successResponse(res, { creator: updated }, 'Creator profile updated successfully')
+    return successResponse(res, { creator: sanitizeUser(updated) }, 'Creator profile updated successfully')
   } catch (err) {
     next(err)
   }
@@ -571,7 +583,7 @@ export async function resetCreatorPassword(req, res, next) {
         })
         emailStatus.sent = true
       } catch (mailErr) {
-        console.warn('⚠️ SMTP password reset delivery warning:', mailErr.message)
+        console.warn('[WARN] SMTP password reset delivery warning:', mailErr.message)
         emailStatus.error = mailErr.message
       }
     }
@@ -630,7 +642,7 @@ export async function resendCreatorCredentials(req, res, next) {
       })
       emailStatus.sent = true
     } catch (mailErr) {
-      console.warn('⚠️ SMTP credential resend delivery warning:', mailErr.message)
+      console.warn('[WARN] SMTP credential resend delivery warning:', mailErr.message)
       emailStatus.error = mailErr.message
     }
 
@@ -707,7 +719,7 @@ export async function inviteCreator(req, res, next) {
         tempPassword
       })
     } catch (mailErr) {
-      console.warn('⚠️ SMTP invitation delivery warning:', mailErr.message)
+      console.warn('[WARN] SMTP invitation delivery warning:', mailErr.message)
     }
 
     // Record audit log
@@ -724,7 +736,7 @@ export async function inviteCreator(req, res, next) {
 
     return successResponse(
       res,
-      { creator, tempPasswordGenerated: tempPassword },
+      { creator: sanitizeUser(creator) },
       `Creator account provisioned and invitation dispatched to ${cleanEmail}`,
       201
     )
@@ -781,7 +793,7 @@ export async function updateCreatorStatus(req, res, next) {
       }
     })
 
-    return successResponse(res, { creator: updated }, `Creator status updated to ${normalizedStatus}`)
+    return successResponse(res, { creator: sanitizeUser(updated) }, `Creator status updated to ${normalizedStatus}`)
   } catch (err) {
     next(err)
   }
@@ -1117,7 +1129,7 @@ export async function createCourse(req, res, next) {
 
     if (thumbnail && thumbnail.trim()) {
       const trimmedThumb = thumbnail.trim()
-      if (!/^https:\/\//i.test(trimmedThumb) && !trimmedThumb.startsWith('/uploads/')) {
+      if (!/^https:\/\//i.test(trimmedThumb) && !trimmedThumb.startsWith('/uploads/') && !trimmedThumb.startsWith('/api/media/')) {
         throw new BadRequestError('Please enter a valid image URL or upload an image.')
       }
       if (/^https:\/\//i.test(trimmedThumb)) {
@@ -1190,6 +1202,68 @@ export async function createCourse(req, res, next) {
   }
 }
 
+/**
+ * Strict server-authoritative course publication validator.
+ * Enforces all prerequisites before a course can transition to PUBLISHED.
+ */
+export async function validateCoursePublicationPrerequisites(courseId) {
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      creators: true,
+      playlists: {
+        include: {
+          lessons: true
+        }
+      }
+    }
+  })
+
+  if (!course) {
+    throw new NotFoundError('Course not found')
+  }
+
+  // 1. Valid course title
+  if (!course.title || course.title.trim().length < 3) {
+    throw new BadRequestError('Cannot publish course: Valid title of at least 3 characters is required')
+  }
+
+  // 2. Valid course description
+  if (!course.shortDescription && !course.fullDescription) {
+    throw new BadRequestError('Cannot publish course: Course description is required')
+  }
+
+  // 3. Assigned Creator
+  if (!course.creators || course.creators.length === 0) {
+    throw new BadRequestError('Cannot publish course: At least one Creator must be assigned to the course')
+  }
+
+  // 4. Valid curriculum modules/playlists
+  if (!course.playlists || course.playlists.length === 0) {
+    throw new BadRequestError('Cannot publish course: Course must contain at least one curriculum section')
+  }
+
+  // 5. Published lesson availability
+  const allLessons = course.playlists.flatMap(p => p.lessons || [])
+  const hasPublishedLesson = allLessons.some(l => l.status === 'PUBLISHED')
+  if (!hasPublishedLesson) {
+    throw new BadRequestError('Cannot publish course: At least one lecture must be in PUBLISHED status')
+  }
+
+  // 6. Pricing & Free/Paid consistency
+  if (course.isFree) {
+    if (course.price !== 0) {
+      throw new BadRequestError('Cannot publish course: Free course must have price set to 0')
+    }
+  } else {
+    if (course.price === null || course.price === undefined || course.price < 0) {
+      throw new BadRequestError('Cannot publish course: Paid course must have a valid non-negative price')
+    }
+  }
+
+  return true
+}
+
 export async function updateCourse(req, res, next) {
   try {
     const { courseId } = req.params
@@ -1200,12 +1274,21 @@ export async function updateCourse(req, res, next) {
       throw new NotFoundError('Course not found')
     }
 
+    if (data.status === 'PUBLISHED' && existing.status !== 'PUBLISHED') {
+      await validateCoursePublicationPrerequisites(courseId)
+    }
+
+    const willBePublished = (data.status !== undefined ? data.status : existing.status) === 'PUBLISHED'
+    if (data.isFeatured === true && !willBePublished) {
+      throw new BadRequestError('Only published courses can be featured on the public portal')
+    }
+
     const updatePayload = {}
 
     if (data.thumbnail !== undefined && data.thumbnail !== null) {
       const trimmedThumb = String(data.thumbnail).trim()
       if (trimmedThumb) {
-        if (!/^https:\/\//i.test(trimmedThumb) && !trimmedThumb.startsWith('/uploads/')) {
+        if (!/^https:\/\//i.test(trimmedThumb) && !trimmedThumb.startsWith('/uploads/') && !trimmedThumb.startsWith('/api/media/')) {
           throw new BadRequestError('Please enter a valid image URL or upload an image.')
         }
         if (/^https:\/\//i.test(trimmedThumb)) {
@@ -1241,6 +1324,19 @@ export async function updateCourse(req, res, next) {
       if (data[f] !== undefined) updatePayload[f] = data[f]
     })
 
+    if (data.status && data.status !== 'PUBLISHED') {
+      updatePayload.isFeatured = false
+    }
+
+    if (Array.isArray(data.creatorIds)) {
+      await prisma.courseCreator.deleteMany({ where: { courseId } })
+      if (data.creatorIds.length > 0) {
+        await prisma.courseCreator.createMany({
+          data: data.creatorIds.map(cId => ({ courseId, creatorId: cId }))
+        })
+      }
+    }
+
     const updated = await prisma.course.update({
       where: { id: courseId },
       data: updatePayload
@@ -1263,6 +1359,65 @@ export async function updateCourse(req, res, next) {
   }
 }
 
+// 4b. Explicit Creator Assignment to Course
+export async function assignCreatorToCourse(req, res, next) {
+  try {
+    const { courseId } = req.params
+    const { creatorId, creatorIds } = req.body
+
+    const course = await prisma.course.findUnique({ where: { id: courseId } })
+    if (!course) {
+      throw new NotFoundError('Course not found')
+    }
+
+    const idsToAssign = creatorIds || (creatorId ? [creatorId] : [])
+    if (idsToAssign.length === 0) {
+      throw new BadRequestError('At least one Creator ID is required')
+    }
+
+    // Verify creators exist
+    const creators = await prisma.user.findMany({
+      where: { id: { in: idsToAssign }, role: 'CREATOR' }
+    })
+    if (creators.length === 0) {
+      throw new BadRequestError('No valid Creators found matching provided IDs')
+    }
+
+    for (const c of creators) {
+      await prisma.courseCreator.upsert({
+        where: { courseId_creatorId: { courseId, creatorId: c.id } },
+        create: { courseId, creatorId: c.id },
+        update: {}
+      })
+
+      // Send operational notification to assigned creator
+      await prisma.notification.create({
+        data: {
+          userId: c.id,
+          title: 'Course Assigned',
+          message: `You have been assigned to course '${course.title}'.`,
+          linkUrl: `/creator/courses/${course.id}`
+        }
+      }).catch(() => {})
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'COURSE_CREATOR_ASSIGNED',
+        entityType: 'Course',
+        entityId: courseId,
+        details: `Admin assigned creator(s) ${creators.map(c => c.name).join(', ')} to ${course.title}`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    })
+
+    return successResponse(res, { courseId, assignedCreators: creators.map(c => ({ id: c.id, name: c.name, email: c.email })) }, 'Creator assigned successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+
 export async function updatePricing(req, res, next) {
   try {
     const { courseId } = req.params
@@ -1271,6 +1426,16 @@ export async function updatePricing(req, res, next) {
     const course = await prisma.course.findUnique({ where: { id: courseId } })
     if (!course) {
       throw new NotFoundError('Course not found')
+    }
+
+    if (price !== undefined && (Number(price) < 0 || isNaN(Number(price)))) {
+      throw new BadRequestError('Price must be a non-negative number')
+    }
+    if (originalPrice !== undefined && (Number(originalPrice) < 0 || isNaN(Number(originalPrice)))) {
+      throw new BadRequestError('Original price must be a non-negative number')
+    }
+    if (discountPercent !== undefined && (Number(discountPercent) < 0 || Number(discountPercent) > 100 || isNaN(Number(discountPercent)))) {
+      throw new BadRequestError('Discount percent must be between 0 and 100')
     }
 
     const updated = await prisma.course.update({
@@ -1310,52 +1475,75 @@ export async function updatePublicControls(req, res, next) {
       throw new NotFoundError('Course not found')
     }
 
+    if (status === 'PUBLISHED' && course.status !== 'PUBLISHED') {
+      await validateCoursePublicationPrerequisites(courseId)
+    }
+
+    const willBePublished = (status !== undefined ? status : course.status) === 'PUBLISHED'
+    if (isFeatured === true && !willBePublished) {
+      throw new BadRequestError('Only published courses can be featured on the public portal')
+    }
+
     const data = {}
     if (status !== undefined) {
       if (!['DRAFT', 'PUBLISHED', 'ARCHIVED'].includes(status)) {
         throw new BadRequestError('Invalid course visibility status')
       }
       data.status = status
-    }
-    if (isFeatured !== undefined) data.isFeatured = Boolean(isFeatured)
-    if (enrollmentOpen !== undefined) data.enrollmentOpen = Boolean(enrollmentOpen)
-
-    // Handle Public Demo video assignment
-    if (demoLessonId !== undefined) {
-      if (demoLessonId) {
-        // Verify lesson exists, belongs to course, and is approved/published
-        const lesson = await prisma.lesson.findUnique({
-          where: { id: demoLessonId },
-          include: { playlist: true }
-        })
-        if (!lesson || lesson.playlist.courseId !== courseId) {
-          throw new BadRequestError('Selected demo lesson does not belong to this course')
-        }
-        if (!['APPROVED', 'PUBLISHED'].includes(lesson.status)) {
-          throw new BadRequestError('Only an Approved or Published lesson can be designated as a Public Demo')
-        }
-
-        data.demoLessonId = demoLessonId
-        // Flag lesson as public demo
-        await prisma.lesson.update({
-          where: { id: demoLessonId },
-          data: { isPublicDemo: true }
-        })
-      } else {
-        // Remove public demo
-        data.demoLessonId = null
-        if (course.demoLessonId) {
-          await prisma.lesson.update({
-            where: { id: course.demoLessonId },
-            data: { isPublicDemo: false }
-          }).catch(() => {})
-        }
+      if (status !== 'PUBLISHED') {
+        data.isFeatured = false
       }
     }
+    if (isFeatured !== undefined && willBePublished) {
+      data.isFeatured = Boolean(isFeatured)
+    }
+    if (enrollmentOpen !== undefined) data.enrollmentOpen = Boolean(enrollmentOpen)
 
-    const updated = await prisma.course.update({
-      where: { id: courseId },
-      data
+    // Execute updates inside an atomic transaction
+    const updated = await prisma.$transaction(async (tx) => {
+      // Handle Public Demo video assignment
+      if (demoLessonId !== undefined) {
+        if (demoLessonId) {
+          // Verify lesson exists, belongs to course, and is approved/published
+          const lesson = await tx.lesson.findUnique({
+            where: { id: demoLessonId },
+            include: { playlist: true }
+          })
+          if (!lesson || lesson.playlist.courseId !== courseId) {
+            throw new BadRequestError('Selected demo lesson does not belong to this course')
+          }
+          if (!['APPROVED', 'PUBLISHED'].includes(lesson.status)) {
+            throw new BadRequestError('Only an Approved or Published lesson can be designated as a Public Demo')
+          }
+
+          data.demoLessonId = demoLessonId
+          if (course.demoLessonId && course.demoLessonId !== demoLessonId) {
+            await tx.lesson.update({
+              where: { id: course.demoLessonId },
+              data: { isPublicDemo: false }
+            }).catch(() => {})
+          }
+          // Flag lesson as public demo
+          await tx.lesson.update({
+            where: { id: demoLessonId },
+            data: { isPublicDemo: true }
+          })
+        } else {
+          // Remove public demo
+          data.demoLessonId = null
+          if (course.demoLessonId) {
+            await tx.lesson.update({
+              where: { id: course.demoLessonId },
+              data: { isPublicDemo: false }
+            }).catch(() => {})
+          }
+        }
+      }
+
+      return await tx.course.update({
+        where: { id: courseId },
+        data
+      })
     })
 
     await prisma.auditLog.create({
@@ -1537,6 +1725,18 @@ export async function publishLesson(req, res, next) {
         }
       })
 
+      // Send operational notification to Creator
+      if (lesson.creatorId) {
+        await tx.notification.create({
+          data: {
+            userId: lesson.creatorId,
+            title: 'Lecture Published',
+            message: `Your lecture '${lesson.title}' in course '${lesson.playlist.course.title}' has been published.`,
+            linkUrl: '/creator/courses'
+          }
+        })
+      }
+
       return l
     })
 
@@ -1571,7 +1771,13 @@ export async function unpublishLesson(req, res, next) {
     const updated = await prisma.$transaction(async (tx) => {
       const l = await tx.lesson.update({
         where: { id: lessonId },
-        data: { status: 'ARCHIVED' }
+        data: { status: 'ARCHIVED', isPublicDemo: false }
+      })
+
+      // If this lesson was assigned as the public demo for its course, clear it
+      await tx.course.updateMany({
+        where: { demoLessonId: lessonId },
+        data: { demoLessonId: null }
       })
 
       await tx.videoStatusHistory.create({
@@ -2114,11 +2320,24 @@ export async function revokeSession(req, res, next) {
   }
 }
 
-// 12. Offer Management (Full CRUD)
+// 12. Offer Management (Full CRUD with Course Relation)
 export async function getOffers(req, res, next) {
   try {
+    const { courseId } = req.query
+    const where = {}
+    if (courseId) {
+      where.OR = [
+        { courseId },
+        { courseId: null }
+      ]
+    }
+
     const offers = await prisma.offer.findMany({
-      orderBy: { createdAt: 'desc' }
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        course: { select: { id: true, title: true, slug: true } }
+      }
     })
     return successResponse(res, { offers })
   } catch (err) {
@@ -2131,6 +2350,7 @@ export async function createOffer(req, res, next) {
     const {
       title,
       code,
+      courseId,
       discountPercent,
       discountAmount,
       startDate,
@@ -2156,16 +2376,27 @@ export async function createOffer(req, res, next) {
       throw new BadRequestError(`Offer with code '${cleanCode}' already exists`)
     }
 
+    if (courseId) {
+      const course = await prisma.course.findUnique({ where: { id: courseId } })
+      if (!course) {
+        throw new NotFoundError(`Course with ID ${courseId} not found`)
+      }
+    }
+
     const offer = await prisma.offer.create({
       data: {
         title: title.trim(),
         code: cleanCode,
+        courseId: courseId ? String(courseId).trim() : null,
         discountPercent: discountPercent !== undefined && discountPercent !== null ? Number(discountPercent) : null,
         discountAmount: discountAmount !== undefined && discountAmount !== null ? Number(discountAmount) : null,
         startDate: startDate ? new Date(startDate) : new Date(),
         endDate: endDate ? new Date(endDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         isActive: Boolean(isActive),
         maxUses: maxUses ? Number(maxUses) : null
+      },
+      include: {
+        course: { select: { id: true, title: true, slug: true } }
       }
     })
 
@@ -2175,7 +2406,7 @@ export async function createOffer(req, res, next) {
         action: 'OFFER_CREATED',
         entityType: 'Offer',
         entityId: offer.id,
-        details: `Admin created coupon offer ${offer.code} (${offer.title})`,
+        details: `Admin created coupon offer ${offer.code} (${offer.title}) for ${offer.course ? offer.course.title : 'All Courses'}`,
         ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
       }
     })
@@ -2192,6 +2423,7 @@ export async function updateOffer(req, res, next) {
     const {
       title,
       code,
+      courseId,
       discountPercent,
       discountAmount,
       startDate,
@@ -2217,6 +2449,15 @@ export async function updateOffer(req, res, next) {
       }
       data.code = cleanCode
     }
+    if (courseId !== undefined) {
+      if (courseId) {
+        const course = await prisma.course.findUnique({ where: { id: courseId } })
+        if (!course) throw new NotFoundError('Course not found')
+        data.courseId = courseId
+      } else {
+        data.courseId = null
+      }
+    }
     if (discountPercent !== undefined) data.discountPercent = discountPercent !== null ? Number(discountPercent) : null
     if (discountAmount !== undefined) data.discountAmount = discountAmount !== null ? Number(discountAmount) : null
     if (startDate !== undefined) data.startDate = new Date(startDate)
@@ -2226,7 +2467,10 @@ export async function updateOffer(req, res, next) {
 
     const updated = await prisma.offer.update({
       where: { id },
-      data
+      data,
+      include: {
+        course: { select: { id: true, title: true, slug: true } }
+      }
     })
 
     await prisma.auditLog.create({
@@ -2521,6 +2765,17 @@ export async function updateAdminSupportTicketStatus(req, res, next) {
       where: { id },
       data: { status }
     })
+
+    if (ticket.studentId) {
+      await prisma.notification.create({
+        data: {
+          userId: ticket.studentId,
+          title: 'Support Ticket Status Changed',
+          message: `Your support ticket "${ticket.subject}" status is now ${status}`,
+          linkUrl: '/student/support'
+        }
+      }).catch(() => {})
+    }
 
     await prisma.auditLog.create({
       data: {

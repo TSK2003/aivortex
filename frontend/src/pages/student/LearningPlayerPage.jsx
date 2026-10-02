@@ -61,6 +61,11 @@ export default function LearningPlayerPage() {
   const [issuedCertificate, setIssuedCertificate] = useState(null)
   const [showCertModal, setShowCertModal] = useState(false)
 
+  // Report Issue / Support State
+  const [ticketSubject, setTicketSubject] = useState('')
+  const [ticketMessage, setTicketMessage] = useState('')
+  const [isSubmittingTicket, setIsSubmittingTicket] = useState(false)
+
   // 1. Initial Course & Curriculum Fetch
   useEffect(() => {
     async function loadCurriculum() {
@@ -115,12 +120,13 @@ export default function LearningPlayerPage() {
     maxWatchedTimeRef.current = 0
   }, [currentLesson?.id])
 
-  // 2. Fullscreen Continuity Listener (Rule 13)
+  // 2. Fullscreen Exit Pauses Playback (SOP Section 3.10)
   useEffect(() => {
     const handleFullscreenChange = () => {
-      // Ensure playback state is smoothly maintained when entering/exiting fullscreen
-      if (videoRef.current && wasPlayingBeforeFsRef.current && videoRef.current.paused) {
-        videoRef.current.play().catch(() => {})
+      const isFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement)
+      if (!isFullscreen && videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause()
+        showToast('Playback paused on exiting fullscreen mode.', 'info')
       }
     }
 
@@ -131,7 +137,7 @@ export default function LearningPlayerPage() {
       document.removeEventListener('fullscreenchange', handleFullscreenChange)
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
     }
-  }, [])
+  }, [showToast])
 
   // 3. Start Video Session & Heartbeat for Active Lesson
   useEffect(() => {
@@ -152,14 +158,15 @@ export default function LearningPlayerPage() {
 
         if (sessionRes.success && sessionRes.data) {
           setSessionId(sessionRes.data.sessionId)
-          setCurrentVideoUrl(sessionRes.data.videoUrl || currentLesson.videoUrl)
+          setCurrentVideoUrl(sessionRes.data.streamUrl || sessionRes.data.videoUrl || currentLesson.videoUrl)
           setWatermarkText(sessionRes.data.watermark?.displayText || `${student?.name || 'Verified Scholar'} • APEX-2026`)
 
-          // Restore last saved position if available
-          if (sessionRes.data.lastPositionSec) {
-            maxWatchedTimeRef.current = sessionRes.data.lastPositionSec
+          // Restore last saved position if available (canonical resumePositionSec)
+          const resumeSec = sessionRes.data.resumePositionSec ?? sessionRes.data.lastPositionSec ?? 0
+          if (resumeSec) {
+            maxWatchedTimeRef.current = resumeSec
             if (videoRef.current) {
-              videoRef.current.currentTime = sessionRes.data.lastPositionSec
+              videoRef.current.currentTime = resumeSec
             }
           }
         }
@@ -433,18 +440,23 @@ export default function LearningPlayerPage() {
                 {pl.lessons?.map((les) => {
                   const completed = completedLessonIds.includes(les.id)
                   const isActive = currentLesson && les.id === currentLesson.id
+                  const isLocked = les.isLocked && !completed
                   return (
                     <div
                       key={les.id}
-                      className={`player-lesson-item ${isActive ? 'active' : ''} ${completed ? 'completed' : ''}`}
+                      className={`player-lesson-item ${isActive ? 'active' : ''} ${completed ? 'completed' : ''} ${isLocked ? 'locked' : ''}`}
                       onClick={() => {
+                        if (isLocked) {
+                          showToast('This lesson is locked. Complete earlier lessons sequentially.', 'warning')
+                          return
+                        }
                         const idx = allLessons.findIndex((l) => l.id === les.id)
                         if (idx !== -1) setActiveLessonIndex(idx)
                       }}
-                      style={{ cursor: 'pointer' }}
+                      style={{ cursor: isLocked ? 'not-allowed' : 'pointer', opacity: isLocked ? 0.6 : 1 }}
                     >
                       <div className="lesson-check-icon">
-                        {completed ? '✓' : ''}
+                        {completed ? <CheckCircle size={12} color="var(--color-success, #10b981)" /> : (isLocked ? <Lock size={12} /> : '')}
                       </div>
                       <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {les.title}
@@ -559,7 +571,7 @@ export default function LearningPlayerPage() {
               className={`btn ${isCompleted ? 'btn-teal' : 'btn-primary'} btn-sm`}
               onClick={() => toggleLessonComplete()}
             >
-              <span>{isCompleted ? '✓ Completed' : 'Mark as Complete'}</span>
+              <span>{isCompleted ? 'Completed' : 'Mark as Complete'}</span>
             </button>
 
             <button
@@ -600,6 +612,17 @@ export default function LearningPlayerPage() {
             onClick={() => setActiveTab('resources')}
           >
             Resources
+          </button>
+          <button
+            className={`player-tab-btn ${activeTab === 'support' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('support')
+              if (!ticketSubject && currentLesson) {
+                setTicketSubject(`Question/Issue: ${currentLesson.title}`)
+              }
+            }}
+          >
+            Report Issue
           </button>
         </div>
 
@@ -731,20 +754,129 @@ export default function LearningPlayerPage() {
               </p>
 
               <div className="resource-download-list">
-                <div className="resource-item">
-                  <div>
-                    <strong style={{ color: 'var(--color-primary)', fontSize: '0.9rem' }}>01_lecture_starter_notebook.ipynb</strong>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Jupyter Notebook • Includes complete exercises</div>
-                  </div>
-                  <button
-                    className="btn btn-outline btn-sm"
-                    onClick={() => showToast('Starter notebook download initialized', 'success')}
-                    style={{ color: 'var(--color-text)', borderColor: 'var(--color-border)' }}
+                {currentLesson?.resources && currentLesson.resources.length > 0 ? (
+                  currentLesson.resources.map((res) => (
+                    <div
+                      key={res.id}
+                      className="resource-item"
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 16px',
+                        background: '#F8FAFC',
+                        borderRadius: 8,
+                        border: '1px solid var(--color-border)',
+                        marginBottom: 10
+                      }}
+                    >
+                      <div>
+                        <strong style={{ color: 'var(--color-primary)', fontSize: '0.9rem' }}>{res.title || res.fileName}</strong>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{res.fileType || 'Lesson Asset'}</div>
+                      </div>
+                      <a
+                        href={res.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-outline btn-sm"
+                        style={{ color: 'var(--color-text)', borderColor: 'var(--color-border)', textDecoration: 'none' }}
+                      >
+                        <span>Download</span>
+                      </a>
+                    </div>
+                  ))
+                ) : (
+                  <div
+                    className="resource-item"
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '12px 16px',
+                      background: '#F8FAFC',
+                      borderRadius: 8,
+                      border: '1px solid var(--color-border)'
+                    }}
                   >
-                    <span>Download .ipynb</span>
+                    <div>
+                      <strong style={{ color: 'var(--color-primary)', fontSize: '0.9rem' }}>01_lecture_starter_notebook.ipynb</strong>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Jupyter Notebook • Includes complete exercises</div>
+                    </div>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => showToast('Starter notebook download initialized', 'success')}
+                      style={{ color: 'var(--color-text)', borderColor: 'var(--color-border)' }}
+                    >
+                      <span>Download .ipynb</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tab 5: Report Issue */}
+          {activeTab === 'support' && (
+            <div className="player-tab-pane active" id="player-pane-support">
+              <h3 style={{ color: 'var(--color-primary)', marginBottom: 8, fontSize: '1.15rem' }}>Report a Content or Technical Issue</h3>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginBottom: 16 }}>
+                Encountered an audio glitch, inaccurate transcript, or question about this lecture? Submit a support ticket directly to our instructional team.
+              </p>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  if (!ticketSubject || !ticketMessage) return
+                  setIsSubmittingTicket(true)
+                  try {
+                    await api.student.createSupportTicket({
+                      subject: ticketSubject,
+                      message: ticketMessage,
+                      courseId,
+                      priority: 'MEDIUM'
+                    })
+                    showToast('Support ticket filed successfully! Our team will respond shortly.', 'success')
+                    setTicketMessage('')
+                  } catch (err) {
+                    showToast(err.message || 'Failed to submit support ticket', 'error')
+                  } finally {
+                    setIsSubmittingTicket(false)
+                  }
+                }}
+                style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+              >
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: 4, color: 'var(--color-primary)' }}>
+                    Subject
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={ticketSubject}
+                    onChange={(e) => setTicketSubject(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', fontSize: '0.875rem' }}
+                    required
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: 4, color: 'var(--color-primary)' }}>
+                    Description of Issue
+                  </label>
+                  <textarea
+                    className="form-input"
+                    value={ticketMessage}
+                    onChange={(e) => setTicketMessage(e.target.value)}
+                    rows={4}
+                    placeholder="Describe what occurred, including timestamp if applicable..."
+                    style={{ width: '100%', padding: '10px 12px', fontSize: '0.875rem' }}
+                    required
+                  />
+                </div>
+                <div>
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={isSubmittingTicket}>
+                    {isSubmittingTicket ? 'Submitting...' : 'Submit Support Ticket'}
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           )}
         </div>

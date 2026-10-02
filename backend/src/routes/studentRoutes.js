@@ -6,6 +6,8 @@ import {
   toggleLessonProgress,
   getNote,
   saveNote,
+  getLessonResources,
+  downloadLessonResource,
   getStudentCertificates,
   getStudentPayments,
   updateProfile
@@ -60,6 +62,10 @@ router.patch('/progress', toggleLessonProgress)
 // Private Lesson Notes
 router.get('/lessons/:lessonId/notes', getNote)
 router.post('/lessons/:lessonId/notes', saveNote)
+
+// Lesson Resources (Authenticated & Enrollment-Gated)
+router.get('/lessons/:lessonId/resources', getLessonResources)
+router.get('/resources/:resourceId/download', downloadLessonResource)
 
 // Video Session Protection & Concurrency Enforcement
 router.post('/video-session/start', startVideoSession)

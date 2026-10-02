@@ -3,6 +3,99 @@ import prisma from '../config/prisma.js'
 import { successResponse } from '../utils/responseWrapper.js'
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/appError.js'
 
+async function verifyQuizAccess(studentId, quiz) {
+  const courseId = quiz.courseId || (quiz.lessonId ? (await prisma.lesson.findUnique({
+    where: { id: quiz.lessonId },
+    include: { playlist: true }
+  }))?.playlist?.courseId : null)
+
+  if (!courseId) return
+
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { studentId_courseId: { studentId, courseId } }
+  })
+
+  if (!enrollment || enrollment.status !== 'ACTIVE') {
+    throw new ForbiddenError('You must be enrolled in this course to access or submit this assessment.')
+  }
+
+  if (enrollment.expiresAt && new Date(enrollment.expiresAt) < new Date()) {
+    throw new ForbiddenError('Your course enrollment access period has expired.')
+  }
+
+  // If attached to a specific lesson, enforce sequential prerequisite unlocking
+  if (quiz.lessonId) {
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: quiz.lessonId },
+      include: { playlist: true }
+    })
+
+    if (lesson) {
+      const earlierPlaylists = await prisma.playlist.findMany({
+        where: {
+          courseId,
+          orderIndex: { lt: lesson.playlist.orderIndex }
+        },
+        include: {
+          lessons: { where: { status: 'PUBLISHED' }, select: { id: true } }
+        }
+      })
+
+      const earlierLessonsInSamePlaylist = await prisma.lesson.findMany({
+        where: {
+          playlistId: lesson.playlistId,
+          orderIndex: { lt: lesson.orderIndex },
+          status: 'PUBLISHED'
+        },
+        select: { id: true }
+      })
+
+      const allPrereqIds = [
+        ...earlierPlaylists.flatMap((p) => p.lessons.map((l) => l.id)),
+        ...earlierLessonsInSamePlaylist.map((l) => l.id)
+      ]
+
+      if (allPrereqIds.length > 0) {
+        const completedCount = await prisma.lessonProgress.count({
+          where: {
+            enrollmentId: enrollment.id,
+            lessonId: { in: allPrereqIds },
+            isCompleted: true
+          }
+        })
+        if (completedCount < allPrereqIds.length) {
+          throw new ForbiddenError(
+            'Sequential learning rule enforced: You must complete earlier lessons before unlocking this assessment.'
+          )
+        }
+      }
+    }
+  } else {
+    // Course-level comprehensive assessment: requires completing all published lessons
+    const allPublishedLessons = await prisma.lesson.findMany({
+      where: {
+        playlist: { courseId },
+        status: 'PUBLISHED'
+      },
+      select: { id: true }
+    })
+    if (allPublishedLessons.length > 0) {
+      const completedCount = await prisma.lessonProgress.count({
+        where: {
+          enrollmentId: enrollment.id,
+          lessonId: { in: allPublishedLessons.map((l) => l.id) },
+          isCompleted: true
+        }
+      })
+      if (completedCount < allPublishedLessons.length) {
+        throw new ForbiddenError(
+          'Sequential learning rule enforced: You must complete all course lessons before unlocking this assessment.'
+        )
+      }
+    }
+  }
+}
+
 // 1. Fetch Lesson Quiz (Excludes isCorrect from Client)
 export async function getLessonQuiz(req, res, next) {
   try {
@@ -25,6 +118,8 @@ export async function getLessonQuiz(req, res, next) {
     if (!quiz) {
       throw new NotFoundError('No assessment quiz configured for this lesson.')
     }
+
+    await verifyQuizAccess(req.user.id, quiz)
 
     return successResponse(res, { quiz })
   } catch (err) {
@@ -55,6 +150,8 @@ export async function getQuizById(req, res, next) {
       throw new NotFoundError('Assessment quiz not found.')
     }
 
+    await verifyQuizAccess(req.user.id, quiz)
+
     return successResponse(res, { quiz })
   } catch (err) {
     next(err)
@@ -66,10 +163,18 @@ export async function submitQuizAttempt(req, res, next) {
   try {
     const studentId = req.user.id
     const { quizId } = req.params
-    const { answers } = req.body // Map of { questionId: selectedOptionId }
-
-    if (!answers || typeof answers !== 'object') {
-      throw new BadRequestError('Answers payload must be an object mapping question IDs to option IDs')
+    const { answers } = req.body
+    let answerMap = {}
+    if (Array.isArray(answers)) {
+      answers.forEach((a) => {
+        if (a && a.questionId && a.selectedOptionId) {
+          answerMap[a.questionId] = a.selectedOptionId
+        }
+      })
+    } else if (typeof answers === 'object' && answers !== null) {
+      answerMap = answers
+    } else {
+      throw new BadRequestError('Answers payload must be an object or array mapping question IDs to option IDs')
     }
 
     const quiz = await prisma.quiz.findUnique({
@@ -85,6 +190,8 @@ export async function submitQuizAttempt(req, res, next) {
       throw new NotFoundError('Quiz not found')
     }
 
+    await verifyQuizAccess(studentId, quiz)
+
     // Check maximum attempts
     const attemptsCount = await prisma.quizAttempt.count({
       where: { quizId, studentId }
@@ -99,7 +206,7 @@ export async function submitQuizAttempt(req, res, next) {
 
     quiz.questions.forEach((q) => {
       const correctOption = q.options.find((o) => o.isCorrect)
-      if (correctOption && answers[q.id] === correctOption.id) {
+      if (correctOption && answerMap[q.id] === correctOption.id) {
         correctCount++
       }
     })
@@ -165,7 +272,6 @@ export async function issueCertificateIfEligible(req, res, next) {
       where: { id: courseId },
       include: {
         playlists: {
-          where: { status: 'PUBLISHED' },
           include: {
             lessons: {
               where: { status: 'PUBLISHED' },
@@ -196,6 +302,10 @@ export async function issueCertificateIfEligible(req, res, next) {
         }
       })
     })
+
+    if (allPublishedLessons.length === 0) {
+      throw new BadRequestError('Course has no published lessons available for credential issuance.')
+    }
 
     const completedProgresses = await prisma.lessonProgress.findMany({
       where: {

@@ -21,7 +21,12 @@ const STATUS_CONFIGS = {
   REJECTED: { bg: '#FEE2E2', text: '#B91C1C', label: 'Rejected' },
   FAILED: { bg: '#FEE2E2', text: '#B91C1C', label: 'Failed' },
   VALID: { bg: '#DCFCE7', text: '#15803D', label: 'Valid' },
-  REVOKED: { bg: '#FEE2E2', text: '#B91C1C', label: 'Revoked' }
+  REVOKED: { bg: '#FEE2E2', text: '#B91C1C', label: 'Revoked' },
+  UPLOADED: { bg: '#F1F5F9', text: '#475569', label: 'Uploaded' },
+  EXPIRED: { bg: '#FEE2E2', text: '#B91C1C', label: 'Expired' },
+  UNPUBLISHED: { bg: '#F1F5F9', text: '#64748B', label: 'Unpublished' },
+  ARCHIVED: { bg: '#F1F5F9', text: '#64748B', label: 'Archived' },
+  PROCESSING: { bg: '#EFF6FF', text: '#1D4ED8', label: 'Processing' }
 }
 
 export default function StatusBadge({ status = 'DRAFT', label, size = 'sm' }) {

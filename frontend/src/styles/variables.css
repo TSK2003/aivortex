@@ -8,176 +8,237 @@
 }
 
 :root {
-  /* Primary & Brand Colors - Premium AI Platform Palette */
-  --color-primary: #0F172A;         /* Deep Navy / Slate Dark */
-  --color-primary-dark: #0A0F1D;    /* Midnight Navy */
-  --color-primary-light: #1E293B;   /* Deep Slate Accent */
-  --color-secondary: #2563EB;       /* Modern Royal Blue */
-  --color-secondary-hover: #1D4ED8; /* Darker Royal Blue */
-  --color-secondary-light: #EFF6FF; /* Ultra-light Ice Blue */
-  --color-electric: #3B82F6;        /* Electric Blue Highlight */
+  /* ==================================================
+     PHASE 5 ENTERPRISE DESIGN SYSTEM TOKENS (LIGHT)
+     Aligned strictly with Phase 5 Specifications
+  ================================================== */
+  --color-canvas: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-subtle: #F1F5F9;
   
-  /* Accent & Highlight Colors */
-  --color-accent: #0EA5E9;          /* Cyber Teal / Sky Blue */
-  --color-accent-hover: #0284C7;
-  --color-accent-light: #F0F9FF;
-  --color-highlight: #F59E0B;       /* Warm Amber */
-  --color-highlight-light: #FEF3C7;
-  --color-gold: #D97706;
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748B;
+  --color-text-inverse: #FFFFFF;
 
-  /* Neutrals & Backgrounds (White-first) */
-  --color-bg: #FFFFFF;              /* Pure White */
-  --color-bg-alt: #F8FAFC;          /* Clean Light Slate */
-  --color-bg-card: #FFFFFF;
-  --color-bg-subtle: #F1F5F9;
   --color-border: #E2E8F0;
   --color-border-hover: #CBD5E1;
+  --color-border-subtle: #F1F5F9;
 
-  /* Typography Colors */
-  --color-text: #0F172A;            /* Deep Navy Black */
-  --color-text-secondary: #475569;  /* Slate Grey */
-  --color-text-tertiary: #94A3B8;   /* Muted Slate */
-  --color-text-inverse: #FFFFFF;    /* Pure White */
+  --color-primary: #4F46E5;
+  --color-primary-dark: #4338CA;
+  --color-primary-soft: #EEF2FF;
+  --color-primary-hover: #4338CA;
 
-  /* Semantic Feedback */
+  --color-secondary: #4F46E5;
+  --color-secondary-hover: #4338CA;
+  --color-secondary-light: #EEF2FF;
+  --color-electric: #6366F1;
+
   --color-success: #10B981;
-  --color-success-bg: #D1FAE5;
+  --color-success-soft: #ECFDF5;
+  --color-success-bg: #ECFDF5;
+  
   --color-warning: #F59E0B;
-  --color-warning-bg: #FEF3C7;
-  --color-error: #EF4444;
-  --color-error-bg: #FEE2E2;
+  --color-warning-soft: #FFFBEB;
+  --color-warning-bg: #FFFBEB;
 
-  /* Typography Styles */
-  --font-family-base: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --color-danger: #EF4444;
+  --color-danger-soft: #FEF2F2;
+  --color-error: #EF4444;
+  --color-error-bg: #FEF2F2;
+
+  --color-neutral: #64748B;
+  --color-neutral-soft: #F1F5F9;
+
+  /* Backward Compatibility Aliases for Components */
+  --color-bg: #F8FAFC;
+  --color-bg-alt: #F1F5F9;
+  --color-bg-card: #FFFFFF;
+  --color-bg-subtle: #F1F5F9;
+  --color-header-bg: #FFFFFF;
+  --color-sidebar-bg: #FFFFFF;
+  --color-input-bg: #FFFFFF;
+  --color-input-border: #E2E8F0;
+  --color-text: #0F172A;
+  --color-text-tertiary: #64748B;
+
+  /* ==================================================
+     TYPOGRAPHY SCALE (Section 5.2)
+     Inter / system sans-serif hierarchy
+  ================================================== */
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-family-brand: "Good Timing W00 SemiBold", "Good Timing SemiBold", "Good Timing", sans-serif;
   --font-weight-brand: 600;
   --letter-spacing-brand: 0px;
-  
-  /* Font Sizes */
-  --font-size-xs: 0.75rem;    /* 12px */
-  --font-size-sm: 0.875rem;   /* 14px */
-  --font-size-base: 1rem;     /* 16px */
-  --font-size-md: 1.125rem;   /* 18px */
-  --font-size-lg: 1.25rem;    /* 20px */
-  --font-size-xl: 1.5rem;     /* 24px */
-  --font-size-2xl: 1.875rem;  /* 30px */
-  --font-size-3xl: 2.25rem;   /* 36px */
-  --font-size-4xl: 3rem;      /* 48px */
-  --font-size-5xl: 3.75rem;   /* 60px */
 
-  /* Spacing Scale */
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
-  --spacing-2xl: 3rem;
-  --spacing-3xl: 5rem;        /* 80px */
-  --spacing-4xl: 7.5rem;      /* 120px */
+  --font-size-xs: 0.75rem;    /* 12px Caption / Table micro */
+  --font-size-sm: 0.875rem;   /* 14px Body Small / Label */
+  --font-size-base: 1rem;     /* 16px Body */
+  --font-size-md: 1.125rem;   /* 18px Body Large / H4 */
+  --font-size-lg: 1.25rem;    /* 20px H3 */
+  --font-size-xl: 1.5rem;     /* 24px H2 */
+  --font-size-2xl: 1.875rem;  /* 30px H1 */
+  --font-size-3xl: 2.25rem;   /* 36px Display */
+  --font-size-4xl: 2.75rem;   /* 44px Hero Display */
 
-  /* Radius - Strict Enterprise SaaS Tokens */
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-base: 1.5;
+  --line-height-relaxed: 1.625;
+
+  /* ==================================================
+     SPACING SYSTEM (Section 5.3)
+     8-point scale with 4-point micro adjustments
+  ================================================== */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Legacy Spacing Tokens */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  --spacing-4xl: 96px;
+
+  /* ==================================================
+     BORDER RADII (Section 5.4)
+     Restrained Enterprise Values
+  ================================================== */
   --radius-xs: 4px;
-  --radius-sm: 6px;           /* Inputs, buttons, dropdowns, badges */
-  --radius-md: 8px;           /* Cards, panels, modals, tables */
-  --radius-lg: 8px;           /* Identical to md — max component radius */
-  --radius-xl: 8px;           /* Locked to 8px — no escalation */
-  --radius-full: 9999px;      /* Avatars ONLY — never for badges/buttons */
+  --radius-sm: 6px;           /* Inputs, buttons, micro controls */
+  --radius-md: 8px;           /* Cards, modals, drawers, panels */
+  --radius-lg: 8px;
+  --radius-xl: 8px;
+  --radius-btn: 6px;
+  --radius-input: 6px;
+  --radius-card: 8px;
+  --radius-modal: 8px;
+  --radius-pill: 9999px;      /* Pill badges, chips, searchbars */
+  --radius-full: 9999px;
 
-  /* Component Dimension Tokens */
+  /* ==================================================
+     LAYOUT & DIMENSION TOKENS (Section 5.7 & 5.8)
+  ================================================== */
+  --width-sidebar: 240px;      /* Enterprise desktop sidebar */
+  --width-sidebar-collapsed: 64px;
+  --width-content-max: 1440px;
+  --height-topbar: 56px;      /* Compact enterprise toolbar */
   --height-btn: 36px;
   --height-btn-sm: 32px;
-  --height-btn-lg: 44px;
-  --height-input: 40px;
-  --height-sidebar-item: 38px;
-  --height-table-row: 52px;
-  --height-topbar: 64px;
-  --width-sidebar: 260px;
-  --width-sidebar-collapsed: 76px;
-  --width-content-max: 1280px;
+  --height-btn-lg: 42px;
+  --height-input: 38px;
+  --height-table-row: 48px;
+  --height-sidebar-item: 36px;
 
-  /* Enterprise Subtle Shadows — structure through borders, not elevation */
-  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
-  --shadow-lg: 0 2px 6px -1px rgba(15, 23, 42, 0.06), 0 1px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-xl: 0 6px 12px -3px rgba(15, 23, 42, 0.07), 0 3px 6px -4px rgba(15, 23, 42, 0.04);
-  --shadow-card-hover: 0 2px 8px 0 rgba(15, 23, 42, 0.06);
-  --shadow-dropdown: 0 4px 16px -2px rgba(15, 23, 42, 0.1), 0 2px 6px -2px rgba(15, 23, 42, 0.05);
-  --shadow-blue-glow: none;
+  /* ==================================================
+     Z-INDEX OVERLAY SYSTEM (Section 5.32)
+  ================================================== */
+  --z-base: 1;
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-drawer: 1200;
+  --z-modal: 1300;
+  --z-toast: 1400;
 
-  /* Transitions - Fast & Usability-first */
+  /* Restrained Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-xl: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 2px 8px 0 rgba(15, 23, 42, 0.08);
+  --shadow-dropdown: 0 4px 16px -2px rgba(15, 23, 42, 0.12);
+
+  /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 250ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Centralized Header, Sidebar, Input Surface tokens for Light Mode */
-  --color-header-bg: #FFFFFF;
-  --color-sidebar-bg: #FFFFFF;
-  --color-input-bg: #FFFFFF;
-  --color-input-border: #CBD5E1;
   color-scheme: light;
 }
 
 /* ==================================================
-   CENTRALIZED SAAS DARK THEME DESIGN TOKENS
-   Deep charcoal / dark navy palette with blue branding
+   PHASE 5 ENTERPRISE DARK THEME DESIGN TOKENS
+   #0F172A Canvas, #1E293B Surface, #334155 Border
 ================================================== */
 :root[data-theme='dark'],
 [data-theme='dark'],
 .dark-theme {
   color-scheme: dark;
-  /* Brand Colors - crisp contrast against dark surfaces */
-  --color-primary: #F8FAFC;         /* White / near-white primary text */
-  --color-primary-dark: #FFFFFF;
-  --color-primary-light: #E2E8F0;
-  --color-secondary: #3B82F6;       /* Modern royal/electric blue accent */
-  --color-secondary-hover: #60A5FA;
-  --color-secondary-light: rgba(59, 130, 246, 0.16); /* Soft blue tint */
-  --color-electric: #60A5FA;
 
-  /* Accent & Highlight Colors */
-  --color-accent: #38BDF8;          /* Cyber Teal / Sky Blue */
-  --color-accent-hover: #0EA5E9;
-  --color-accent-light: rgba(56, 189, 248, 0.16);
-  --color-highlight: #F59E0B;       /* Warm Amber */
-  --color-highlight-light: rgba(245, 158, 11, 0.16);
-  --color-gold: #FBBF24;
+  --color-canvas: #0F172A;
+  --color-surface: #1E293B;
+  --color-surface-subtle: #243044;
 
-  /* Surfaces & Backgrounds - Deep charcoal & dark navy SaaS hierarchy */
-  --color-bg: #0A0E17;              /* Deep slate navy page background */
-  --color-bg-alt: #080C15;          /* Grounded dark navy surface */
-  --color-bg-card: #111827;         /* Elevated dark gray/navy surfaces */
-  --color-bg-subtle: #162033;       /* Elevated dark subtle/hover surface */
-  --color-header-bg: #0D1322;       /* Dark header surface */
-  --color-sidebar-bg: #080C14;      /* Grounded dark sidebar surface */
-  --color-input-bg: #0B101D;        /* Dark input field background */
-  --color-input-border: #223047;    /* Subtle dark input border */
-  --color-border: #1C2638;          /* Subtle dark-gray borders */
-  --color-border-hover: #2E3E58;
-
-  /* Typography Colors */
-  --color-text: #F8FAFC;            /* White / near-white primary text */
-  --color-text-secondary: #94A3B8;  /* Muted gray secondary text (5.5:1 contrast) */
-  --color-text-tertiary: #64748B;   /* Slate gray */
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
   --color-text-inverse: #0F172A;
 
-  /* Semantic Feedback in Dark Mode - Distinguishable high contrast */
-  --color-success: #34D399;
+  --color-border: #334155;
+  --color-border-hover: #475569;
+  --color-border-subtle: #243044;
+
+  --color-primary: #6366F1;
+  --color-primary-dark: #4F46E5;
+  --color-primary-soft: rgba(99, 102, 241, 0.16);
+  --color-primary-hover: #818CF8;
+
+  --color-secondary: #6366F1;
+  --color-secondary-hover: #818CF8;
+  --color-secondary-light: rgba(99, 102, 241, 0.16);
+  --color-electric: #818CF8;
+
+  --color-success: #10B981;
+  --color-success-soft: rgba(16, 185, 129, 0.16);
   --color-success-bg: rgba(16, 185, 129, 0.16);
-  --color-warning: #FBBF24;
+
+  --color-warning: #F59E0B;
+  --color-warning-soft: rgba(245, 158, 11, 0.16);
   --color-warning-bg: rgba(245, 158, 11, 0.16);
-  --color-error: #F87171;
+
+  --color-danger: #EF4444;
+  --color-danger-soft: rgba(239, 68, 68, 0.16);
+  --color-error: #EF4444;
   --color-error-bg: rgba(239, 68, 68, 0.16);
 
-  /* Elevated Dark Shadows */
+  --color-neutral: #94A3B8;
+  --color-neutral-soft: #1E293B;
+
+  /* Dark Backward Compatibility Aliases */
+  --color-bg: #0F172A;
+  --color-bg-alt: #0B1120;
+  --color-bg-card: #1E293B;
+  --color-bg-subtle: #243044;
+  --color-header-bg: #1E293B;
+  --color-sidebar-bg: #1E293B;
+  --color-input-bg: #0F172A;
+  --color-input-border: #334155;
+  --color-text: #F8FAFC;
+  --color-text-tertiary: #64748B;
+
+  /* Subtle Dark Mode Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
   --shadow-md: 0 2px 4px -1px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
-  --shadow-card-hover: 0 4px 12px 0 rgba(0, 0, 0, 0.6);
-  --shadow-blue-glow: none;
+  --shadow-card-hover: 0 4px 12px 0 rgba(0, 0, 0, 0.5);
+  --shadow-dropdown: 0 4px 16px -2px rgba(0, 0, 0, 0.6);
 }
 
-/* Accessibility: Respect Reduced Motion */
+/* Accessibility: Respect Reduced Motion (Section 5.38) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -186,6 +247,3 @@
     scroll-behavior: auto !important;
   }
 }
-
-
-
