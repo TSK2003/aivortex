@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import {
   Layout,
   Globe,
@@ -329,8 +329,8 @@ export default function AdminCmsManager({ showToast }) {
                 style={{
                   fontSize: '0.74rem',
                   fontWeight: 700,
-                  color: '#15803D',
-                  background: '#DCFCE7',
+                  color: '#2D2F33',
+                  background: '#EFEFEF',
                   padding: '3px 10px',
                   borderRadius: 9999,
                   display: 'inline-flex',
@@ -338,7 +338,7 @@ export default function AdminCmsManager({ showToast }) {
                   gap: 5
                 }}
               >
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16A34A' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2D2F33' }} />
                 Published (Live)
               </span>
             )}
@@ -347,8 +347,8 @@ export default function AdminCmsManager({ showToast }) {
                 style={{
                   fontSize: '0.74rem',
                   fontWeight: 700,
-                  color: '#B45309',
-                  background: '#FEF3C7',
+                  color: '#4B4D52',
+                  background: '#EFEFEF',
                   padding: '3px 10px',
                   borderRadius: 9999,
                   display: 'inline-flex',
@@ -356,7 +356,7 @@ export default function AdminCmsManager({ showToast }) {
                   gap: 5
                 }}
               >
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#D97706' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4B4D52' }} />
                 Unsaved Changes
               </span>
             )}
@@ -365,8 +365,8 @@ export default function AdminCmsManager({ showToast }) {
                 style={{
                   fontSize: '0.74rem',
                   fontWeight: 700,
-                  color: '#1D4ED8',
-                  background: '#DBEAFE',
+                  color: '#15171A',
+                  background: '#EFEFEF',
                   padding: '3px 10px',
                   borderRadius: 9999,
                   display: 'inline-flex',
@@ -374,7 +374,7 @@ export default function AdminCmsManager({ showToast }) {
                   gap: 5
                 }}
               >
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563EB' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#15171A' }} />
                 Draft Saved
               </span>
             )}
@@ -455,7 +455,7 @@ export default function AdminCmsManager({ showToast }) {
               padding: '7px 18px',
               borderRadius: 8,
               border: 'none',
-              background: isSaving ? '#94A3B8' : '#0F172A',
+              background: isSaving ? '#9B9DA3' : '#15171A',
               color: '#FFFFFF',
               fontSize: '0.85rem',
               fontWeight: 700,
@@ -463,8 +463,8 @@ export default function AdminCmsManager({ showToast }) {
               transition: 'background 0.15s ease',
               boxShadow: '0 1px 3px rgba(0,0,0,0.15)'
             }}
-            onMouseEnter={(e) => { if (!isSaving) e.currentTarget.style.background = '#1E293B' }}
-            onMouseLeave={(e) => { if (!isSaving) e.currentTarget.style.background = '#0F172A' }}
+            onMouseEnter={(e) => { if (!isSaving) e.currentTarget.style.background = '#2D2F33' }}
+            onMouseLeave={(e) => { if (!isSaving) e.currentTarget.style.background = '#15171A' }}
           >
             <Save size={14} />
             {isSaving ? 'Publishing…' : 'Publish Changes'}
@@ -517,7 +517,7 @@ export default function AdminCmsManager({ showToast }) {
                 whiteSpace: 'nowrap'
               }}
             >
-              <Icon size={16} color={isActive ? '#2563EB' : '#64748B'} />
+              <Icon size={16} color={isActive ? '#15171A' : '#6B6D73'} />
               {tab.label}
             </button>
           )
@@ -546,8 +546,8 @@ export default function AdminCmsManager({ showToast }) {
                   padding: '7px 14px',
                   borderRadius: 8,
                   border: 'none',
-                  background: footerSubTab === sub.id ? '#EFF6FF' : 'transparent',
-                  color: footerSubTab === sub.id ? '#2563EB' : 'var(--color-text-secondary, #64748B)',
+                  background: footerSubTab === sub.id ? '#F4F4F5' : 'transparent',
+                  color: footerSubTab === sub.id ? '#15171A' : 'var(--color-text-secondary, #64748B)',
                   fontWeight: footerSubTab === sub.id ? 700 : 500,
                   fontSize: '0.85rem',
                   cursor: 'pointer'
@@ -683,7 +683,7 @@ export default function AdminCmsManager({ showToast }) {
                 <div style={{ overflowX: 'auto', border: '1px solid #E2E8F0', borderRadius: 10 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
                     <thead>
-                      <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
+                      <tr style={{ background: '#F8F8F8', borderBottom: '1px solid #E2E8F0', color: '#5A5C62' }}>
                         <th style={{ padding: '10px 14px', width: 60 }}>Order</th>
                         <th style={{ padding: '10px 14px' }}>Label</th>
                         <th style={{ padding: '10px 14px' }}>Path / URL</th>
@@ -693,7 +693,7 @@ export default function AdminCmsManager({ showToast }) {
                     <tbody>
                       {links.map((link, idx) => (
                         <tr key={idx} style={{ borderBottom: '1px solid #E2E8F0' }}>
-                          <td style={{ padding: '10px 14px', color: '#94A3B8', fontWeight: 700 }}>
+                          <td style={{ padding: '10px 14px', color: '#9B9DA3', fontWeight: 700 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                               <span>{idx + 1}</span>
                               <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -725,7 +725,7 @@ export default function AdminCmsManager({ showToast }) {
                             </div>
                           </td>
                           <td style={{ padding: '10px 14px', fontWeight: 600 }}>{link.label}</td>
-                          <td style={{ padding: '10px 14px', color: '#2563EB', fontFamily: 'monospace', fontSize: '0.84rem' }}>{link.path}</td>
+                          <td style={{ padding: '10px 14px', color: '#15171A', fontFamily: 'monospace', fontSize: '0.84rem' }}>{link.path}</td>
                           <td style={{ padding: '10px 14px', textAlign: 'right' }}>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
                               <button
@@ -747,7 +747,7 @@ export default function AdminCmsManager({ showToast }) {
                                   })
                                 }
                                 className="btn btn-secondary btn-sm"
-                                style={{ padding: '4px 8px', color: '#DC2626' }}
+                                style={{ padding: '4px 8px', color: '#15171A' }}
                                 title="Delete Link"
                               >
                                 <Trash2 size={13} />
@@ -814,15 +814,15 @@ export default function AdminCmsManager({ showToast }) {
                   gap: 6,
                   padding: '6px 14px',
                   borderRadius: 7,
-                  border: '1px solid #FCA5A5',
+                  border: '1px solid #D5D5D8',
                   background: 'transparent',
-                  color: '#DC2626',
+                  color: '#15171A',
                   fontSize: '0.8rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'background 0.15s ease'
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#EFEFEF' }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
               >
                 <RotateCcw size={13} />
@@ -854,8 +854,8 @@ export default function AdminCmsManager({ showToast }) {
                   padding: '7px 14px',
                   borderRadius: 8,
                   border: 'none',
-                  background: aboutSubTab === sub.id ? '#EFF6FF' : 'transparent',
-                  color: aboutSubTab === sub.id ? '#2563EB' : 'var(--color-text-secondary, #64748B)',
+                  background: aboutSubTab === sub.id ? '#F4F4F5' : 'transparent',
+                  color: aboutSubTab === sub.id ? '#15171A' : 'var(--color-text-secondary, #64748B)',
                   fontWeight: aboutSubTab === sub.id ? 700 : 500,
                   fontSize: '0.85rem',
                   cursor: 'pointer'
@@ -891,18 +891,18 @@ export default function AdminCmsManager({ showToast }) {
 
               {/* Public Preview Card */}
               <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, padding: 28, textAlign: 'center', maxWidth: 780, margin: '0 auto' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#475569', marginBottom: 12 }}>
-                  <span style={{ width: 16, height: 1.5, background: '#2563EB' }} />
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#5A5C62', marginBottom: 12 }}>
+                  <span style={{ width: 16, height: 1.5, background: '#15171A' }} />
                   About Aivortex
-                  <span style={{ width: 16, height: 1.5, background: '#2563EB' }} />
+                  <span style={{ width: 16, height: 1.5, background: '#15171A' }} />
                 </div>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0F172A', margin: '0 0 14px 0' }}>
+                <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#15171A', margin: '0 0 14px 0' }}>
                   {aboutData.hero?.title || defaultAboutData.hero.title}
                 </h2>
-                <p style={{ fontSize: '0.98rem', color: '#334155', lineHeight: 1.6, fontWeight: 500, marginBottom: 14 }}>
+                <p style={{ fontSize: '0.98rem', color: '#4B4D52', lineHeight: 1.6, fontWeight: 500, marginBottom: 14 }}>
                   {aboutData.hero?.subtitle || defaultAboutData.hero.subtitle}
                 </p>
-                <p style={{ fontSize: '0.88rem', color: '#64748B', lineHeight: 1.7, margin: 0 }}>
+                <p style={{ fontSize: '0.88rem', color: '#6B6D73', lineHeight: 1.7, margin: 0 }}>
                   {aboutData.hero?.introParagraph || defaultAboutData.hero.introParagraph}
                 </p>
               </div>
@@ -913,11 +913,11 @@ export default function AdminCmsManager({ showToast }) {
           {aboutSubTab === 'mission' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))', gap: 20 }}>
               {/* Mission Card */}
-              <div className="card" style={{ padding: 24, borderRadius: 8, border: '1.5px solid #BFDBFE' }}>
+              <div className="card" style={{ padding: 24, borderRadius: 8, border: '1.5px solid #E4E4E7' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Compass size={18} color="#2563EB" />
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#2563EB' }}>
+                    <Compass size={18} color="#15171A" />
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#15171A' }}>
                       {aboutData.mission?.title || 'Our Mission'}
                     </h3>
                   </div>
@@ -929,17 +929,17 @@ export default function AdminCmsManager({ showToast }) {
                     <Edit3 size={13} /> Edit
                   </button>
                 </div>
-                <p style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.65, margin: 0 }}>
+                <p style={{ fontSize: '0.9rem', color: '#4B4D52', lineHeight: 1.65, margin: 0 }}>
                   {aboutData.mission?.description || defaultAboutData.mission.description}
                 </p>
               </div>
 
               {/* Vision Card */}
-              <div className="card" style={{ padding: 24, borderRadius: 8, border: '1.5px solid #DDD6FE' }}>
+              <div className="card" style={{ padding: 24, borderRadius: 8, border: '1.5px solid #E4E4E7' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Sparkles size={18} color="#7C3AED" />
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#7C3AED' }}>
+                    <Sparkles size={18} color="#2D2F33" />
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#2D2F33' }}>
                       {aboutData.vision?.title || 'Our Vision'}
                     </h3>
                   </div>
@@ -951,7 +951,7 @@ export default function AdminCmsManager({ showToast }) {
                     <Edit3 size={13} /> Edit
                   </button>
                 </div>
-                <p style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.65, margin: 0 }}>
+                <p style={{ fontSize: '0.9rem', color: '#4B4D52', lineHeight: 1.65, margin: 0 }}>
                   {aboutData.vision?.description || defaultAboutData.vision.description}
                 </p>
               </div>
@@ -987,7 +987,7 @@ export default function AdminCmsManager({ showToast }) {
                     <div
                       key={idx}
                       style={{
-                        background: '#F8FAFC',
+                        background: '#F8F8F8',
                         borderRadius: 10,
                         border: '1px solid #E2E8F0',
                         padding: 16,
@@ -998,14 +998,14 @@ export default function AdminCmsManager({ showToast }) {
                     >
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#2563EB', background: '#EFF6FF', padding: '2px 8px', borderRadius: 4 }}>
+                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#15171A', background: '#F4F4F5', padding: '2px 8px', borderRadius: 4 }}>
                             Pillar 0{idx + 1}
                           </span>
                           <div style={{ display: 'flex', gap: 4 }}>
                             <button
                               type="button"
                               onClick={() => setPillarModal({ open: true, type: 'whatWeDo', item: pillar, index: idx })}
-                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748B', padding: 2 }}
+                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6B6D73', padding: 2 }}
                               title="Edit"
                             >
                               <Edit3 size={13} />
@@ -1019,15 +1019,15 @@ export default function AdminCmsManager({ showToast }) {
                                   onConfirm: () => handleDeletePillar('whatWeDo', idx)
                                 })
                               }
-                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#DC2626', padding: 2 }}
+                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#15171A', padding: 2 }}
                               title="Delete"
                             >
                               <Trash2 size={13} />
                             </button>
                           </div>
                         </div>
-                        <h4 style={{ margin: '4px 0 6px 0', fontSize: '0.96rem', fontWeight: 700, color: '#0F172A' }}>{pillar.title}</h4>
-                        <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748B', lineHeight: 1.5 }}>{pillar.description}</p>
+                        <h4 style={{ margin: '4px 0 6px 0', fontSize: '0.96rem', fontWeight: 700, color: '#15171A' }}>{pillar.title}</h4>
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: '#6B6D73', lineHeight: 1.5 }}>{pillar.description}</p>
                       </div>
                     </div>
                   ))}
@@ -1060,7 +1060,7 @@ export default function AdminCmsManager({ showToast }) {
                     <div
                       key={idx}
                       style={{
-                        background: '#F8FAFC',
+                        background: '#F8F8F8',
                         borderRadius: 10,
                         border: '1px solid #E2E8F0',
                         padding: 16,
@@ -1071,14 +1071,14 @@ export default function AdminCmsManager({ showToast }) {
                     >
                       <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#16A34A', background: '#DCFCE7', padding: '2px 8px', borderRadius: 4 }}>
+                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#2D2F33', background: '#EFEFEF', padding: '2px 8px', borderRadius: 4 }}>
                             Advantage 0{idx + 1}
                           </span>
                           <div style={{ display: 'flex', gap: 4 }}>
                             <button
                               type="button"
                               onClick={() => setPillarModal({ open: true, type: 'whyAivortex', item: val, index: idx })}
-                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748B', padding: 2 }}
+                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6B6D73', padding: 2 }}
                               title="Edit"
                             >
                               <Edit3 size={13} />
@@ -1092,15 +1092,15 @@ export default function AdminCmsManager({ showToast }) {
                                   onConfirm: () => handleDeletePillar('whyAivortex', idx)
                                 })
                               }
-                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#DC2626', padding: 2 }}
+                              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#15171A', padding: 2 }}
                               title="Delete"
                             >
                               <Trash2 size={13} />
                             </button>
                           </div>
                         </div>
-                        <h4 style={{ margin: '4px 0 6px 0', fontSize: '0.96rem', fontWeight: 700, color: '#0F172A' }}>{val.title}</h4>
-                        <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748B', lineHeight: 1.5 }}>{val.description}</p>
+                        <h4 style={{ margin: '4px 0 6px 0', fontSize: '0.96rem', fontWeight: 700, color: '#15171A' }}>{val.title}</h4>
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: '#6B6D73', lineHeight: 1.5 }}>{val.description}</p>
                       </div>
                     </div>
                   ))}
@@ -1119,8 +1119,8 @@ export default function AdminCmsManager({ showToast }) {
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
                   {(aboutData.philosophy || []).map((ph, idx) => (
-                    <div key={idx} style={{ background: '#F8FAFC', borderRadius: 10, padding: 16, border: '1px solid #E2E8F0' }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#2563EB', marginBottom: 6 }}>
+                    <div key={idx} style={{ background: '#F8F8F8', borderRadius: 10, padding: 16, border: '1px solid #E2E8F0' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#15171A', marginBottom: 6 }}>
                         Step 0{idx + 1}: {ph.step}
                       </div>
                       <textarea
@@ -1184,15 +1184,15 @@ export default function AdminCmsManager({ showToast }) {
                   gap: 6,
                   padding: '6px 14px',
                   borderRadius: 7,
-                  border: '1px solid #FCA5A5',
+                  border: '1px solid #D5D5D8',
                   background: 'transparent',
-                  color: '#DC2626',
+                  color: '#15171A',
                   fontSize: '0.8rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'background 0.15s ease'
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#EFEFEF' }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
               >
                 <RotateCcw size={13} />
@@ -1261,14 +1261,14 @@ export default function AdminCmsManager({ showToast }) {
                 }}
               >
                 {/* Photo & Badge Preview */}
-                <div style={{ display: 'flex', gap: 20, padding: 20, background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                <div style={{ display: 'flex', gap: 20, padding: 20, background: '#F8F8F8', borderBottom: '1px solid #E2E8F0' }}>
                   <div
                     style={{
                       width: 100,
                       height: 115,
                       borderRadius: 10,
                       overflow: 'hidden',
-                      background: '#0F172A',
+                      background: '#15171A',
                       border: '1px solid #CBD5E1',
                       flexShrink: 0
                     }}
@@ -1280,7 +1280,7 @@ export default function AdminCmsManager({ showToast }) {
                         style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }}
                       />
                     ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9B9DA3' }}>
                         <User size={32} />
                       </div>
                     )}
@@ -1288,20 +1288,20 @@ export default function AdminCmsManager({ showToast }) {
 
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#15171A', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                         {leader.sectionTitle || 'Leadership'}
                       </span>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#16A34A', background: '#DCFCE7', padding: '1px 7px', borderRadius: 4 }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#2D2F33', background: '#EFEFEF', padding: '1px 7px', borderRadius: 4 }}>
                         Published
                       </span>
                     </div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: '0 0 2px 0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#15171A', margin: '0 0 2px 0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                       {leader.name}
                     </h3>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#2563EB', marginBottom: 2 }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#15171A', marginBottom: 2 }}>
                       {leader.role}
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: '#64748B', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: '0.78rem', color: '#6B6D73', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                       {leader.company}
                     </div>
                   </div>
@@ -1310,17 +1310,17 @@ export default function AdminCmsManager({ showToast }) {
                 {/* Card Body */}
                 <div style={{ padding: 20, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: 4 }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#5A5C62', textTransform: 'uppercase', marginBottom: 4 }}>
                       Qualifications
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: '#0F172A', marginBottom: 12 }}>
+                    <div style={{ fontSize: '0.85rem', color: '#15171A', marginBottom: 12 }}>
                       {leader.qualifications || 'Professional Degrees'}
                     </div>
 
-                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: 4 }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#5A5C62', textTransform: 'uppercase', marginBottom: 4 }}>
                       Public Narrative
                     </div>
-                    <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
+                    <p style={{ fontSize: '0.85rem', color: '#5A5C62', lineHeight: 1.5, margin: 0 }}>
                       {leader.bio || 'Executive biography and industry experience.'}
                     </p>
                   </div>
@@ -1378,7 +1378,7 @@ export default function AdminCmsManager({ showToast }) {
                               onConfirm: () => handleDeleteLeader(leader.id)
                             })
                           }
-                          style={{ color: '#DC2626' }}
+                          style={{ color: '#15171A' }}
                           title="Delete"
                         >
                           <Trash2 size={13} />
@@ -1489,8 +1489,8 @@ export default function AdminCmsManager({ showToast }) {
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
               {(homeSections.stats || []).map((st, idx) => (
-                <div key={idx} style={{ background: '#F8FAFC', padding: 14, borderRadius: 10, border: '1px solid #E2E8F0' }}>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748B', marginBottom: 4 }}>
+                <div key={idx} style={{ background: '#F8F8F8', padding: 14, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#6B6D73', marginBottom: 4 }}>
                     Metric 0{idx + 1} Value
                   </label>
                   <input
@@ -1504,7 +1504,7 @@ export default function AdminCmsManager({ showToast }) {
                     }}
                     style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #CBD5E1', fontSize: '0.9rem', fontWeight: 800, marginBottom: 8 }}
                   />
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#64748B', marginBottom: 4 }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#6B6D73', marginBottom: 4 }}>
                     Label
                   </label>
                   <input
@@ -1549,7 +1549,7 @@ export default function AdminCmsManager({ showToast }) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.86rem', fontWeight: 600 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F59E0B', display: 'inline-block' }} />
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4B4D52', display: 'inline-block' }} />
             Unsaved changes detected
           </div>
 
@@ -1560,7 +1560,7 @@ export default function AdminCmsManager({ showToast }) {
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#94A3B8',
+                color: '#9B9DA3',
                 cursor: 'pointer',
                 fontSize: '0.82rem',
                 fontWeight: 600,
@@ -1573,9 +1573,9 @@ export default function AdminCmsManager({ showToast }) {
               type="button"
               onClick={handleSaveDraft}
               style={{
-                background: '#334155',
+                background: '#4B4D52',
                 border: 'none',
-                color: '#F8FAFC',
+                color: '#F8F8F8',
                 cursor: 'pointer',
                 fontSize: '0.82rem',
                 fontWeight: 600,
@@ -1590,7 +1590,7 @@ export default function AdminCmsManager({ showToast }) {
               onClick={handlePublishAll}
               disabled={isSaving}
               style={{
-                background: '#2563EB',
+                background: '#15171A',
                 border: 'none',
                 color: '#FFFFFF',
                 cursor: 'pointer',
@@ -1659,14 +1659,14 @@ export default function AdminCmsManager({ showToast }) {
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--color-primary, #0F172A)' }}>
                   {leaderModal.isNew ? 'Add Leadership Profile' : `Edit: ${leaderModal.leader.name}`}
                 </h3>
-                <p style={{ margin: '3px 0 0 0', fontSize: '0.8rem', color: '#64748B' }}>
+                <p style={{ margin: '3px 0 0 0', fontSize: '0.8rem', color: '#6B6D73' }}>
                   Manage executive qualifications, position, and public photo.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setLeaderModal({ open: false, leader: null, isNew: false })}
-                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748B', padding: 6, borderRadius: 6 }}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6B6D73', padding: 6, borderRadius: 6 }}
               >
                 <X size={20} />
               </button>
@@ -1685,7 +1685,7 @@ export default function AdminCmsManager({ showToast }) {
                 {/* LEFT: Profile Photo Area */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
                   {/* Section Label */}
-                  <div style={{ width: '100%', fontSize: '0.72rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
+                  <div style={{ width: '100%', fontSize: '0.72rem', fontWeight: 700, color: '#5A5C62', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
                     Profile Photo
                   </div>
 
@@ -1696,7 +1696,7 @@ export default function AdminCmsManager({ showToast }) {
                       aspectRatio: '3/4',
                       maxHeight: 220,
                       borderRadius: 10,
-                      background: '#0F172A',
+                      background: '#15171A',
                       overflow: 'hidden',
                       border: '1px solid #CBD5E1',
                       flexShrink: 0
@@ -1709,9 +1709,9 @@ export default function AdminCmsManager({ showToast }) {
                         style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }}
                       />
                     ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748B', gap: 6 }}>
+                      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#6B6D73', gap: 6 }}>
                         <User size={40} />
-                        <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>No photo</span>
+                        <span style={{ fontSize: '0.72rem', color: '#9B9DA3' }}>No photo</span>
                       </div>
                     )}
                   </div>
@@ -1722,9 +1722,9 @@ export default function AdminCmsManager({ showToast }) {
                       width: '100%',
                       padding: '7px 10px',
                       borderRadius: 8,
-                      border: '1px solid #2563EB',
-                      background: '#EFF6FF',
-                      color: '#2563EB',
+                      border: '1px solid #15171A',
+                      background: '#F4F4F5',
+                      color: '#15171A',
                       fontSize: '0.8rem',
                       fontWeight: 600,
                       textAlign: 'center',
@@ -1766,9 +1766,9 @@ export default function AdminCmsManager({ showToast }) {
                         width: '100%',
                         padding: '6px 10px',
                         borderRadius: 8,
-                        border: '1px solid #FCA5A5',
+                        border: '1px solid #D5D5D8',
                         background: 'transparent',
-                        color: '#DC2626',
+                        color: '#15171A',
                         fontSize: '0.78rem',
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -1778,7 +1778,7 @@ export default function AdminCmsManager({ showToast }) {
                         gap: 6,
                         transition: 'background 0.15s ease'
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#EFEFEF' }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                     >
                       Remove Photo
@@ -1789,7 +1789,7 @@ export default function AdminCmsManager({ showToast }) {
                   <button
                     type="button"
                     onClick={() => setShowPhotoUrlInput(!showPhotoUrlInput)}
-                    style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '0.72rem', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                    style={{ background: 'none', border: 'none', color: '#9B9DA3', fontSize: '0.72rem', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
                   >
                     {showPhotoUrlInput ? 'Hide URL input' : 'Use URL instead'}
                   </button>
@@ -1808,8 +1808,8 @@ export default function AdminCmsManager({ showToast }) {
                 {/* RIGHT: Grouped Fields */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {/* BASIC INFORMATION */}
-                  <div style={{ background: '#F8FAFC', padding: 14, borderRadius: 10, border: '1px solid #E2E8F0' }}>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#2563EB', textTransform: 'uppercase', marginBottom: 10 }}>
+                  <div style={{ background: '#F8F8F8', padding: 14, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#15171A', textTransform: 'uppercase', marginBottom: 10 }}>
                       Basic Information
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -1847,8 +1847,8 @@ export default function AdminCmsManager({ showToast }) {
                   </div>
 
                   {/* PROFESSIONAL POSITION */}
-                  <div style={{ background: '#F8FAFC', padding: 14, borderRadius: 10, border: '1px solid #E2E8F0' }}>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#16A34A', textTransform: 'uppercase', marginBottom: 10 }}>
+                  <div style={{ background: '#F8F8F8', padding: 14, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#2D2F33', textTransform: 'uppercase', marginBottom: 10 }}>
                       Professional Position
                     </div>
                     <div>
@@ -1864,8 +1864,8 @@ export default function AdminCmsManager({ showToast }) {
                   </div>
 
                   {/* BIO */}
-                  <div style={{ background: '#F8FAFC', padding: 14, borderRadius: 10, border: '1px solid #E2E8F0' }}>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', marginBottom: 10 }}>
+                  <div style={{ background: '#F8F8F8', padding: 14, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#5A5C62', textTransform: 'uppercase', marginBottom: 10 }}>
                       Public Profile &amp; Bio
                     </div>
                     <div>
@@ -1880,8 +1880,8 @@ export default function AdminCmsManager({ showToast }) {
                   </div>
 
                   {/* DISPLAY SETTINGS */}
-                  <div style={{ background: '#F8FAFC', padding: 14, borderRadius: 10, border: '1px solid #E2E8F0' }}>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#7C3AED', textTransform: 'uppercase', marginBottom: 10 }}>
+                  <div style={{ background: '#F8F8F8', padding: 14, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#2D2F33', textTransform: 'uppercase', marginBottom: 10 }}>
                       Display Settings
                     </div>
                     <div>
@@ -2288,8 +2288,8 @@ export default function AdminCmsManager({ showToast }) {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, borderBottom: '1px solid #E2E8F0', paddingBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Sparkles size={18} color="#2563EB" />
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                <Sparkles size={18} color="#15171A" />
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#15171A' }}>
                   Live Public Preview
                 </h3>
               </div>
@@ -2299,40 +2299,40 @@ export default function AdminCmsManager({ showToast }) {
             </div>
 
             {/* Preview Body according to active type */}
-            <div style={{ background: '#F8FAFC', padding: 24, borderRadius: 8, border: '1px solid #E2E8F0' }}>
+            <div style={{ background: '#F8F8F8', padding: 24, borderRadius: 8, border: '1px solid #E2E8F0' }}>
               {previewModal.type === 'leadership' ? (
                 <div>
                   <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Leadership</div>
-                    <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0F172A', margin: '4px 0 0 0' }}>Executive Leadership</h2>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#15171A', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Leadership</div>
+                    <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#15171A', margin: '4px 0 0 0' }}>Executive Leadership</h2>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
                     {(aboutData.leadership || []).map((l, idx) => (
                       <div key={idx} style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
-                        <div style={{ height: 260, background: '#0F172A' }}>
+                        <div style={{ height: 260, background: '#15171A' }}>
                           {l.image && <img src={l.image} alt={l.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />}
                         </div>
                         <div style={{ padding: 20 }}>
-                          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#2563EB', textTransform: 'uppercase' }}>{l.sectionTitle}</div>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#15171A', textTransform: 'uppercase' }}>{l.sectionTitle}</div>
                           <h4 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '2px 0 4px 0' }}>{l.name}</h4>
-                          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: 4 }}>{l.role}</div>
-                          <div style={{ fontSize: '0.78rem', color: '#64748B', marginBottom: 10 }}>{l.company}</div>
-                          <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>{l.bio}</p>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#15171A', marginBottom: 4 }}>{l.role}</div>
+                          <div style={{ fontSize: '0.78rem', color: '#6B6D73', marginBottom: 10 }}>{l.company}</div>
+                          <p style={{ fontSize: '0.82rem', color: '#5A5C62', lineHeight: 1.5, margin: 0 }}>{l.bio}</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : previewModal.type === 'footer' ? (
-                <div style={{ background: '#0F172A', color: '#F8FAFC', padding: 28, borderRadius: 8 }}>
+                <div style={{ background: '#15171A', color: '#F8F8F8', padding: 28, borderRadius: 8 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24, marginBottom: 24 }}>
                     <div>
                       <h4 style={{ color: '#FFFFFF', margin: '0 0 10px 0', fontSize: '1.1rem', fontWeight: 800 }}>AIVORTEX</h4>
-                      <p style={{ fontSize: '0.82rem', color: '#94A3B8', lineHeight: 1.6 }}>{footerData.brandDesc}</p>
+                      <p style={{ fontSize: '0.82rem', color: '#9B9DA3', lineHeight: 1.6 }}>{footerData.brandDesc}</p>
                     </div>
                     <div>
                       <h5 style={{ color: '#FFFFFF', margin: '0 0 10px 0', fontSize: '0.88rem', fontWeight: 700 }}>{footerData.quickLinksTitle}</h5>
-                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.82rem', color: '#94A3B8' }}>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.82rem', color: '#9B9DA3' }}>
                         {(footerData.quickLinks || []).map((l, i) => (
                           <li key={i}>{l.label}</li>
                         ))}
@@ -2340,14 +2340,14 @@ export default function AdminCmsManager({ showToast }) {
                     </div>
                     <div>
                       <h5 style={{ color: '#FFFFFF', margin: '0 0 10px 0', fontSize: '0.88rem', fontWeight: 700 }}>{footerData.coursesTitle}</h5>
-                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.82rem', color: '#94A3B8' }}>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.82rem', color: '#9B9DA3' }}>
                         {(footerData.coursesLinks || []).slice(0, 5).map((l, i) => (
                           <li key={i}>{l.label}</li>
                         ))}
                       </ul>
                     </div>
                   </div>
-                  <div style={{ borderTop: '1px solid #1E293B', paddingTop: 14, fontSize: '0.78rem', color: '#64748B', textAlign: 'center' }}>
+                  <div style={{ borderTop: '1px solid #1E293B', paddingTop: 14, fontSize: '0.78rem', color: '#6B6D73', textAlign: 'center' }}>
                     {footerData.copyrightText}
                   </div>
                 </div>
@@ -2355,18 +2355,18 @@ export default function AdminCmsManager({ showToast }) {
                 /* About Page Preview */
                 <div style={{ background: '#FFFFFF', padding: 28, borderRadius: 12 }}>
                   <div style={{ textAlign: 'center', maxWidth: 680, margin: '0 auto 32px auto' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563EB', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>About Aivortex</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#15171A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>About Aivortex</div>
                     <h2 style={{ fontSize: '1.75rem', fontWeight: 800, margin: '0 0 12px 0' }}>{aboutData.hero?.title}</h2>
-                    <p style={{ fontSize: '0.95rem', color: '#334155', lineHeight: 1.6 }}>{aboutData.hero?.subtitle}</p>
+                    <p style={{ fontSize: '0.95rem', color: '#4B4D52', lineHeight: 1.6 }}>{aboutData.hero?.subtitle}</p>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                    <div style={{ padding: 18, borderRadius: 10, background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
-                      <h4 style={{ color: '#2563EB', margin: '0 0 8px 0', fontWeight: 800 }}>{aboutData.mission?.title}</h4>
-                      <p style={{ fontSize: '0.84rem', color: '#1E293B', lineHeight: 1.6, margin: 0 }}>{aboutData.mission?.description}</p>
+                    <div style={{ padding: 18, borderRadius: 10, background: '#F4F4F5', border: '1px solid #E4E4E7' }}>
+                      <h4 style={{ color: '#15171A', margin: '0 0 8px 0', fontWeight: 800 }}>{aboutData.mission?.title}</h4>
+                      <p style={{ fontSize: '0.84rem', color: '#2D2F33', lineHeight: 1.6, margin: 0 }}>{aboutData.mission?.description}</p>
                     </div>
-                    <div style={{ padding: 18, borderRadius: 10, background: '#F5F3FF', border: '1px solid #DDD6FE' }}>
-                      <h4 style={{ color: '#7C3AED', margin: '0 0 8px 0', fontWeight: 800 }}>{aboutData.vision?.title}</h4>
-                      <p style={{ fontSize: '0.84rem', color: '#1E293B', lineHeight: 1.6, margin: 0 }}>{aboutData.vision?.description}</p>
+                    <div style={{ padding: 18, borderRadius: 10, background: '#F4F4F5', border: '1px solid #E4E4E7' }}>
+                      <h4 style={{ color: '#2D2F33', margin: '0 0 8px 0', fontWeight: 800 }}>{aboutData.vision?.title}</h4>
+                      <p style={{ fontSize: '0.84rem', color: '#2D2F33', lineHeight: 1.6, margin: 0 }}>{aboutData.vision?.description}</p>
                     </div>
                   </div>
                 </div>
@@ -2406,7 +2406,7 @@ export default function AdminCmsManager({ showToast }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#FEF3C7', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#EFEFEF', color: '#4B4D52', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <AlertCircle size={20} />
               </div>
               <div>
@@ -2419,7 +2419,7 @@ export default function AdminCmsManager({ showToast }) {
               </div>
             </div>
 
-            <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.5, marginBottom: 20 }}>
+            <p style={{ fontSize: '0.88rem', color: '#4B4D52', lineHeight: 1.5, marginBottom: 20 }}>
               Would you like to stay and publish your changes, save a local draft, or discard your unsaved modifications?
             </p>
 
@@ -2439,7 +2439,7 @@ export default function AdminCmsManager({ showToast }) {
                   setActiveTab(unsavedWarningModal.pendingTab)
                   setUnsavedWarningModal({ open: false, pendingTab: null })
                 }}
-                style={{ color: '#DC2626' }}
+                style={{ color: '#15171A' }}
               >
                 Discard
               </button>
@@ -2488,7 +2488,7 @@ export default function AdminCmsManager({ showToast }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#FEF2F2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#EFEFEF', color: '#15171A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <RotateCcw size={20} />
               </div>
               <div>
@@ -2501,7 +2501,7 @@ export default function AdminCmsManager({ showToast }) {
               </div>
             </div>
 
-            <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.5, marginBottom: 20 }}>
+            <p style={{ fontSize: '0.88rem', color: '#4B4D52', lineHeight: 1.5, marginBottom: 20 }}>
               Are you sure you want to restore the official default copy for {restoreConfirmModal.target === 'about' ? 'About & Leadership' : 'Footer'}? You can still review the draft before publishing live.
             </p>
 
@@ -2517,7 +2517,7 @@ export default function AdminCmsManager({ showToast }) {
                 type="button"
                 className="btn btn-primary"
                 onClick={() => handleRestoreDefaults(restoreConfirmModal.target)}
-                style={{ background: '#DC2626', borderColor: '#DC2626' }}
+                style={{ background: '#15171A', borderColor: '#15171A' }}
               >
                 Restore Defaults
               </button>
@@ -2555,7 +2555,7 @@ export default function AdminCmsManager({ showToast }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#EFEFEF', color: '#15171A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Trash2 size={20} />
               </div>
               <div>
@@ -2568,7 +2568,7 @@ export default function AdminCmsManager({ showToast }) {
               </div>
             </div>
 
-            <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.5, marginBottom: 20 }}>
+            <p style={{ fontSize: '0.88rem', color: '#4B4D52', lineHeight: 1.5, marginBottom: 20 }}>
               {deleteConfirmModal.title || 'Are you sure you want to delete this item?'}
             </p>
 
@@ -2584,7 +2584,7 @@ export default function AdminCmsManager({ showToast }) {
                 type="button"
                 className="btn btn-primary"
                 onClick={deleteConfirmModal.onConfirm}
-                style={{ background: '#DC2626', borderColor: '#DC2626' }}
+                style={{ background: '#15171A', borderColor: '#15171A' }}
               >
                 Delete
               </button>

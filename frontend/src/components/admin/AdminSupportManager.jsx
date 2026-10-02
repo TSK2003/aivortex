@@ -119,15 +119,15 @@ export default function AdminSupportManager() {
     switch (status) {
       case 'OPEN':
       case 'NEW':
-        return { bg: '#FEF3C7', color: '#92400E', label: status }
+        return { bg: '#B45309', color: '#FFFFFF', label: status }
       case 'IN_PROGRESS':
-        return { bg: '#DBEAFE', color: '#1E40AF', label: 'In Progress' }
+        return { bg: '#B45309', color: '#FFFFFF', label: 'In Progress' }
       case 'RESOLVED':
-        return { bg: '#DCFCE7', color: '#166534', label: 'Resolved' }
+        return { bg: '#15803D', color: '#FFFFFF', label: 'Resolved' }
       case 'CLOSED':
-        return { bg: '#F1F5F9', color: '#475569', label: 'Closed' }
+        return { bg: '#6B7280', color: '#FFFFFF', label: 'Closed' }
       default:
-        return { bg: '#F1F5F9', color: '#475569', label: status }
+        return { bg: '#6B7280', color: '#FFFFFF', label: status }
     }
   }
 
@@ -153,20 +153,20 @@ export default function AdminSupportManager() {
               width: 38,
               height: 38,
               borderRadius: 8,
-              background: '#EFF6FF',
+              background: '#F4F4F5',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#2563EB'
+              color: '#15171A'
             }}
           >
             <MessageSquare size={20} />
           </div>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 700, color: '#0F172A' }}>
+            <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 700, color: '#15171A' }}>
               Support & Inquiries Governance
             </h3>
-            <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748B' }}>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: '#6B6D73' }}>
               Authoritative management of student support tickets and admissions enquiries
             </p>
           </div>
@@ -178,9 +178,9 @@ export default function AdminSupportManager() {
             className="btn btn-sm"
             onClick={() => setActiveSubTab('tickets')}
             style={{
-              background: activeSubTab === 'tickets' ? '#2563EB' : '#F8FAFC',
-              color: activeSubTab === 'tickets' ? '#FFFFFF' : '#475569',
-              border: '1px solid ' + (activeSubTab === 'tickets' ? '#2563EB' : '#E2E8F0'),
+              background: activeSubTab === 'tickets' ? '#15171A' : '#F8F8F8',
+              color: activeSubTab === 'tickets' ? '#FFFFFF' : '#5A5C62',
+              border: '1px solid ' + (activeSubTab === 'tickets' ? '#15171A' : '#E4E4E7'),
               fontWeight: 600
             }}
           >
@@ -191,9 +191,9 @@ export default function AdminSupportManager() {
             className="btn btn-sm"
             onClick={() => setActiveSubTab('enquiries')}
             style={{
-              background: activeSubTab === 'enquiries' ? '#2563EB' : '#F8FAFC',
-              color: activeSubTab === 'enquiries' ? '#FFFFFF' : '#475569',
-              border: '1px solid ' + (activeSubTab === 'enquiries' ? '#2563EB' : '#E2E8F0'),
+              background: activeSubTab === 'enquiries' ? '#15171A' : '#F8F8F8',
+              color: activeSubTab === 'enquiries' ? '#FFFFFF' : '#5A5C62',
+              border: '1px solid ' + (activeSubTab === 'enquiries' ? '#15171A' : '#E4E4E7'),
               fontWeight: 600
             }}
           >
@@ -227,7 +227,7 @@ export default function AdminSupportManager() {
               style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 260 }}
             >
               <div style={{ position: 'relative', width: '100%', maxWidth: 360 }}>
-                <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+                <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9B9DA3' }} />
                 <input
                   type="text"
                   placeholder="Search tickets by subject, message, student..."
@@ -248,7 +248,7 @@ export default function AdminSupportManager() {
             </form>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>Status:</span>
+              <span style={{ fontSize: '0.8rem', color: '#6B6D73', fontWeight: 600 }}>Status:</span>
               <select
                 value={ticketStatusFilter}
                 onChange={(e) => setTicketStatusFilter(e.target.value)}
@@ -271,7 +271,7 @@ export default function AdminSupportManager() {
 
           {/* Tickets List */}
           {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#64748B' }}>
+            <div style={{ padding: 40, textAlign: 'center', color: '#6B6D73' }}>
               <RefreshCw size={24} className="spin" style={{ margin: '0 auto 8px' }} />
               <p>Loading support tickets from database...</p>
             </div>
@@ -283,11 +283,11 @@ export default function AdminSupportManager() {
                 padding: 48,
                 textAlign: 'center',
                 border: '1px solid #E2E8F0',
-                color: '#64748B'
+                color: '#6B6D73'
               }}
             >
-              <CheckCircle size={36} color="#16A34A" style={{ margin: '0 auto 12px' }} />
-              <h4 style={{ margin: '0 0 6px', color: '#0F172A' }}>No Support Tickets Found</h4>
+              <CheckCircle size={36} color="#2D2F33" style={{ margin: '0 auto 12px' }} />
+              <h4 style={{ margin: '0 0 6px', color: '#15171A' }}>No Support Tickets Found</h4>
               <p style={{ margin: 0, fontSize: '0.85rem' }}>All student queries have been addressed or no tickets match the current filter.</p>
             </div>
           ) : (
@@ -322,11 +322,11 @@ export default function AdminSupportManager() {
                           >
                             {badge.label}
                           </span>
-                          <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Priority: {t.priority}</span>
-                          <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>•</span>
-                          <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{new Date(t.createdAt).toLocaleDateString()}</span>
+                          <span style={{ fontSize: '0.75rem', color: '#9B9DA3' }}>Priority: {t.priority}</span>
+                          <span style={{ fontSize: '0.75rem', color: '#9B9DA3' }}>•</span>
+                          <span style={{ fontSize: '0.75rem', color: '#9B9DA3' }}>{new Date(t.createdAt).toLocaleDateString()}</span>
                         </div>
-                        <h4 style={{ margin: 0, fontSize: '1rem', color: '#0F172A', fontWeight: 700 }}>{t.subject}</h4>
+                        <h4 style={{ margin: 0, fontSize: '1rem', color: '#15171A', fontWeight: 700 }}>{t.subject}</h4>
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -338,7 +338,7 @@ export default function AdminSupportManager() {
                             borderRadius: 6,
                             border: '1px solid #CBD5E1',
                             fontSize: '0.78rem',
-                            background: '#F8FAFC',
+                            background: '#F8F8F8',
                             fontWeight: 600
                           }}
                         >
@@ -359,12 +359,12 @@ export default function AdminSupportManager() {
                       </div>
                     </div>
 
-                    <div style={{ fontSize: '0.875rem', color: '#334155', background: '#F8FAFC', padding: '12px 14px', borderRadius: 8 }}>
+                    <div style={{ fontSize: '0.875rem', color: '#4B4D52', background: '#F8F8F8', padding: '12px 14px', borderRadius: 8 }}>
                       {t.message}
                     </div>
 
                     {/* Student Info & Replies Preview */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: '#64748B' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: '#6B6D73' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <User size={13} />
                         <span>
@@ -408,7 +408,7 @@ export default function AdminSupportManager() {
               style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 260 }}
             >
               <div style={{ position: 'relative', width: '100%', maxWidth: 360 }}>
-                <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+                <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9B9DA3' }} />
                 <input
                   type="text"
                   placeholder="Search inquiries by name, email, subject..."
@@ -429,7 +429,7 @@ export default function AdminSupportManager() {
             </form>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>Status:</span>
+              <span style={{ fontSize: '0.8rem', color: '#6B6D73', fontWeight: 600 }}>Status:</span>
               <select
                 value={enquiryStatusFilter}
                 onChange={(e) => setEnquiryStatusFilter(e.target.value)}
@@ -451,7 +451,7 @@ export default function AdminSupportManager() {
 
           {/* Enquiries List */}
           {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#64748B' }}>
+            <div style={{ padding: 40, textAlign: 'center', color: '#6B6D73' }}>
               <RefreshCw size={24} className="spin" style={{ margin: '0 auto 8px' }} />
               <p>Loading enquiries from database...</p>
             </div>
@@ -463,11 +463,11 @@ export default function AdminSupportManager() {
                 padding: 48,
                 textAlign: 'center',
                 border: '1px solid #E2E8F0',
-                color: '#64748B'
+                color: '#6B6D73'
               }}
             >
-              <CheckCircle size={36} color="#16A34A" style={{ margin: '0 auto 12px' }} />
-              <h4 style={{ margin: '0 0 6px', color: '#0F172A' }}>No Contact Enquiries</h4>
+              <CheckCircle size={36} color="#2D2F33" style={{ margin: '0 auto 12px' }} />
+              <h4 style={{ margin: '0 0 6px', color: '#15171A' }}>No Contact Enquiries</h4>
               <p style={{ margin: 0, fontSize: '0.85rem' }}>No public visitor enquiries match the current criteria.</p>
             </div>
           ) : (
@@ -502,9 +502,9 @@ export default function AdminSupportManager() {
                           >
                             {badge.label}
                           </span>
-                          <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{new Date(enq.createdAt).toLocaleDateString()}</span>
+                          <span style={{ fontSize: '0.75rem', color: '#9B9DA3' }}>{new Date(enq.createdAt).toLocaleDateString()}</span>
                         </div>
-                        <h4 style={{ margin: 0, fontSize: '1rem', color: '#0F172A', fontWeight: 700 }}>{enq.subject}</h4>
+                        <h4 style={{ margin: 0, fontSize: '1rem', color: '#15171A', fontWeight: 700 }}>{enq.subject}</h4>
                       </div>
 
                       <select
@@ -515,7 +515,7 @@ export default function AdminSupportManager() {
                           borderRadius: 6,
                           border: '1px solid #CBD5E1',
                           fontSize: '0.78rem',
-                          background: '#F8FAFC',
+                          background: '#F8F8F8',
                           fontWeight: 600
                         }}
                       >
@@ -525,13 +525,13 @@ export default function AdminSupportManager() {
                       </select>
                     </div>
 
-                    <div style={{ fontSize: '0.875rem', color: '#334155', background: '#F8FAFC', padding: '12px 14px', borderRadius: 8 }}>
+                    <div style={{ fontSize: '0.875rem', color: '#4B4D52', background: '#F8F8F8', padding: '12px 14px', borderRadius: 8 }}>
                       {enq.message}
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: '#64748B' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: '#6B6D73' }}>
                       <div>
-                        Prospect: <strong>{enq.name}</strong> • <a href={`mailto:${enq.email}`} style={{ color: '#2563EB', textDecoration: 'none' }}>{enq.email}</a>
+                        Prospect: <strong>{enq.name}</strong> • <a href={`mailto:${enq.email}`} style={{ color: '#15171A', textDecoration: 'none' }}>{enq.email}</a>
                       </div>
                       <a
                         href={`mailto:${enq.email}?subject=RE: ${encodeURIComponent(enq.subject)}`}
@@ -574,10 +574,10 @@ export default function AdminSupportManager() {
               boxShadow: 'var(--shadow-lg)'
             }}
           >
-            <h4 style={{ margin: '0 0 8px', fontSize: '1.125rem', color: '#0F172A', fontWeight: 700 }}>
+            <h4 style={{ margin: '0 0 8px', fontSize: '1.125rem', color: '#15171A', fontWeight: 700 }}>
               Reply to: {replyModal.ticket?.subject}
             </h4>
-            <p style={{ margin: '0 0 16px', fontSize: '0.85rem', color: '#64748B' }}>
+            <p style={{ margin: '0 0 16px', fontSize: '0.85rem', color: '#6B6D73' }}>
               Student: {replyModal.ticket?.student?.name} ({replyModal.ticket?.student?.email})
             </p>
 
