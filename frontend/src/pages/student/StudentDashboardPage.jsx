@@ -748,7 +748,7 @@ export default function StudentDashboardPage() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ display: 'flex', gap: 6, background: '#F1F5F9', padding: 3, borderRadius: 8 }}>
+              <div style={{ display: 'flex', gap: 6, background: 'var(--color-bg-subtle, #F1F5F9)', padding: 3, borderRadius: 8 }}>
                 <button
                   type="button"
                   onClick={() => setNotifFilter('all')}
@@ -757,8 +757,8 @@ export default function StudentDashboardPage() {
                     padding: '4px 12px',
                     fontSize: '0.8rem',
                     borderRadius: 6,
-                    background: notifFilter === 'all' ? '#0F172A' : 'transparent',
-                    color: notifFilter === 'all' ? '#FFFFFF' : '#64748B',
+                    background: notifFilter === 'all' ? 'var(--color-primary, #0F172A)' : 'transparent',
+                    color: notifFilter === 'all' ? 'var(--color-text-inverse, #FFFFFF)' : 'var(--color-text-secondary, #64748B)',
                     border: 'none',
                     fontWeight: 700,
                     cursor: 'pointer'
@@ -774,8 +774,8 @@ export default function StudentDashboardPage() {
                     padding: '4px 12px',
                     fontSize: '0.8rem',
                     borderRadius: 6,
-                    background: notifFilter === 'unread' ? '#2563EB' : 'transparent',
-                    color: notifFilter === 'unread' ? '#FFFFFF' : '#64748B',
+                    background: notifFilter === 'unread' ? 'var(--color-secondary, #2563EB)' : 'transparent',
+                    color: notifFilter === 'unread' ? '#FFFFFF' : 'var(--color-text-secondary, #64748B)',
                     border: 'none',
                     fontWeight: 700,
                     cursor: 'pointer'

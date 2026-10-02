@@ -1519,6 +1519,10 @@ export default function AdminProjectsManager({ showToast }) {
                 </button>
                 <button
                   type="button"
+                  className="btn btn-danger"
+                  onClick={handleConfirmDeleteProject}
+                  disabled={deleteConfirmModal.isSubmitting}
+                  style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   className="btn"
                   onClick={handleConfirmDeleteProject}
                   disabled={deleteConfirmModal.isSubmitting}

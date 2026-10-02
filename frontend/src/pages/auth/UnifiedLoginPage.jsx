@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Lock, Mail, ArrowLeft, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react'
 import { GraduationCap, Lock, Mail, ArrowLeft, KeyRound, CheckCircle2, AlertCircle, BookOpen, Shield } from 'lucide-react'
 import BrandLogo from '../../components/common/BrandLogo'
 import { useAuth } from '../../contexts/AuthContext'
@@ -30,6 +31,7 @@ export default function UnifiedLoginPage() {
   const [resetSuccess, setResetSuccess] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
 
+  const { login, user: existingUser, isAuthenticated } = useAuth()
   const { login, demoLogin, user: existingUser, isAuthenticated } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
@@ -201,7 +203,7 @@ export default function UnifiedLoginPage() {
                 Sign In to aivortex
               </h1>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
-                Enter your credentials to access your authorized portal (Student, Creator, or Admin).
+                Enter your credentials to access your account.
               </p>
               {redirectParam && (
                 <div

@@ -9,7 +9,7 @@ html {
   scroll-behavior: smooth;
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
   width: 100%;
 }
@@ -21,7 +21,7 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
   width: 100%;
 }
@@ -168,7 +168,7 @@ button {
   color: var(--color-accent);
 }
 
-/* Buttons */
+/* Buttons — Universal High-Contrast Visible System */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -179,10 +179,27 @@ button {
   font-size: var(--font-size-sm);
   font-weight: 600;
   border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
   transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
   line-height: 1.25;
   text-decoration: none;
   white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid transparent;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.btn svg,
+button svg {
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+.btn-xs {
+  padding: 0 8px;
+  height: 26px;
+  font-size: 0.75rem;
 }
 
 .btn-sm {
@@ -197,7 +214,34 @@ button {
   font-size: var(--font-size-sm);
 }
 
+/* Primary Button: Deep Navy with Crisp White text in Light Mode, Crisp Off-White with Dark Navy text in Dark Mode */
 .btn-primary {
+  background-color: var(--color-primary, #0F172A);
+  color: #FFFFFF !important;
+  border-color: var(--color-primary, #0F172A);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-light, #1E293B);
+  color: #FFFFFF !important;
+  border-color: var(--color-primary-light, #1E293B);
+}
+
+:root[data-theme='dark'] .btn-primary,
+[data-theme='dark'] .btn-primary,
+.dark-theme .btn-primary {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+  border-color: #F8FAFC !important;
+  font-weight: 700;
+}
+
+:root[data-theme='dark'] .btn-primary:hover,
+[data-theme='dark'] .btn-primary:hover,
+.dark-theme .btn-primary:hover {
+  background-color: #FFFFFF !important;
+  color: #020617 !important;
+  border-color: #FFFFFF !important;
   background-color: var(--color-primary);
   color: var(--color-text-inverse);
 }
@@ -207,7 +251,25 @@ button {
   color: var(--color-text-inverse);
 }
 
+/* Secondary Button: Vivid Royal Blue with Pure White text ALWAYS */
 .btn-secondary {
+  background-color: var(--color-secondary, #2563EB) !important;
+  color: #FFFFFF !important;
+  border: 1px solid var(--color-secondary, #2563EB) !important;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-secondary-hover, #1D4ED8) !important;
+  color: #FFFFFF !important;
+  border-color: var(--color-secondary-hover, #1D4ED8) !important;
+}
+
+:root[data-theme='dark'] .btn-secondary,
+[data-theme='dark'] .btn-secondary,
+.dark-theme .btn-secondary {
+  background-color: #2563EB !important;
+  color: #FFFFFF !important;
+  border-color: #3B82F6 !important;
   background-color: var(--color-secondary);
   color: var(--color-text-inverse);
 }
@@ -217,7 +279,25 @@ button {
   color: var(--color-text-inverse);
 }
 
+:root[data-theme='dark'] .btn-secondary:hover,
+[data-theme='dark'] .btn-secondary:hover,
+.dark-theme .btn-secondary:hover {
+  background-color: #1D4ED8 !important;
+  color: #FFFFFF !important;
+  border-color: #60A5FA !important;
+}
+
+/* Outline Button: Clean neutral outline with high-contrast text */
 .btn-outline {
+  background-color: var(--color-bg, #FFFFFF);
+  color: #0F172A !important;
+  border: 1px solid var(--color-border, #CBD5E1);
+}
+
+.btn-outline:hover {
+  border-color: #0F172A;
+  background-color: var(--color-bg-alt, #F8FAFC);
+  color: #0F172A !important;
   background-color: var(--color-bg);
   color: var(--color-primary);
   border: 1px solid var(--color-border);
@@ -229,36 +309,155 @@ button {
   color: var(--color-primary);
 }
 
+:root[data-theme='dark'] .btn-outline,
+[data-theme='dark'] .btn-outline,
+.dark-theme .btn-outline {
+  background-color: var(--color-bg-card, #111827) !important;
+  color: #F8FAFC !important;
+  border: 1px solid var(--color-border, #2E3E58) !important;
+}
+
+:root[data-theme='dark'] .btn-outline:hover,
+[data-theme='dark'] .btn-outline:hover,
+.dark-theme .btn-outline:hover {
+  background-color: var(--color-bg-subtle, #1A2640) !important;
+  color: #FFFFFF !important;
+  border-color: #3B82F6 !important;
+}
+
+/* Outline Blue Button: Blue border & text, solid blue with white text on hover */
 .btn-outline-blue {
-  background-color: var(--color-bg);
-  color: var(--color-secondary);
-  border: 1.5px solid var(--color-secondary);
+  background-color: transparent;
+  color: #2563EB !important;
+  border: 1.5px solid #2563EB;
 }
 
 .btn-outline-blue:hover {
-  background-color: var(--color-secondary-light);
-  color: var(--color-secondary);
+  background-color: #2563EB !important;
+  color: #FFFFFF !important;
+  border-color: #2563EB !important;
 }
 
+:root[data-theme='dark'] .btn-outline-blue,
+[data-theme='dark'] .btn-outline-blue,
+.dark-theme .btn-outline-blue {
+  background-color: rgba(59, 130, 246, 0.08) !important;
+  color: #60A5FA !important;
+  border: 1.5px solid #3B82F6 !important;
+}
+
+:root[data-theme='dark'] .btn-outline-blue:hover,
+[data-theme='dark'] .btn-outline-blue:hover,
+.dark-theme .btn-outline-blue:hover {
+  background-color: #3B82F6 !important;
+  color: #FFFFFF !important;
+  border-color: #3B82F6 !important;
+}
+
+/* Outline White Button: Used on dark sections & hero cards */
+.btn-outline-white {
+  background-color: transparent;
+  color: #FFFFFF !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+}
+
+.btn-outline-white:hover {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #FFFFFF !important;
+}
+
+/* Teal / Accent Button */
 .btn-teal {
-  background-color: var(--color-accent);
-  color: var(--color-text-inverse);
+  background-color: #0284C7;
+  color: #FFFFFF !important;
+  border-color: #0284C7;
 }
 
 .btn-teal:hover {
+  background-color: #0369A1;
+  color: #FFFFFF !important;
+  border-color: #0369A1;
+}
+
+:root[data-theme='dark'] .btn-teal,
+[data-theme='dark'] .btn-teal,
+.dark-theme .btn-teal {
+  background-color: #0284C7 !important;
+  color: #FFFFFF !important;
+  border-color: #38BDF8 !important;
+}
+
+:root[data-theme='dark'] .btn-teal:hover,
+[data-theme='dark'] .btn-teal:hover,
+.dark-theme .btn-teal:hover {
+  background-color: #0369A1 !important;
+  color: #FFFFFF !important;
+}
+
+/* Danger / Destructive Button */
+.btn-danger {
+  background-color: #DC2626 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #DC2626 !important;
+}
+
+.btn-danger:hover {
+  background-color: #B91C1C !important;
+  color: #FFFFFF !important;
+  border-color: #B91C1C !important;
+}
+
+:root[data-theme='dark'] .btn-danger,
+[data-theme='dark'] .btn-danger,
+.dark-theme .btn-danger {
+  background-color: #DC2626 !important;
+  color: #FFFFFF !important;
+  border-color: #EF4444 !important;
   background-color: var(--color-accent-hover);
   color: var(--color-text-inverse);
 }
 
+:root[data-theme='dark'] .btn-danger:hover,
+[data-theme='dark'] .btn-danger:hover,
+.dark-theme .btn-danger:hover {
+  background-color: #B91C1C !important;
+  color: #FFFFFF !important;
+}
+
+/* Ghost Button: Transparent with clear contrast */
 .btn-ghost {
   background: transparent;
-  color: var(--color-text);
+  color: #475569 !important;
+  border-color: transparent;
   padding: 0.5rem 0.75rem;
 }
 
 .btn-ghost:hover {
-  background-color: var(--color-bg-alt);
-  color: var(--color-primary);
+  background-color: var(--color-bg-subtle, #F1F5F9);
+  color: #0F172A !important;
+}
+
+:root[data-theme='dark'] .btn-ghost,
+[data-theme='dark'] .btn-ghost,
+.dark-theme .btn-ghost {
+  color: #CBD5E1 !important;
+}
+
+:root[data-theme='dark'] .btn-ghost:hover,
+[data-theme='dark'] .btn-ghost:hover,
+.dark-theme .btn-ghost:hover {
+  background-color: var(--color-bg-subtle, #162033) !important;
+  color: #FFFFFF !important;
+}
+
+/* Disabled State for All Buttons */
+.btn:disabled,
+.btn.disabled,
+button:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
 }
 
 /* Badges */

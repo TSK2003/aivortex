@@ -1836,6 +1836,35 @@ button {
 
 /* 11. Buttons in Dark Mode */
 [data-theme='dark'] .btn-ghost {
+  color: #CBD5E1 !important;
+}
+
+[data-theme='dark'] .btn-ghost:hover {
+  background: var(--color-bg-subtle, #162033) !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme='dark'] .btn-secondary {
+  background: #2563EB !important;
+  border-color: #3B82F6 !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme='dark'] .btn-secondary:hover {
+  background: #1D4ED8 !important;
+  border-color: #60A5FA !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme='dark'] .btn-outline {
+  background: var(--color-bg-card, #111827) !important;
+  border-color: var(--color-input-border, #223047) !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme='dark'] .btn-outline:hover {
+  background: var(--color-bg-subtle, #162033) !important;
+  border-color: #3B82F6 !important;
   color: var(--color-text-secondary) !important;
 }
 

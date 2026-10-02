@@ -1,5 +1,6 @@
 import HeroSection from '../../components/public/HeroSection'
 import StatsCounterStrip from '../../components/public/StatsCounterStrip'
+import ToolsCoveredSection from '../../components/public/ToolsCoveredSection'
 import ExploreTracksSection from '../../components/public/ExploreTracksSection'
 import WhyLearnSection from '../../components/public/WhyLearnSection'
 import HandsOnWorkflow from '../../components/public/HandsOnWorkflow'
@@ -11,6 +12,7 @@ export default function HomePage() {
     <>
       <HeroSection />
       <StatsCounterStrip />
+      <ToolsCoveredSection />
       <ExploreTracksSection />
       <WhyLearnSection />
       <HandsOnWorkflow />

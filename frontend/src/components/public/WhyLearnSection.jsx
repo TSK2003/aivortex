@@ -68,16 +68,63 @@ export default function WhyLearnSection() {
               We eliminate passive video consumption with an active engineering loop designed to transform knowledge into instinct.
             </p>
 
-            <div className="benefits-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 20, marginBottom: 0 }}>
+            <div className="benefits-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 16, marginBottom: 0 }}>
               {benefits.map((b, i) => (
-                <div key={i} className="benefit-item" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, padding: '18px 20px' }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#2563EB', marginBottom: 6 }}>
+                <div
+                  key={i}
+                  className="why-benefit-card"
+                  style={{
+                    background: '#FFFFFF',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: 12,
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    boxShadow: '0 2px 4px rgba(15, 23, 42, 0.02)',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '3px 10px',
+                      background: '#EFF6FF',
+                      border: '1px solid #DBEAFE',
+                      borderRadius: 6,
+                      fontSize: '0.775rem',
+                      fontWeight: 800,
+                      color: '#2563EB',
+                      letterSpacing: '0.04em',
+                      marginBottom: 12
+                    }}
+                  >
                     0{i + 1}
                   </div>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', marginBottom: 6 }}>
+                  <h4
+                    style={{
+                      fontSize: '1.05rem',
+                      fontWeight: 700,
+                      color: '#0F172A',
+                      lineHeight: 1.35,
+                      margin: '0 0 8px 0',
+                      wordBreak: 'normal',
+                      overflowWrap: 'break-word',
+                      hyphens: 'none'
+                    }}
+                  >
                     {b.title}
                   </h4>
-                  <p style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: 1.5, margin: 0 }}>
+                  <p
+                    style={{
+                      fontSize: '0.875rem',
+                      color: '#64748B',
+                      lineHeight: 1.55,
+                      margin: 0
+                    }}
+                  >
                     {b.desc}
                   </p>
                 </div>
