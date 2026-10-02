@@ -137,13 +137,13 @@ export default function LiveSessionsPage() {
                   key={session.id}
                   className="card"
                   style={{
-                    borderRadius: 16,
+                    borderRadius: 8,
                     padding: 24,
                     border: '1px solid var(--color-border, #E2E8F0)',
                     display: 'flex',
                     flexDirection: 'column',
                     background: 'var(--color-surface, #FFFFFF)',
-                    boxShadow: '0 2px 4px rgba(15, 23, 42, 0.04)'
+                    boxShadow: 'var(--shadow-sm)'
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
@@ -293,11 +293,11 @@ export default function LiveSessionsPage() {
             className="modal-card"
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               maxWidth: 520,
               width: '100%',
               padding: 28,
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)'
+              boxShadow: 'var(--shadow-lg)'
             }}
             onClick={(e) => e.stopPropagation()}
           >

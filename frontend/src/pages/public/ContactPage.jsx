@@ -59,7 +59,7 @@ export default function ContactPage() {
           <div
             className="card"
             style={{
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 'clamp(20px, 4vw, 36px)',
               background: '#FFFFFF',
               border: '1px solid var(--color-border)',
@@ -148,7 +148,7 @@ export default function ContactPage() {
           <div
             className="card"
             style={{
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 'clamp(20px, 4vw, 36px)',
               background: '#FFFFFF',
               border: '1px solid var(--color-border)',

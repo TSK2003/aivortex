@@ -41,10 +41,10 @@ export default function HowItWorks() {
               className="step-card"
               style={{
                 background: '#FFFFFF',
-                borderRadius: 16,
+                borderRadius: 8,
                 padding: 'clamp(20px, 4vw, 32px) clamp(16px, 3.5vw, 24px)',
                 border: '1px solid #E2E8F0',
-                boxShadow: '0 2px 8px -2px rgba(15, 23, 42, 0.05)',
+                boxShadow: 'var(--shadow-sm)',
                 display: 'flex',
                 flexDirection: 'column'
               }}

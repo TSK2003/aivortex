@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import {
   login,
+  demoLogin,
   register,
   logout,
   me,
@@ -20,6 +21,7 @@ const router = Router()
 
 // Public Auth Endpoints with Rate Limiting & Validation
 router.post('/login', authLimiter, validateRequest(loginSchema), login)
+router.post('/demo-login', authLimiter, demoLogin)
 router.post('/student/login', authLimiter, validateRequest(loginSchema), login)
 router.post('/creator/login', authLimiter, validateRequest(loginSchema), login)
 router.post('/admin/login', authLimiter, validateRequest(loginSchema), login)

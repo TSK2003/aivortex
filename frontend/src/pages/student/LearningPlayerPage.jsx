@@ -68,8 +68,8 @@ export default function LearningPlayerPage() {
         setLoading(true)
         setAccessError(null)
 
-        // Fetch course playlists and published lessons from backend
-        const res = await api.student.getCoursePlaylists(courseId)
+        // Fetch course curriculum and published lessons from backend
+        const res = await api.student.getCourseCurriculum(courseId)
         if (res.data?.course && res.data?.playlists) {
           setCourse(res.data.course)
           setPlaylists(res.data.playlists)
@@ -185,11 +185,23 @@ export default function LearningPlayerPage() {
     // Load Quiz if current lesson has attached quizzes
     if (currentLesson.quizzes && currentLesson.quizzes.length > 0) {
       const quizId = currentLesson.quizzes[0].id
-      api.student.getQuiz(quizId).then((res) => {
-        if (!cancelled && res.data?.quiz) {
-          setActiveQuiz(res.data.quiz)
-        }
-      }).catch(() => {})
+      api.student
+        .getQuiz(quizId)
+        .then((res) => {
+          if (!cancelled && res.data?.quiz) {
+            setActiveQuiz(res.data.quiz)
+          }
+        })
+        .catch(() => {
+          api.student
+            .getLessonQuiz(currentLesson.id)
+            .then((fallbackRes) => {
+              if (!cancelled && fallbackRes.data?.quiz) {
+                setActiveQuiz(fallbackRes.data.quiz)
+              }
+            })
+            .catch(() => {})
+        })
     } else {
       setActiveQuiz(null)
     }
@@ -646,7 +658,7 @@ export default function LearningPlayerPage() {
                   <span
                     style={{
                       padding: '4px 12px',
-                      borderRadius: 20,
+                      borderRadius: 6,
                       fontWeight: 700,
                       fontSize: '0.8rem',
                       background: quizResult.passed ? '#DCFCE7' : '#FEE2E2',

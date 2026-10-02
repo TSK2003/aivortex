@@ -40,10 +40,10 @@ export default class ErrorBoundary extends Component {
               maxWidth: 580,
               width: '100%',
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 36,
               border: '1px solid #E2E8F0',
-              boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.1)',
+              boxShadow: 'var(--shadow-md)',
               textAlign: 'center',
             }}
           >

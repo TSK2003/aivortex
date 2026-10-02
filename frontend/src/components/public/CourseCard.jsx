@@ -240,7 +240,7 @@ export default function CourseCard({ course, onViewDetails, onSelectCourse, onEn
               backdropFilter: 'blur(4px)',
               color: '#FFFFFF',
               border: 'none',
-              borderRadius: 20,
+              borderRadius: 6,
               padding: '4px 10px',
               fontSize: '0.6875rem',
               fontWeight: 700,

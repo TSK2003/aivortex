@@ -54,27 +54,25 @@ export default function StatCard({
       className="stat-card"
       style={{
         background: 'var(--color-bg-card, #FFFFFF)',
-        borderRadius: '16px',
+        borderRadius: '8px',
         border: '1px solid var(--color-border, #E2E8F0)',
-        padding: '22px 24px',
-        boxShadow: 'var(--shadow-sm, 0 1px 3px 0 rgba(15, 23, 42, 0.04))',
+        padding: '20px 24px',
+        boxShadow: 'var(--shadow-sm)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        transition: 'background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease',
+        transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
         cursor: onClick ? 'pointer' : 'default',
         position: 'relative',
         overflow: 'hidden'
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = 'var(--color-border-hover, #CBD5E1)'
-        e.currentTarget.style.boxShadow = 'var(--shadow-md, 0 6px 16px -2px rgba(15, 23, 42, 0.08))'
-        if (onClick) e.currentTarget.style.transform = 'translateY(-2px)'
+        e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)'
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.borderColor = 'var(--color-border, #E2E8F0)'
-        e.currentTarget.style.boxShadow = 'var(--shadow-sm, 0 1px 3px 0 rgba(15, 23, 42, 0.04))'
-        if (onClick) e.currentTarget.style.transform = 'none'
+        e.currentTarget.style.boxShadow = 'var(--shadow-sm)'
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -93,16 +91,15 @@ export default function StatCard({
         {Icon && (
           <div
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: '12px',
+              width: 40,
+              height: 40,
+              borderRadius: '8px',
               background: isDark ? 'rgba(59, 130, 246, 0.15)' : iconBg,
               color: isDark ? '#60A5FA' : iconColor,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              flexShrink: 0,
-              transition: 'background-color 0.3s ease, color 0.3s ease'
+              flexShrink: 0
             }}
           >
             <Icon size={20} strokeWidth={2.2} />
@@ -113,13 +110,12 @@ export default function StatCard({
       <div>
         <div
           style={{
-            fontSize: '1.875rem',
+            fontSize: '1.75rem',
             fontWeight: 800,
             color: 'var(--color-text, #0F172A)',
-            letterSpacing: '-0.03em',
+            letterSpacing: '-0.02em',
             lineHeight: 1.1,
-            marginBottom: 8,
-            transition: 'color 0.3s ease'
+            marginBottom: 8
           }}
         >
           {value ?? '—'}

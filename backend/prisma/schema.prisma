@@ -509,8 +509,8 @@ model Certificate {
   verificationUrl String?
   status          CertificateStatus @default(VALID)
 
-  student         User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course          Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student         User              @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  course          Course            @relation(fields: [courseId], references: [id], onDelete: Restrict)
 
   @@index([certificateCode])
   @@index([studentId])
@@ -535,8 +535,8 @@ model Order {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
-  student           User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course            Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student           User          @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  course            Course        @relation(fields: [courseId], references: [id], onDelete: Restrict)
   paymentEvents     PaymentEvent[]
 
   @@index([orderNumber])

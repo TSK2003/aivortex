@@ -1,7 +1,50 @@
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
+// In-flight request deduplication map (prevents duplicate simultaneous calls)
+const pendingGetRequests = new Map()
+
+// Short-lived query cache for high-frequency idempotent reads (15 seconds TTL)
+const responseCache = new Map()
+const CACHE_TTL_MS = 15 * 1000
+
+// Circuit breaker cooldown when 429 Too Many Requests is encountered
+let rateLimitedUntil = 0
+
+export function clearApiCache() {
+  responseCache.clear()
+}
+
 async function request(endpoint, options = {}) {
+  const method = (options.method || 'GET').toUpperCase()
   const token = localStorage.getItem('apex_token')
+
+  // Check 429 Cooldown
+  if (rateLimitedUntil > Date.now()) {
+    const remainingSec = Math.ceil((rateLimitedUntil - Date.now()) / 1000)
+    const error = new Error(`System is cooling down from rate limit. Please try again in ${remainingSec}s.`)
+    error.status = 429
+    error.code = 'RATE_LIMIT_COOLDOWN'
+    throw error
+  }
+
+  // Cache & Deduplication Key
+  const cacheKey = `${method}:${endpoint}:${token ? token.slice(-10) : 'anon'}`
+
+  // Check Read Cache for idempotent GET requests
+  const isCacheableGet = method === 'GET' && !options.noCache
+  if (isCacheableGet) {
+    const cached = responseCache.get(cacheKey)
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data
+    }
+    // Check in-flight promise to prevent duplicate concurrent network requests
+    if (pendingGetRequests.has(cacheKey)) {
+      return pendingGetRequests.get(cacheKey)
+    }
+  } else if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    // Invalidate read cache on mutation to guarantee freshness
+    responseCache.clear()
+  }
 
   const headers = {
     'Content-Type': 'application/json',
@@ -15,41 +58,68 @@ async function request(endpoint, options = {}) {
     credentials: 'include'
   }
 
-  try {
-    const response = await fetch(`${API_BASE}${endpoint}`, config)
+  const executeFetch = async () => {
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, config)
 
-    let json = null
-    const contentType = response.headers.get('content-type') || ''
-    if (contentType.includes('application/json')) {
-      json = await response.json().catch(() => null)
-    }
+      let json = null
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        json = await response.json().catch(() => null)
+      }
 
-    if (!response.ok) {
-      const errorMessage =
-        json?.error?.message ||
-        json?.message ||
-        (response.status === 502 || response.status === 504
-          ? 'Unable to connect to aivortex API backend. Please ensure the backend server is running on port 3001.'
-          : `Request failed with status ${response.status}`)
-      const error = new Error(errorMessage)
-      error.status = response.status
-      error.code = json?.error?.code
-      error.details = json?.error?.details
-      throw error
-    }
+      if (!response.ok) {
+        if (response.status === 429) {
+          const retryAfterHeader = response.headers.get('retry-after')
+          const retryAfterSec = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 15
+          rateLimitedUntil = Date.now() + (retryAfterSec * 1000)
+        }
 
-    return json || {}
-  } catch (err) {
-    if (
-      (err.name === 'TypeError' && err.message.includes('fetch')) ||
-      err.name === 'SyntaxError' ||
-      err.status === 502 ||
-      err.status === 504
-    ) {
-      throw new Error('Unable to connect to aivortex API backend. Please ensure the backend server is running on port 3001.')
+        const errorMessage =
+          json?.error?.message ||
+          json?.message ||
+          (response.status === 502 || response.status === 504
+            ? 'Unable to connect to aivortex API backend. Please ensure the backend server is running on port 3001.'
+            : `Request failed with status ${response.status}`)
+        const error = new Error(errorMessage)
+        error.status = response.status
+        error.code = json?.error?.code
+        error.details = json?.error?.details
+        throw error
+      }
+
+      const result = json || {}
+      if (isCacheableGet) {
+        responseCache.set(cacheKey, {
+          data: result,
+          expiresAt: Date.now() + CACHE_TTL_MS
+        })
+      }
+      return result
+    } catch (err) {
+      if (
+        (err.name === 'TypeError' && err.message.includes('fetch')) ||
+        err.name === 'SyntaxError' ||
+        err.status === 502 ||
+        err.status === 504
+      ) {
+        throw new Error('Unable to connect to aivortex API backend. Please ensure the backend server is running on port 3001.')
+      }
+      throw err
+    } finally {
+      if (isCacheableGet) {
+        pendingGetRequests.delete(cacheKey)
+      }
     }
-    throw err
   }
+
+  if (isCacheableGet) {
+    const inFlightPromise = executeFetch()
+    pendingGetRequests.set(cacheKey, inFlightPromise)
+    return inFlightPromise
+  }
+
+  return executeFetch()
 }
 
 export const api = {
@@ -59,6 +129,11 @@ export const api = {
       request('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password })
+      }),
+    demoLogin: (role) =>
+      request('/auth/demo-login', {
+        method: 'POST',
+        body: JSON.stringify({ role })
       }),
     studentLogin: (email, password) =>
       request('/auth/student/login', {
@@ -158,7 +233,13 @@ export const api = {
   student: {
     getDashboard: () => request('/student/dashboard'),
     getMyCourses: () => request('/student/courses'),
-    getCoursePlaylists: (courseId) => request(`/student/courses/${courseId}/playlists`),
+    getCourseCurriculum: (courseId) => request(`/student/courses/${courseId}/curriculum`),
+    getCoursePlaylists: (courseId) => request(`/student/courses/${courseId}/curriculum`),
+    toggleLessonProgress: (courseId, lessonId, isCompleted, meta = {}) =>
+      request(`/student/courses/${courseId}/lessons/${lessonId}/progress`, {
+        method: 'POST',
+        body: JSON.stringify({ isCompleted, courseId, lessonId, ...meta })
+      }),
     startVideoSession: (courseId, lessonId) =>
       request('/student/video-session/start', {
         method: 'POST',
@@ -176,6 +257,7 @@ export const api = {
         body: JSON.stringify({ noteText })
       }),
     getQuiz: (quizId) => request(`/student/quizzes/${quizId}`),
+    getLessonQuiz: (lessonId) => request(`/student/lessons/${lessonId}/quiz`),
     submitQuiz: (quizId, answers) =>
       request(`/student/quizzes/${quizId}/submit`, {
         method: 'POST',
@@ -505,6 +587,37 @@ export const api = {
       request('/admin/media/upload', {
         method: 'POST',
         body: JSON.stringify(data)
+      }),
+    // Support Tickets & Contact Governance
+    getSupportTickets: (params = {}) => {
+      const query = new URLSearchParams(params).toString()
+      return request(`/admin/support-tickets${query ? `?${query}` : ''}`)
+    },
+    updateSupportTicketStatus: (id, status) =>
+      request(`/admin/support-tickets/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      }),
+    getContactEnquiries: (params = {}) => {
+      const query = new URLSearchParams(params).toString()
+      return request(`/admin/contact-enquiries${query ? `?${query}` : ''}`)
+    },
+    updateContactEnquiryStatus: (id, status) =>
+      request(`/admin/contact-enquiries/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      })
+  },
+
+  // Notifications & Support Interaction
+  notifications: {
+    getNotifications: () => request('/notifications'),
+    markRead: (id) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
+    markAllRead: () => request('/notifications/mark-all-read', { method: 'PATCH' }),
+    replyTicket: (ticketId, message) =>
+      request(`/tickets/${ticketId}/reply`, {
+        method: 'POST',
+        body: JSON.stringify({ message })
       })
   }
 }

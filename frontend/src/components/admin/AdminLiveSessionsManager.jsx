@@ -539,9 +539,10 @@ export default function AdminLiveSessionsManager({ showToast }) {
             className="card"
             style={{
               padding: '14px 18px',
-              borderRadius: 12,
+              borderRadius: 8,
               border: '1px solid var(--color-border, #E2E8F0)',
-              background: card.bg
+              background: card.bg,
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: card.color === 'var(--color-primary, #0F172A)' ? '#64748B' : card.color, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
@@ -617,7 +618,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
         </div>
       </div>
       {/* Sessions Table */}
-      <div className="card" style={{ borderRadius: 14, border: '1px solid var(--color-border, #E2E8F0)', overflow: 'hidden' }}>
+      <div className="card" style={{ borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
             <thead>
@@ -1129,10 +1130,10 @@ export default function AdminLiveSessionsManager({ showToast }) {
               maxWidth: 840,
               maxHeight: '90vh',
               overflowY: 'auto',
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 28,
               background: 'var(--color-surface, #FFFFFF)',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+              boxShadow: 'var(--shadow-lg)'
             }}
           >
             {/* Modal Header */}
@@ -1338,7 +1339,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
               </div>
 
               {/* Row 3: Speaker Information */}
-              <div style={{ background: 'var(--color-bg-subtle, #F8FAFC)', padding: 16, borderRadius: 12, marginBottom: 18, border: '1px solid var(--color-border, #E2E8F0)' }}>
+              <div style={{ background: 'var(--color-bg-subtle, #F8FAFC)', padding: 16, borderRadius: 8, marginBottom: 18, border: '1px solid var(--color-border, #E2E8F0)' }}>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary, #0F172A)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <User size={16} color="#2563EB" />
                   Speaker & Instructor Information
@@ -1434,7 +1435,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
               </div>
 
               {/* Row 4: Seats Capacity Management (Requirement 9) */}
-              <div style={{ background: '#F0FDF4', padding: 16, borderRadius: 12, marginBottom: 18, border: '1px solid #BBF7D0' }}>
+              <div style={{ background: '#F0FDF4', padding: 16, borderRadius: 8, marginBottom: 18, border: '1px solid #BBF7D0' }}>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#166534', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Users size={16} color="#16A34A" />
                   Seats Capacity & Registration Management
@@ -1874,7 +1875,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
             </div>
 
             {/* Agenda List */}
-            <div style={{ background: 'var(--color-bg-subtle, #F8FAFC)', borderRadius: 12, padding: 14, marginBottom: 20 }}>
+            <div style={{ background: 'var(--color-bg-subtle, #F8FAFC)', borderRadius: 8, padding: 14, marginBottom: 20 }}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-text, #1E293B)', textTransform: 'uppercase', marginBottom: 8 }}>
                 Key Session Agenda:
               </div>
@@ -1925,10 +1926,10 @@ export default function AdminLiveSessionsManager({ showToast }) {
             style={{
               width: '100%',
               maxWidth: 440,
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 24,
               background: 'var(--color-surface, #FFFFFF)',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+              boxShadow: 'var(--shadow-lg)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>

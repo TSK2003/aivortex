@@ -173,64 +173,60 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-sm);
-  padding: 0.75rem 1.5rem;
-  font-size: var(--font-size-base);
+  gap: 8px;
+  padding: 0 16px;
+  height: var(--height-btn, 36px);
+  font-size: var(--font-size-sm);
   font-weight: 600;
-  border-radius: var(--radius-md);
-  transition: all var(--transition-normal);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
   line-height: 1.25;
   text-decoration: none;
   white-space: nowrap;
 }
 
 .btn-sm {
-  padding: 0.5rem 1rem;
-  font-size: var(--font-size-sm);
+  padding: 0 12px;
+  height: var(--height-btn-sm, 32px);
+  font-size: var(--font-size-xs);
 }
 
 .btn-lg {
-  padding: 0.9rem 2rem;
-  font-size: 1.05rem;
+  padding: 0 24px;
+  height: var(--height-btn-lg, 44px);
+  font-size: var(--font-size-sm);
 }
 
 .btn-primary {
   background-color: var(--color-primary);
   color: var(--color-text-inverse);
-  box-shadow: 0 4px 12px rgba(23, 59, 122, 0.2);
 }
 
 .btn-primary:hover {
   background-color: var(--color-primary-light);
   color: var(--color-text-inverse);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(23, 59, 122, 0.25);
 }
 
 .btn-secondary {
   background-color: var(--color-secondary);
   color: var(--color-text-inverse);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .btn-secondary:hover {
   background-color: var(--color-secondary-hover);
   color: var(--color-text-inverse);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.28);
 }
 
 .btn-outline {
   background-color: var(--color-bg);
   color: var(--color-primary);
-  border: 1.5px solid var(--color-border);
+  border: 1px solid var(--color-border);
 }
 
 .btn-outline:hover {
   border-color: var(--color-primary);
   background-color: var(--color-bg-alt);
   color: var(--color-primary);
-  transform: translateY(-2px);
 }
 
 .btn-outline-blue {
@@ -252,7 +248,6 @@ button {
 .btn-teal:hover {
   background-color: var(--color-accent-hover);
   color: var(--color-text-inverse);
-  transform: translateY(-2px);
 }
 
 .btn-ghost {
@@ -273,10 +268,9 @@ button {
   gap: 4px;
   font-size: var(--font-size-xs);
   font-weight: 700;
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.04em;
 }
 
 .badge-bestseller {
@@ -314,35 +308,6 @@ button {
   }
 }
 
-@keyframes floatGentle {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-@keyframes floatSlow {
-  0%, 100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-12px) rotate(1deg);
-  }
-}
-
-.float-item {
-  animation: floatGentle 4s ease-in-out infinite;
-}
-
-.float-item-delay-1 {
-  animation: floatSlow 5s ease-in-out 1s infinite;
-}
-
-.float-item-delay-2 {
-  animation: floatGentle 4.5s ease-in-out 2s infinite;
-}
 
 
 /* Root App Shell Safeguards */

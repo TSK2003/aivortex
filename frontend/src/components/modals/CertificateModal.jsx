@@ -76,7 +76,7 @@ export default function CertificateModal({
           width: '100%',
           maxWidth: '980px',
           background: '#0F172A',
-          borderRadius: 16,
+          borderRadius: 8,
           boxShadow: '0 25px 60px -12px rgba(0, 0, 0, 0.65)',
           overflow: 'hidden',
           border: '1px solid #334155',

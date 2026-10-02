@@ -185,9 +185,8 @@
 
 /* Hover Interaction */
 .portal-card:hover {
-  transform: translateY(-8px);
-  border-color: #3B82F6;
-  box-shadow: 0 20px 40px -10px rgba(37, 99, 235, 0.15), 0 8px 16px -4px rgba(15, 23, 42, 0.06);
+  border-color: var(--color-border-hover, #CBD5E1);
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
 }
 
 .portal-card-header {
@@ -200,11 +199,11 @@
 .portal-icon-wrapper {
   width: 56px;
   height: 56px;
-  border-radius: 16px;
+  border-radius: var(--radius-md, 8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .portal-icon-wrapper i {

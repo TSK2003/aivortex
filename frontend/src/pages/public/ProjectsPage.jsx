@@ -66,7 +66,7 @@ export default function ProjectsPage() {
             type="button"
             onClick={() => setSelectedCategory('all')}
             className={`btn btn-sm ${selectedCategory === 'all' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ borderRadius: 24, padding: '8px 20px', fontWeight: 600 }}
+            style={{ borderRadius: 6, padding: '8px 16px', fontWeight: 600 }}
           >
             All Projects
           </button>
@@ -76,7 +76,7 @@ export default function ProjectsPage() {
               type="button"
               onClick={() => setSelectedCategory(cat.slug)}
               className={`btn btn-sm ${selectedCategory === cat.slug ? 'btn-primary' : 'btn-outline'}`}
-              style={{ borderRadius: 24, padding: '8px 20px', fontWeight: 600 }}
+              style={{ borderRadius: 6, padding: '8px 16px', fontWeight: 600 }}
             >
               {cat.name}
             </button>
@@ -99,16 +99,16 @@ export default function ProjectsPage() {
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  borderRadius: 16,
+                  borderRadius: 8,
                   padding: 24,
                   border: '1px solid var(--color-border)',
-                  transition: 'all 0.2s ease',
+                  transition: 'all 0.15s ease',
                   background: 'var(--color-surface, #FFFFFF)'
                 }}
               >
                 {/* Thumbnail if provided */}
                 {project.thumbnailUrl && (
-                  <div style={{ width: '100%', height: 160, borderRadius: 12, overflow: 'hidden', marginBottom: 16, background: '#0F172A' }}>
+                  <div style={{ width: '100%', height: 160, borderRadius: 6, overflow: 'hidden', marginBottom: 16, background: '#0F172A' }}>
                     <img
                       src={project.thumbnailUrl}
                       alt={project.title}

@@ -27,7 +27,7 @@ export default function CertVerifyModal({ certId, cert, isOpen, onClose }) {
                   gap: 8,
                   background: '#DCFCE7',
                   color: '#166534',
-                  borderRadius: 20,
+                  borderRadius: 6,
                   padding: '6px 16px',
                   fontWeight: 700,
                   fontSize: '0.85rem',

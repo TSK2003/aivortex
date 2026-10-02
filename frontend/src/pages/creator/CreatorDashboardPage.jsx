@@ -57,7 +57,6 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import api from '../../services/api'
 import VideoModal from '../../components/modals/VideoModal'
-import { initialCourses } from '../../data/initialData'
 
 const INITIAL_CREATOR_MESSAGES = [
   {
@@ -405,11 +404,10 @@ export default function CreatorDashboardPage() {
         api.creator.getProfile()
       ])
 
-      if (coursesRes.status === 'fulfilled' && Array.isArray(coursesRes.value?.data?.courses) && coursesRes.value.data.courses.length > 0) {
+      if (coursesRes.status === 'fulfilled' && Array.isArray(coursesRes.value?.data?.courses)) {
         setAssignedCourses(coursesRes.value.data.courses)
       } else {
-        // Fallback to initialCourses so creator always has structured masterclasses ready in Studio
-        setAssignedCourses(initialCourses.slice(0, 3))
+        setAssignedCourses([])
       }
 
       if (subsRes.status === 'fulfilled' && subsRes.value?.data?.submissions) {
@@ -749,7 +747,7 @@ export default function CreatorDashboardPage() {
           alignItems: 'center',
           gap: 6,
           padding: '4px 10px',
-          borderRadius: 20,
+          borderRadius: 6,
           fontSize: '0.75rem',
           fontWeight: 700,
           background: bg,
@@ -3450,7 +3448,7 @@ export default function CreatorDashboardPage() {
         {/* ==================================================
             1. PERSONAL INFORMATION
         ================================================== */}
-        <div className="creator-card" style={{ marginBottom: 24, borderRadius: 14, overflow: 'hidden', border: '1px solid #E2E8F0' }}>
+        <div className="creator-card" style={{ marginBottom: 24, borderRadius: 8, overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: 'var(--shadow-sm)' }}>
           <div className="creator-card-header" style={{ padding: '16px 22px', borderBottom: '1px solid #F1F5F9', background: '#F8FAFC' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <User size={18} style={{ color: '#2563EB' }} />
@@ -3563,7 +3561,7 @@ export default function CreatorDashboardPage() {
         {/* ==================================================
             2. PROFILE CHANGE REQUESTS
         ================================================== */}
-        <div className="creator-card" style={{ marginBottom: 24, borderRadius: 14, overflow: 'hidden', border: '1px solid #E2E8F0' }}>
+        <div className="creator-card" style={{ marginBottom: 24, borderRadius: 8, overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: 'var(--shadow-sm)' }}>
           <div className="creator-card-header" style={{ padding: '16px 22px', borderBottom: '1px solid #F1F5F9', background: '#F8FAFC' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <ShieldCheck size={18} style={{ color: '#D97706' }} />
@@ -3952,7 +3950,7 @@ export default function CreatorDashboardPage() {
         {/* ==================================================
             3. REQUEST STATUS TABLE
         ================================================== */}
-        <div className="creator-card" style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid #E2E8F0' }}>
+        <div className="creator-card" style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: 'var(--shadow-sm)' }}>
           <div className="creator-card-header" style={{ padding: '16px 22px', borderBottom: '1px solid #F1F5F9', background: '#F8FAFC' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Clock size={18} style={{ color: '#2563EB' }} />
@@ -5986,6 +5984,13 @@ export default function CreatorDashboardPage() {
                       onChange={(e) => {
                         const file = e.target.files?.[0]
                         if (file) {
+                          const allowedTypes = ['video/mp4', 'video/quicktime', 'video/webm']
+                          const allowedExts = ['.mp4', '.mov', '.webm']
+                          const hasValidExt = allowedExts.some((ext) => file.name.toLowerCase().endsWith(ext))
+                          if (!allowedTypes.includes(file.type) && !hasValidExt) {
+                            showToast('Only .mp4, .mov, and .webm video files are allowed', 'error')
+                            return
+                          }
                           if (file.size > 500 * 1024 * 1024) {
                             showToast('File size exceeds 500 MB limit', 'error')
                             return
@@ -6009,19 +6014,27 @@ export default function CreatorDashboardPage() {
                     </div>
                   )}
 
-                  {/* Stream URL Option */}
-                  <div style={{ marginTop: 12 }}>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', display: 'block', marginBottom: 2 }}>
-                      Or Stream Video URL (Optional direct CDN link)
-                    </label>
-                    <input
-                      type="url"
-                      placeholder="https://... direct video URL"
-                      value={lectureModal.videoUrl}
-                      onChange={(e) => setLectureModal((prev) => ({ ...prev, videoUrl: e.target.value }))}
-                      style={{ width: '100%', padding: '7px 10px', border: '1px solid #CBD5E1', borderRadius: 6, fontSize: '0.8rem' }}
-                    />
-                  </div>
+                  {/* S3 Storage Asset Info */}
+                  {(lectureModal.s3Key || lectureModal.videoUrl) ? (
+                    <div style={{ marginTop: 12, padding: '10px 14px', background: '#F8FAFC', borderRadius: 6, border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                        <CheckCircle2 size={16} style={{ color: '#16A34A', flexShrink: 0 }} />
+                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>
+                            S3 Private Storage: {lectureModal.s3Key || 'Configured Video Asset'}
+                          </span>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '0.7rem', color: '#16A34A', fontWeight: 700, padding: '2px 8px', borderRadius: 9999, background: '#DCFCE7' }}>
+                        Verified
+                      </span>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 10, fontSize: '0.75rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <AlertCircle size={14} style={{ color: '#94A3B8', flexShrink: 0 }} />
+                      <span>Select a valid .mp4, .mov, or .webm video file up to 500 MB for secure presigned S3 upload.</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Supporting Resources & Review Notes */}

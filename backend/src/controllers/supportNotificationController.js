@@ -1,6 +1,6 @@
 import prisma from '../config/prisma.js'
 import { successResponse } from '../utils/responseWrapper.js'
-import { NotFoundError, BadRequestError } from '../utils/appError.js'
+import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/appError.js'
 
 export async function createTicket(req, res, next) {
   try {
@@ -77,6 +77,11 @@ export async function replyToTicket(req, res, next) {
 
     if (!ticket) {
       throw new NotFoundError('Ticket not found')
+    }
+
+    // IDOR Protection: Only the ticket creator or an ADMIN can view/reply
+    if (ticket.studentId !== userId && req.user.role !== 'ADMIN') {
+      throw new ForbiddenError('You are not authorized to view or reply to this support ticket')
     }
 
     const reply = await prisma.$transaction(async (tx) => {

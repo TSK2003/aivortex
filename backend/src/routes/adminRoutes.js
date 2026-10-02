@@ -39,7 +39,11 @@ import {
   getAdminAboutContent,
   updateAdminAboutContent,
   getAdminFooterContent,
-  updateAdminFooterContent
+  updateAdminFooterContent,
+  getAdminSupportTickets,
+  updateAdminSupportTicketStatus,
+  getAdminContactEnquiries,
+  updateAdminContactEnquiryStatus
 } from '../controllers/adminController.js'
 import {
   getAdminReviews,
@@ -184,6 +188,12 @@ router.patch('/live-sessions/:id', updateAdminLiveSession)
 router.delete('/live-sessions/:id', deleteAdminLiveSession)
 router.patch('/live-sessions/:id/status', updateAdminLiveSessionStatus)
 router.post('/live-sessions/:id/duplicate', duplicateAdminLiveSession)
+
+// Support Tickets & Contact Enquiries Governance
+router.get('/support-tickets', getAdminSupportTickets)
+router.patch('/support-tickets/:id/status', updateAdminSupportTicketStatus)
+router.get('/contact-enquiries', getAdminContactEnquiries)
+router.patch('/contact-enquiries/:id/status', updateAdminContactEnquiryStatus)
 
 // Media Upload (Projects thumbnails, Speaker photos)
 router.post('/media/upload', uploadAdminMedia)

@@ -17,7 +17,7 @@ export default function PrivacyPage() {
           </p>
         </div>
 
-        <div className="card" style={{ padding: 40, borderRadius: 16, border: '1px solid var(--color-border)', lineHeight: 1.8, color: 'var(--color-text-secondary)' }}>
+        <div className="card" style={{ padding: 40, borderRadius: 8, border: '1px solid var(--color-border)', lineHeight: 1.8, color: 'var(--color-text-secondary)' }}>
           <h2 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', fontWeight: 700, marginBottom: 12 }}>1. Information We Collect</h2>
           <p style={{ marginBottom: 24 }}>
             We collect personal identity data (name, email address, password hashes), learning analytics (lesson completion, quiz attempts, timestamps, notes), payment event receipts via Razorpay (transaction references; we never store raw credit card numbers), and device telemetry necessary to ensure single-session video playback.

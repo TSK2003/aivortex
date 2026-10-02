@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   getDashboardStats,
   getMyCourses,
+  getCourseCurriculum,
   toggleLessonProgress,
   getNote,
   saveNote,
@@ -15,12 +16,14 @@ import {
 } from '../controllers/videoProtectionController.js'
 import {
   getLessonQuiz,
+  getQuizById,
   submitQuizAttempt,
   issueCertificateIfEligible
 } from '../controllers/assessmentController.js'
 import {
   createTicket,
   getMyTickets,
+  replyToTicket,
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead
@@ -43,8 +46,14 @@ router.post('/courses/:courseId/review', submitCourseReview)
 // Dashboard & Courses
 router.get('/dashboard', getDashboardStats)
 router.get('/courses', getMyCourses)
+router.get('/courses/:courseId/curriculum', getCourseCurriculum)
+router.get('/courses/:courseId/playlists', getCourseCurriculum)
+
+// Lesson Progression
 router.post('/courses/:courseId/lessons/:lessonId/progress', toggleLessonProgress)
 router.patch('/courses/:courseId/lessons/:lessonId/progress', toggleLessonProgress)
+router.post('/courses/:courseId/lessons/:lessonId/toggle', toggleLessonProgress)
+router.post('/lessons/:lessonId/toggle', toggleLessonProgress)
 router.post('/progress', toggleLessonProgress)
 router.patch('/progress', toggleLessonProgress)
 
@@ -58,6 +67,7 @@ router.post('/video-session/heartbeat', heartbeatVideoSession)
 
 // Quizzes & Certificate Issuance
 router.get('/lessons/:lessonId/quiz', getLessonQuiz)
+router.get('/quizzes/:quizId', getQuizById)
 router.post('/quizzes/:quizId/submit', submitQuizAttempt)
 router.post('/courses/:courseId/issue-certificate', issueCertificateIfEligible)
 router.get('/certificates', getStudentCertificates)
@@ -77,5 +87,7 @@ router.post('/support-tickets', (req, res, next) => {
   }
   return createTicket(req, res, next)
 })
+router.post('/support-tickets/:ticketId/reply', replyToTicket)
+router.post('/tickets/:ticketId/reply', replyToTicket)
 
 export default router

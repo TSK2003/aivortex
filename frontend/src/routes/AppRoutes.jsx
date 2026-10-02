@@ -152,6 +152,8 @@ export default function AppRoutes() {
         <Route path="audit-logs" element={<AdminDashboardPage />} />
         <Route path="security" element={<AdminDashboardPage />} />
         <Route path="profile" element={<AdminDashboardPage />} />
+        <Route path="support" element={<AdminDashboardPage />} />
+        <Route path="enquiries" element={<AdminDashboardPage />} />
       </Route>
 
       {/* Global Fallback Route */}

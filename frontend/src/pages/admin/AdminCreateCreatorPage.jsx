@@ -325,10 +325,10 @@ export default function AdminCreateCreatorPage() {
         <div
           style={{
             background: '#FFFFFF',
-            borderRadius: 20,
+            borderRadius: 8,
             border: '1px solid #E2E8F0',
             padding: 40,
-            boxShadow: '0 8px 30px rgba(15, 23, 42, 0.08)',
+            boxShadow: 'var(--shadow-md)',
             textAlign: 'center'
           }}
         >
@@ -362,7 +362,7 @@ export default function AdminCreateCreatorPage() {
                 maxWidth: 640,
                 margin: '0 auto 24px auto',
                 padding: '14px 18px',
-                borderRadius: 12,
+                borderRadius: 8,
                 background: '#EFF6FF',
                 border: '1px solid #BFDBFE',
                 display: 'flex',
@@ -383,7 +383,7 @@ export default function AdminCreateCreatorPage() {
             style={{
               background: '#F8FAFC',
               border: '1px solid #E2E8F0',
-              borderRadius: 14,
+              borderRadius: 8,
               padding: 24,
               textAlign: 'left',
               marginBottom: 28
@@ -601,10 +601,10 @@ export default function AdminCreateCreatorPage() {
           <section
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: 28,
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div
@@ -1050,10 +1050,10 @@ export default function AdminCreateCreatorPage() {
           <section
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: 28,
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div
@@ -1313,10 +1313,10 @@ export default function AdminCreateCreatorPage() {
           <section
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: 28,
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div
@@ -1410,10 +1410,10 @@ export default function AdminCreateCreatorPage() {
           <div
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: 24,
-              boxShadow: '0 2px 8px rgba(15, 23, 42, 0.05)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 16px 0' }}>
@@ -1500,10 +1500,10 @@ export default function AdminCreateCreatorPage() {
           <div
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: 24,
-              boxShadow: '0 2px 8px rgba(15, 23, 42, 0.05)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A', margin: '0 0 14px 0' }}>

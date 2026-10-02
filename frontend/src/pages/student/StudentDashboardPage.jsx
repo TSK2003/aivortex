@@ -59,6 +59,8 @@ export default function StudentDashboardPage() {
   const [transactions, setTransactions] = useState([])
   const [supportTickets, setSupportTickets] = useState([])
   const [notifications, setNotifications] = useState([])
+  const [projectsList, setProjectsList] = useState(initialProjects)
+  const [liveSessionsList, setLiveSessionsList] = useState(initialLiveSessions)
   const [notifFilter, setNotifFilter] = useState('all')
   const [selectedCertForModal, setSelectedCertForModal] = useState(null)
 
@@ -89,12 +91,14 @@ export default function StudentDashboardPage() {
     try {
       setLoading(true)
 
-      const [coursesRes, certRes, payRes, ticketRes, notifRes] = await Promise.allSettled([
+      const [coursesRes, certRes, payRes, ticketRes, notifRes, projRes, liveRes] = await Promise.allSettled([
         api.student.getMyCourses(),
         api.student.getCertificates(),
         api.student.getPaymentHistory(),
         api.student.getSupportTickets(),
-        api.student.getNotifications()
+        api.student.getNotifications(),
+        api.public.getProjects(),
+        api.public.getLiveSessions()
       ])
 
       // 1. Enrolled Courses
@@ -130,6 +134,16 @@ export default function StudentDashboardPage() {
         setNotifications(notifRes.value.data.notifications)
       } else {
         setNotifications([])
+      }
+
+      // 6. Dynamic Domain Projects from Backend
+      if (projRes.status === 'fulfilled' && projRes.value?.data?.projects && projRes.value.data.projects.length > 0) {
+        setProjectsList(projRes.value.data.projects)
+      }
+
+      // 7. Dynamic Live Sessions from Backend
+      if (liveRes.status === 'fulfilled' && liveRes.value?.data?.sessions && liveRes.value.data.sessions.length > 0) {
+        setLiveSessionsList(liveRes.value.data.sessions)
       }
     } catch (err) {
       console.warn('Student dashboard data load note:', err.message)
@@ -387,75 +401,127 @@ export default function StudentDashboardPage() {
       {/* Tab 3: Assigned Projects */}
       {activeTab === 'projects' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 20 }}>
-          {initialProjects.map((p) => (
-            <div
-              key={p.id}
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-lg)',
-                padding: 20
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                <span className="project-domain-tag">{p.domain}</span>
-                <span className="project-difficulty difficulty-intermediate">{p.difficulty}</span>
-              </div>
-              <h4 style={{ fontSize: '1.1rem', marginBottom: 8 }}>{p.title}</h4>
-              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginBottom: 14 }}>{p.shortDesc}</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
-                {p.technology.map((t) => (
-                  <span key={t} className="tech-tag">{t}</span>
-                ))}
-              </div>
-              <button
-                className="btn btn-outline btn-sm"
-                onClick={() => showToast(`Starter code package for ${p.title} downloaded`, 'success')}
-                style={{ width: '100%', textAlign: 'center', justifyContent: 'center' }}
+          {projectsList.map((p) => {
+            const rawTools = p.technology || p.tools
+            const techTags = Array.isArray(rawTools)
+              ? rawTools
+              : typeof rawTools === 'string'
+              ? rawTools.split(',').map((s) => s.trim())
+              : ['Python', 'Architecture']
+
+            return (
+              <div
+                key={p.id}
+                style={{
+                  background: '#FFFFFF',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: 20,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}
               >
-                <span>Download Starter (.ZIP)</span>
-              </button>
-            </div>
-          ))}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <span className="project-domain-tag">{p.domain || p.categoryLabel || p.category || 'AI Systems'}</span>
+                    <span className="project-difficulty difficulty-intermediate">{p.difficulty || 'Advanced'}</span>
+                  </div>
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: 8 }}>{p.title}</h4>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginBottom: 14 }}>
+                    {p.shortDesc || p.description || ''}
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+                    {techTags.map((t) => (
+                      <span key={t} className="tech-tag">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {p.githubUrl ? (
+                  <a
+                    href={p.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline btn-sm"
+                    style={{ width: '100%', textAlign: 'center', justifyContent: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <FolderGit2 size={14} />
+                    <span>View GitHub Repo</span>
+                  </a>
+                ) : (
+                  <Link
+                    to={`/projects?id=${p.id || p.slug}`}
+                    className="btn btn-outline btn-sm"
+                    style={{ width: '100%', textAlign: 'center', justifyContent: 'center', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <span>View Specifications</span>
+                  </Link>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
       {/* Tab 4: Live Sessions */}
       {activeTab === 'live' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {initialLiveSessions.map((sess) => (
-            <div
-              key={sess.id}
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-lg)',
-                padding: 24,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 16
-              }}
-            >
-              <div>
-                <span className="badge badge-popular" style={{ marginBottom: 8, display: 'inline-block' }}>
-                  {sess.day} • {sess.date}
-                </span>
-                <h4 style={{ fontSize: '1.15rem', marginBottom: 4 }}>{sess.title}</h4>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginBottom: 8 }}>
-                  Instructor: <strong>{sess.instructor}</strong> ({sess.instructorRole})
-                </p>
-                <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>Time: {sess.time}</span>
-              </div>
-              <button
-                className="btn btn-teal btn-sm"
-                onClick={() => window.open(sess.meetUrl, '_blank')}
+          {liveSessionsList.map((sess) => {
+            const meetingTarget = sess.meetingUrl || sess.meetUrl || sess.registrationUrl || '#'
+            const sessionDateDisplay = sess.sessionDate || (sess.scheduledAt ? new Date(sess.scheduledAt).toLocaleDateString() : 'Upcoming Masterclass')
+            const instructorDisplay = sess.instructor || sess.speakerName || 'Faculty Lead'
+            const roleDisplay = sess.instructorRole || sess.speakerRole || 'Principal Architect'
+
+            return (
+              <div
+                key={sess.id}
+                style={{
+                  background: '#FFFFFF',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 16
+                }}
               >
-                <span>Join Live Class</span>
-              </button>
-            </div>
-          ))}
+                <div>
+                  <span className="badge badge-popular" style={{ marginBottom: 8, display: 'inline-block' }}>
+                    {sess.day ? `${sess.day} • ` : ''}{sessionDateDisplay}
+                  </span>
+                  <h4 style={{ fontSize: '1.15rem', marginBottom: 4 }}>{sess.title}</h4>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginBottom: 8 }}>
+                    Instructor: <strong>{instructorDisplay}</strong> ({roleDisplay})
+                  </p>
+                  <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>Time: {sess.time || sess.startTime || '6:00 PM IST'}</span>
+                </div>
+                {meetingTarget !== '#' ? (
+                  <a
+                    href={meetingTarget}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-teal btn-sm"
+                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <Video size={14} />
+                    <span>Join Live Session</span>
+                  </a>
+                ) : (
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => showToast('Session credentials will be activated 15 minutes before scheduled start time.', 'info')}
+                  >
+                    <span>Registered</span>
+                  </button>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -756,7 +822,7 @@ export default function StudentDashboardPage() {
                       justifyContent: 'space-between',
                       gap: 16,
                       padding: '16px 20px',
-                      borderRadius: 12,
+                      borderRadius: 'var(--radius-md, 8px)',
                       border: n.isRead ? '1px solid #E2E8F0' : '1px solid #BFDBFE',
                       background: n.isRead ? '#FFFFFF' : '#EFF6FF',
                       transition: 'all 0.2s ease'
@@ -767,7 +833,7 @@ export default function StudentDashboardPage() {
                         style={{
                           width: 38,
                           height: 38,
-                          borderRadius: 10,
+                          borderRadius: 'var(--radius-md, 8px)',
                           background: n.isRead ? '#F1F5F9' : '#DBEAFE',
                           display: 'flex',
                           alignItems: 'center',

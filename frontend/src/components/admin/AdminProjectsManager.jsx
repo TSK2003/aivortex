@@ -499,8 +499,8 @@ export default function AdminProjectsManager({ showToast }) {
 
       {/* Metrics Bar */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 1px 3px rgba(15,23,42,0.03)' }}>
-          <div style={{ width: 42, height: 42, borderRadius: 10, background: '#F8FAFC', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 8, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ width: 42, height: 42, borderRadius: 8, background: '#F8FAFC', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <FolderGit2 size={20} />
           </div>
           <div>
@@ -509,8 +509,8 @@ export default function AdminProjectsManager({ showToast }) {
           </div>
         </div>
 
-        <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 10, background: '#DCFCE7', color: '#15803D', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 8, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 8, background: '#DCFCE7', color: '#15803D', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <CheckCircle2 size={20} />
           </div>
           <div>
@@ -519,8 +519,8 @@ export default function AdminProjectsManager({ showToast }) {
           </div>
         </div>
 
-        <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 10, background: '#FEF3C7', color: '#B45309', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 8, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 8, background: '#FEF3C7', color: '#B45309', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Clock size={20} />
           </div>
           <div>
@@ -529,8 +529,8 @@ export default function AdminProjectsManager({ showToast }) {
           </div>
         </div>
 
-        <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 10, background: '#DBEAFE', color: '#1D4ED8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 8, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 8, background: '#DBEAFE', color: '#1D4ED8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Tag size={20} />
           </div>
           <div>
@@ -544,7 +544,7 @@ export default function AdminProjectsManager({ showToast }) {
       <div
         style={{
           background: '#FFFFFF',
-          borderRadius: 14,
+          borderRadius: 8,
           border: '1px solid #E2E8F0',
           padding: '16px 20px',
           marginBottom: 20,
@@ -553,7 +553,7 @@ export default function AdminProjectsManager({ showToast }) {
           gap: 16,
           alignItems: 'center',
           justifyContent: 'space-between',
-          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)'
+          boxShadow: 'var(--shadow-sm)'
         }}
       >
         {/* Status Filter Tabs */}
@@ -659,10 +659,10 @@ export default function AdminProjectsManager({ showToast }) {
       <div
         style={{
           background: '#FFFFFF',
-          borderRadius: 16,
+          borderRadius: 8,
           border: '1px solid #E2E8F0',
           overflow: 'hidden',
-          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+          boxShadow: 'var(--shadow-sm)'
         }}
       >
         {loading ? (
@@ -917,7 +917,7 @@ export default function AdminProjectsManager({ showToast }) {
         >
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 840, maxHeight: '90vh', overflowY: 'auto', background: '#FFFFFF', borderRadius: 16 }}
+            style={{ maxWidth: 840, maxHeight: '90vh', overflowY: 'auto', background: '#FFFFFF', borderRadius: 8, boxShadow: 'var(--shadow-lg)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9', position: 'sticky', top: 0, background: '#FFFFFF', zIndex: 10 }}>
@@ -1337,7 +1337,7 @@ export default function AdminProjectsManager({ showToast }) {
         >
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 620, maxHeight: '85vh', overflowY: 'auto', background: '#FFFFFF', borderRadius: 16 }}
+            style={{ maxWidth: 620, maxHeight: '85vh', overflowY: 'auto', background: '#FFFFFF', borderRadius: 8, boxShadow: 'var(--shadow-lg)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
@@ -1486,7 +1486,7 @@ export default function AdminProjectsManager({ showToast }) {
         >
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 440, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            style={{ maxWidth: 440, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden', boxShadow: 'var(--shadow-lg)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 24px', borderBottom: '1px solid #F1F5F9' }}>

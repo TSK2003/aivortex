@@ -107,6 +107,81 @@ export async function login(req, res, next) {
   }
 }
 
+// 1b. Real Authenticated Demo Login for Seeded Accounts
+export async function demoLogin(req, res, next) {
+  try {
+    const { role = 'STUDENT' } = req.body
+    const targetRole = String(role).toUpperCase().trim()
+
+    let email = 'rahul.sharma@example.com'
+    if (targetRole === 'ADMIN') {
+      email = 'director@apexlearn.edu'
+    } else if (targetRole === 'CREATOR') {
+      email = 'creator@apexlearn.edu'
+    }
+
+    let user = await prisma.user.findFirst({
+      where: {
+        role: targetRole,
+        status: 'ACTIVE'
+      },
+      include: {
+        creatorProfile: true
+      }
+    })
+
+    if (!user) {
+      user = await prisma.user.findUnique({
+        where: { email },
+        include: { creatorProfile: true }
+      })
+    }
+
+    if (!user) {
+      throw new NotFoundError(`No active demo account found for role ${targetRole}`)
+    }
+
+    const token = generateToken(user)
+    setAuthCookie(res, token)
+
+    const sessionToken = uuidv4()
+    try {
+      await prisma.session.create({
+        data: {
+          userId: user.id,
+          token: sessionToken,
+          userAgent: req.headers['user-agent'] || 'Demo Client',
+          ipAddress: String(req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'),
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        }
+      })
+    } catch {
+      // silent
+    }
+
+    return successResponse(
+      res,
+      {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          avatar: user.avatar || null,
+          phone: user.phone || null,
+          bio: user.bio || null,
+          creatorProfile: user.creatorProfile || null
+        },
+        token,
+        sessionId: sessionToken
+      },
+      `Authenticated demo login successful as ${user.role}`
+    )
+  } catch (err) {
+    next(err)
+  }
+}
+
 export async function register(req, res, next) {
   try {
     const { name, email, password, phone } = req.body

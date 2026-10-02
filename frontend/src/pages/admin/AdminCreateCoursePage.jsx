@@ -599,10 +599,10 @@ export default function AdminCreateCoursePage() {
           <section
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: '28px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div
@@ -859,10 +859,10 @@ export default function AdminCreateCoursePage() {
           <section
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: '28px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div
@@ -1144,10 +1144,10 @@ export default function AdminCreateCoursePage() {
           <section
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: '28px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div
@@ -1250,7 +1250,7 @@ export default function AdminCreateCoursePage() {
                         fontSize: '0.6875rem',
                         fontWeight: 700,
                         padding: '1px 8px',
-                        borderRadius: 9999,
+                        borderRadius: 6,
                         border: '1px solid #A7F3D0'
                       }}
                     >
@@ -1272,10 +1272,10 @@ export default function AdminCreateCoursePage() {
           <section
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: '28px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div
@@ -1344,10 +1344,10 @@ export default function AdminCreateCoursePage() {
           <section
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: '28px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             {/* Header: Section 5 — COURSE MEDIA */}
@@ -1407,7 +1407,7 @@ export default function AdminCreateCoursePage() {
                 marginBottom: 26,
                 padding: 20,
                 background: '#F8FAFC',
-                borderRadius: 14,
+                borderRadius: 8,
                 border: '1px solid #E2E8F0'
               }}
             >
@@ -1571,7 +1571,7 @@ export default function AdminCreateCoursePage() {
                 marginBottom: 24,
                 padding: 20,
                 background: '#F8FAFC',
-                borderRadius: 14,
+                borderRadius: 8,
                 border: '1px solid #E2E8F0'
               }}
             >
@@ -1822,10 +1822,10 @@ export default function AdminCreateCoursePage() {
           <div
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               overflow: 'hidden',
-              boxShadow: '0 4px 12px rgba(15, 23, 42, 0.05)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <div
@@ -2056,10 +2056,10 @@ export default function AdminCreateCoursePage() {
           <div
             style={{
               background: '#FFFFFF',
-              borderRadius: 16,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: '20px',
-              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <h4 style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0F172A', margin: '0 0 12px 0' }}>

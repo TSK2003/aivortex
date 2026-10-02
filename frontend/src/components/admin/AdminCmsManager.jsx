@@ -481,7 +481,7 @@ export default function AdminCmsManager({ showToast }) {
           gap: 6,
           background: 'var(--color-bg-subtle, #F1F5F9)',
           padding: 6,
-          borderRadius: 14,
+          borderRadius: 8,
           border: '1px solid var(--color-border, #E2E8F0)',
           marginBottom: 28,
           overflowX: 'auto'
@@ -560,7 +560,7 @@ export default function AdminCmsManager({ showToast }) {
 
           {/* Sub 1: Brand Info */}
           {footerSubTab === 'brand' && (
-            <div className="card" style={{ padding: 24, borderRadius: 14, border: '1px solid var(--color-border, #E2E8F0)' }}>
+            <div className="card" style={{ padding: 24, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
                 <div>
                   <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--color-primary, #0F172A)' }}>
@@ -644,7 +644,7 @@ export default function AdminCmsManager({ showToast }) {
             const links = footerData[colKey] || []
 
             return (
-              <div className="card" style={{ padding: 24, borderRadius: 14, border: '1px solid var(--color-border, #E2E8F0)' }}>
+              <div className="card" style={{ padding: 24, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
                   <div>
                     <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--color-primary, #0F172A)' }}>
@@ -765,7 +765,7 @@ export default function AdminCmsManager({ showToast }) {
 
           {/* Sub 5: Copyright */}
           {footerSubTab === 'copyright' && (
-            <div className="card" style={{ padding: 24, borderRadius: 14, border: '1px solid var(--color-border, #E2E8F0)' }}>
+            <div className="card" style={{ padding: 24, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 14px 0', color: 'var(--color-primary, #0F172A)' }}>
                 Footer Copyright Statement
               </h3>
@@ -868,7 +868,7 @@ export default function AdminCmsManager({ showToast }) {
 
           {/* Sub 1: Hero Section */}
           {aboutSubTab === 'hero' && (
-            <div className="card" style={{ padding: 24, borderRadius: 14, border: '1px solid var(--color-border, #E2E8F0)' }}>
+            <div className="card" style={{ padding: 24, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
                 <div>
                   <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--color-primary, #0F172A)' }}>
@@ -913,7 +913,7 @@ export default function AdminCmsManager({ showToast }) {
           {aboutSubTab === 'mission' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))', gap: 20 }}>
               {/* Mission Card */}
-              <div className="card" style={{ padding: 24, borderRadius: 14, border: '1.5px solid #BFDBFE' }}>
+              <div className="card" style={{ padding: 24, borderRadius: 8, border: '1.5px solid #BFDBFE' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Compass size={18} color="#2563EB" />
@@ -935,7 +935,7 @@ export default function AdminCmsManager({ showToast }) {
               </div>
 
               {/* Vision Card */}
-              <div className="card" style={{ padding: 24, borderRadius: 14, border: '1.5px solid #DDD6FE' }}>
+              <div className="card" style={{ padding: 24, borderRadius: 8, border: '1.5px solid #DDD6FE' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Sparkles size={18} color="#7C3AED" />
@@ -962,7 +962,7 @@ export default function AdminCmsManager({ showToast }) {
           {aboutSubTab === 'offerings' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {/* What We Do */}
-              <div className="card" style={{ padding: 24, borderRadius: 14, border: '1px solid var(--color-border, #E2E8F0)' }}>
+              <div className="card" style={{ padding: 24, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
                   <div>
                     <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--color-primary, #0F172A)' }}>
@@ -1035,7 +1035,7 @@ export default function AdminCmsManager({ showToast }) {
               </div>
 
               {/* Why Aivortex */}
-              <div className="card" style={{ padding: 24, borderRadius: 14, border: '1px solid var(--color-border, #E2E8F0)' }}>
+              <div className="card" style={{ padding: 24, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
                   <div>
                     <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--color-primary, #0F172A)' }}>
@@ -1113,7 +1113,7 @@ export default function AdminCmsManager({ showToast }) {
           {aboutSubTab === 'philosophy' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {/* Philosophy 3-Step */}
-              <div className="card" style={{ padding: 24, borderRadius: 14, border: '1px solid var(--color-border, #E2E8F0)' }}>
+              <div className="card" style={{ padding: 24, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 14px 0', color: 'var(--color-primary, #0F172A)' }}>
                   Our Philosophy (Learn. Grow. Innovate.)
                 </h3>
@@ -1140,7 +1140,7 @@ export default function AdminCmsManager({ showToast }) {
               </div>
 
               {/* Our Promise */}
-              <div className="card" style={{ padding: 24, borderRadius: 14, border: '1px solid var(--color-border, #E2E8F0)' }}>
+              <div className="card" style={{ padding: 24, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 10px 0', color: 'var(--color-primary, #0F172A)' }}>
                   Our Promise
                 </h3>
@@ -1252,7 +1252,7 @@ export default function AdminCmsManager({ showToast }) {
                 key={leader.id || index}
                 className="card"
                 style={{
-                  borderRadius: 14,
+                  borderRadius: 8,
                   border: '1px solid var(--color-border, #E2E8F0)',
                   overflow: 'hidden',
                   background: 'var(--color-surface, #FFFFFF)',
@@ -1399,7 +1399,7 @@ export default function AdminCmsManager({ showToast }) {
       {activeTab === 'home' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Hero Section Copy */}
-          <div className="card" style={{ padding: 24, borderRadius: 14, border: '1px solid var(--color-border, #E2E8F0)' }}>
+          <div className="card" style={{ padding: 24, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
             <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 14px 0', color: 'var(--color-primary, #0F172A)' }}>
               Public Home: Hero Section Copy
             </h3>
@@ -1483,7 +1483,7 @@ export default function AdminCmsManager({ showToast }) {
           </div>
 
           {/* Stats Banner */}
-          <div className="card" style={{ padding: 24, borderRadius: 14, border: '1px solid var(--color-border, #E2E8F0)' }}>
+          <div className="card" style={{ padding: 24, borderRadius: 8, border: '1px solid var(--color-border, #E2E8F0)' }}>
             <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 14px 0', color: 'var(--color-primary, #0F172A)' }}>
               Public Home: Statistics Strip (4 Key Metrics)
             </h3>
@@ -1637,9 +1637,9 @@ export default function AdminCmsManager({ showToast }) {
               maxHeight: 720,
               display: 'flex',
               flexDirection: 'column',
-              borderRadius: 16,
+              borderRadius: 8,
               background: 'var(--color-surface, #FFFFFF)',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              boxShadow: 'var(--shadow-lg)',
               overflow: 'hidden'
             }}
           >
@@ -1954,9 +1954,10 @@ export default function AdminCmsManager({ showToast }) {
               maxWidth: 680,
               maxHeight: '90vh',
               overflowY: 'auto',
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 24,
-              background: 'var(--color-surface, #FFFFFF)'
+              background: 'var(--color-surface, #FFFFFF)',
+              boxShadow: 'var(--shadow-lg)'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, borderBottom: '1px solid #E2E8F0', paddingBottom: 12 }}>
@@ -2038,9 +2039,10 @@ export default function AdminCmsManager({ showToast }) {
             style={{
               width: '100%',
               maxWidth: 600,
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 24,
-              background: 'var(--color-surface, #FFFFFF)'
+              background: 'var(--color-surface, #FFFFFF)',
+              boxShadow: 'var(--shadow-lg)'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid #E2E8F0', paddingBottom: 12 }}>
@@ -2117,9 +2119,10 @@ export default function AdminCmsManager({ showToast }) {
             style={{
               width: '100%',
               maxWidth: 480,
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 24,
-              background: 'var(--color-surface, #FFFFFF)'
+              background: 'var(--color-surface, #FFFFFF)',
+              boxShadow: 'var(--shadow-lg)'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid #E2E8F0', paddingBottom: 12 }}>
@@ -2195,9 +2198,10 @@ export default function AdminCmsManager({ showToast }) {
             style={{
               width: '100%',
               maxWidth: 520,
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 24,
-              background: 'var(--color-surface, #FFFFFF)'
+              background: 'var(--color-surface, #FFFFFF)',
+              boxShadow: 'var(--shadow-lg)'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid #E2E8F0', paddingBottom: 12 }}>
@@ -2295,7 +2299,7 @@ export default function AdminCmsManager({ showToast }) {
             </div>
 
             {/* Preview Body according to active type */}
-            <div style={{ background: '#F8FAFC', padding: 24, borderRadius: 14, border: '1px solid #E2E8F0' }}>
+            <div style={{ background: '#F8FAFC', padding: 24, borderRadius: 8, border: '1px solid #E2E8F0' }}>
               {previewModal.type === 'leadership' ? (
                 <div>
                   <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -2304,7 +2308,7 @@ export default function AdminCmsManager({ showToast }) {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
                     {(aboutData.leadership || []).map((l, idx) => (
-                      <div key={idx} style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+                      <div key={idx} style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
                         <div style={{ height: 260, background: '#0F172A' }}>
                           {l.image && <img src={l.image} alt={l.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />}
                         </div>
@@ -2320,7 +2324,7 @@ export default function AdminCmsManager({ showToast }) {
                   </div>
                 </div>
               ) : previewModal.type === 'footer' ? (
-                <div style={{ background: '#0F172A', color: '#F8FAFC', padding: 28, borderRadius: 14 }}>
+                <div style={{ background: '#0F172A', color: '#F8FAFC', padding: 28, borderRadius: 8 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24, marginBottom: 24 }}>
                     <div>
                       <h4 style={{ color: '#FFFFFF', margin: '0 0 10px 0', fontSize: '1.1rem', fontWeight: 800 }}>AIVORTEX</h4>
@@ -2395,10 +2399,10 @@ export default function AdminCmsManager({ showToast }) {
             style={{
               width: '100%',
               maxWidth: 440,
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 24,
               background: 'var(--color-surface, #FFFFFF)',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+              boxShadow: 'var(--shadow-lg)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
@@ -2477,10 +2481,10 @@ export default function AdminCmsManager({ showToast }) {
             style={{
               width: '100%',
               maxWidth: 440,
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 24,
               background: 'var(--color-surface, #FFFFFF)',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+              boxShadow: 'var(--shadow-lg)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
@@ -2544,10 +2548,10 @@ export default function AdminCmsManager({ showToast }) {
             style={{
               width: '100%',
               maxWidth: 420,
-              borderRadius: 16,
+              borderRadius: 8,
               padding: 24,
               background: 'var(--color-surface, #FFFFFF)',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+              boxShadow: 'var(--shadow-lg)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>

@@ -44,6 +44,7 @@ import {
   EyeOff,
   Sparkles,
   Upload,
+  UploadCloud,
   Link2,
   ChevronDown,
   Lock,
@@ -64,6 +65,7 @@ import defaultFooterData from '../../data/defaultFooterData'
 import AdminProjectsManager from '../../components/admin/AdminProjectsManager'
 import AdminLiveSessionsManager from '../../components/admin/AdminLiveSessionsManager'
 import AdminCmsManager from '../../components/admin/AdminCmsManager'
+import AdminSupportManager from '../../components/admin/AdminSupportManager'
 import {
   INTERNATIONAL_COUNTRY_CODES,
   parsePhoneNumber,
@@ -128,6 +130,7 @@ export default function AdminDashboardPage() {
     if (path.includes('/admin/requests')) return 'requests'
     if (path.includes('/admin/audit-logs')) return 'audit-logs'
     if (path.includes('/admin/security')) return 'security'
+    if (path.includes('/admin/support') || path.includes('/admin/enquiries')) return 'support'
     const searchParams = new URLSearchParams(location.search)
     return searchParams.get('tab') || 'overview'
   }
@@ -1518,6 +1521,9 @@ export default function AdminDashboardPage() {
     try {
       await api.admin.publishLesson(lessonId)
       showToast('Lecture published to enrolled students', 'success')
+      if (selectedReviewLecture && selectedReviewLecture.id === lessonId) {
+        setSelectedReviewLecture((prev) => ({ ...prev, status: 'PUBLISHED' }))
+      }
       loadAdminData()
     } catch (err) {
       showToast(err.message || 'Publish failed', 'error')
@@ -1530,6 +1536,9 @@ export default function AdminDashboardPage() {
       setUnpublishModal((prev) => ({ ...prev, isSubmitting: true }))
       await api.admin.unpublishLesson(unpublishModal.lectureId, unpublishModal.reason.trim() || 'Unpublished by Admin')
       showToast('Lecture unpublished from student player', 'info')
+      if (selectedReviewLecture && selectedReviewLecture.id === unpublishModal.lectureId) {
+        setSelectedReviewLecture((prev) => ({ ...prev, status: 'APPROVED' }))
+      }
       setUnpublishModal({ open: false, lectureId: null, reason: '', error: '', isSubmitting: false })
       loadAdminData()
     } catch (err) {
@@ -2053,7 +2062,7 @@ export default function AdminDashboardPage() {
             <div
               style={{
                 background: '#FFFFFF',
-                borderRadius: 16,
+                borderRadius: 8,
                 border: '1px solid #E2E8F0',
                 boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
                 overflow: 'hidden',
@@ -2196,7 +2205,7 @@ export default function AdminDashboardPage() {
             <div
               style={{
                 background: '#FFFFFF',
-                borderRadius: 16,
+                borderRadius: 8,
                 border: '1px solid #E2E8F0',
                 boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
                 overflow: 'hidden',
@@ -2341,7 +2350,7 @@ export default function AdminDashboardPage() {
             <div
               style={{
                 background: '#FFFFFF',
-                borderRadius: 16,
+                borderRadius: 8,
                 border: '1px solid #E2E8F0',
                 boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
                 overflow: 'hidden',
@@ -2486,7 +2495,7 @@ export default function AdminDashboardPage() {
             <div
               style={{
                 background: '#FFFFFF',
-                borderRadius: 16,
+                borderRadius: 8,
                 border: '1px solid #E2E8F0',
                 boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
                 overflow: 'hidden',
@@ -2748,7 +2757,7 @@ export default function AdminDashboardPage() {
 
           {/* Subtab A: Catalog Table */}
           {courseSubTab === 'catalog' && (
-            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+            <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
               {courses.length > 0 ? (
                 <table className="data-table" style={{ width: '100%' }}>
                   <thead>
@@ -2842,7 +2851,7 @@ export default function AdminDashboardPage() {
               <div
                 style={{
                   background: '#FFFFFF',
-                  borderRadius: 14,
+                  borderRadius: 8,
                   border: '1px solid #E2E8F0',
                   padding: '16px 20px',
                   marginBottom: 20,
@@ -2942,7 +2951,7 @@ export default function AdminDashboardPage() {
                     <div
                       style={{
                         background: '#FFFFFF',
-                        borderRadius: 16,
+                        borderRadius: 8,
                         border: '1px solid #E2E8F0',
                         padding: 24,
                         marginBottom: 24,
@@ -3031,7 +3040,7 @@ export default function AdminDashboardPage() {
                               key={sec.id}
                               style={{
                                 background: '#FFFFFF',
-                                borderRadius: 14,
+                                borderRadius: 8,
                                 border: '1px solid #E2E8F0',
                                 overflow: 'hidden',
                                 boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
@@ -3370,7 +3379,7 @@ export default function AdminDashboardPage() {
                           )
                         })
                       ) : (
-                        <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E2E8F0', textAlign: 'center', padding: '48px 20px' }}>
+                        <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', textAlign: 'center', padding: '48px 20px' }}>
                           <Layers size={40} style={{ color: '#94A3B8', margin: '0 auto 12px auto' }} />
                           <h4 style={{ margin: '0 0 6px 0', fontSize: '1.1rem', color: '#0F172A' }}>No curriculum sections yet</h4>
                           <p style={{ color: '#64748B', fontSize: '0.875rem', marginBottom: 16 }}>
@@ -3400,7 +3409,7 @@ export default function AdminDashboardPage() {
                   </div>
                 )
               })() : (
-                <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid #E2E8F0', padding: 40, textAlign: 'center' }}>
+                <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', padding: 40, textAlign: 'center' }}>
                   <p style={{ color: '#64748B', margin: 0 }}>Please select a course to manage its curriculum.</p>
                 </div>
               )}
@@ -3411,7 +3420,7 @@ export default function AdminDashboardPage() {
           {courseSubTab === 'pricing' && (
             <div>
               {/* Offers Table */}
-              <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, marginBottom: 24 }}>
+              <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', padding: 24, marginBottom: 24 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <div>
                     <h4 style={{ fontSize: '1.125rem', fontWeight: 800, margin: '0 0 2px 0' }}>Promotional Coupon Offers</h4>
@@ -3475,7 +3484,7 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Course Base Pricing Table */}
-              <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24 }}>
+              <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', padding: 24 }}>
                 <h4 style={{ fontSize: '1.125rem', fontWeight: 800, margin: '0 0 16px 0' }}>Course Base Pricing Table</h4>
                 <table className="data-table" style={{ width: '100%' }}>
                   <thead>
@@ -3549,7 +3558,7 @@ export default function AdminDashboardPage() {
 
           {/* Subtab C: Public Catalog Controls */}
           {courseSubTab === 'controls' && (
-            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24 }}>
+            <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', padding: 24 }}>
               <h4 style={{ fontSize: '1.125rem', fontWeight: 800, margin: '0 0 6px 0' }}>Catalog Visibility & Discovery Rules</h4>
               <p style={{ color: '#64748B', fontSize: '0.85rem', marginBottom: 20 }}>
                 Hiding or archiving a course removes it from public listings; enrolled students maintain full playback access.
@@ -3785,7 +3794,7 @@ export default function AdminDashboardPage() {
           <div
             style={{
               background: '#FFFFFF',
-              borderRadius: 14,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               overflow: 'hidden',
               boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
@@ -4179,7 +4188,7 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
             {students.length > 0 ? (
               <table className="data-table" style={{ width: '100%' }}>
                 <thead>
@@ -4242,7 +4251,7 @@ export default function AdminDashboardPage() {
           <div
             style={{
               background: '#FFFFFF',
-              borderRadius: 14,
+              borderRadius: 8,
               border: '1px solid #E2E8F0',
               padding: '14px 18px',
               marginBottom: 20,
@@ -4366,7 +4375,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Review Queue Table */}
-          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
             {filteredReviewQueue.length > 0 ? (
               <table className="data-table" style={{ width: '100%' }}>
                 <thead>
@@ -4441,29 +4450,54 @@ export default function AdminDashboardPage() {
                           {renderReviewStatusChip(v.status)}
                         </td>
 
-                        {/* Action: Single Review Button */}
-                        <td style={{ textAlign: 'right' }}>
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm"
-                            onClick={() => setSelectedReviewLecture(v)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 6,
-                              padding: '5px 14px',
-                              borderRadius: 8,
-                              fontSize: '0.8125rem',
-                              fontWeight: 700,
-                              color: '#0F172A',
-                              borderColor: '#CBD5E1',
-                              background: '#FFFFFF',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            <Eye size={14} style={{ color: '#2563EB' }} />
-                            <span>Review</span>
-                          </button>
+                        {/* Action: Review + Publish if Approved */}
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                            {v.status === 'APPROVED' && (
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-sm"
+                                onClick={() => handlePublishLesson(v.id)}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  padding: '5px 12px',
+                                  borderRadius: 8,
+                                  fontSize: '0.8125rem',
+                                  fontWeight: 700,
+                                  background: '#2563EB',
+                                  color: '#FFFFFF',
+                                  cursor: 'pointer'
+                                }}
+                                title="Publish approved lesson to students"
+                              >
+                                <UploadCloud size={14} />
+                                <span>Publish</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="btn btn-outline btn-sm"
+                              onClick={() => setSelectedReviewLecture(v)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '5px 14px',
+                                borderRadius: 8,
+                                fontSize: '0.8125rem',
+                                fontWeight: 700,
+                                color: '#0F172A',
+                                borderColor: '#CBD5E1',
+                                background: '#FFFFFF',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <Eye size={14} style={{ color: '#2563EB' }} />
+                              <span>Review</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )
@@ -4534,7 +4568,7 @@ export default function AdminDashboardPage() {
                     height: '88vh',
                     maxHeight: '88vh',
                     background: '#FFFFFF',
-                    borderRadius: 16,
+                    borderRadius: 8,
                     display: 'flex',
                     flexDirection: 'column',
                     boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.08)',
@@ -4617,7 +4651,7 @@ export default function AdminDashboardPage() {
                             width: '100%',
                             aspectRatio: '16/9',
                             background: '#000000',
-                            borderRadius: 14,
+                            borderRadius: 8,
                             overflow: 'hidden',
                             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.22)'
                           }}
@@ -4639,7 +4673,7 @@ export default function AdminDashboardPage() {
                             padding: '52px 24px',
                             background: '#FEF2F2',
                             border: '1px solid #FECACA',
-                            borderRadius: 14,
+                            borderRadius: 8,
                             textAlign: 'center'
                           }}
                         >
@@ -4659,7 +4693,7 @@ export default function AdminDashboardPage() {
                       <div
                         style={{
                           background: '#F8FAFC',
-                          borderRadius: 14,
+                          borderRadius: 8,
                           border: '1px solid #E2E8F0',
                           padding: '20px 24px'
                         }}
@@ -4778,7 +4812,7 @@ export default function AdminDashboardPage() {
                         <div
                           style={{
                             background: '#FFFFFF',
-                            borderRadius: 14,
+                            borderRadius: 8,
                             border: '1px solid #E2E8F0',
                             padding: '16px 20px'
                           }}
@@ -4798,7 +4832,7 @@ export default function AdminDashboardPage() {
                       <div
                         style={{
                           background: '#FFFFFF',
-                          borderRadius: 14,
+                          borderRadius: 8,
                           border: '1px solid #E2E8F0',
                           padding: '18px 20px'
                         }}
@@ -4901,35 +4935,107 @@ export default function AdminDashboardPage() {
                       <span>Request Changes</span>
                     </button>
 
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      disabled={!hasVideo}
-                      onClick={() =>
-                        setApproveModal({
-                          open: true,
-                          lecture: selectedReviewLecture,
-                          isSubmitting: false
-                        })
-                      }
-                      style={{
-                        background: hasVideo ? '#16A34A' : '#94A3B8',
-                        borderColor: hasVideo ? '#16A34A' : '#94A3B8',
-                        color: '#FFFFFF',
-                        fontWeight: 700,
-                        height: 42,
-                        padding: '0 26px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        borderRadius: 8,
-                        cursor: hasVideo ? 'pointer' : 'not-allowed'
-                      }}
-                      title={!hasVideo ? 'Video unavailable - approval blocked' : 'Approve Lecture'}
-                    >
-                      <CheckCircle2 size={16} />
-                      <span>Approve</span>
-                    </button>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+                      {selectedReviewLecture.status === 'PUBLISHED' ? (
+                        <>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              color: '#16A34A',
+                              fontWeight: 700,
+                              fontSize: '0.85rem'
+                            }}
+                          >
+                            <CheckCircle2 size={16} />
+                            <span>Live for Students</span>
+                          </span>
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            onClick={() =>
+                              setUnpublishModal({
+                                open: true,
+                                lectureId: selectedReviewLecture.id,
+                                reason: '',
+                                error: '',
+                                isSubmitting: false
+                              })
+                            }
+                            style={{
+                              color: '#DC2626',
+                              borderColor: '#FECACA',
+                              background: '#FEF2F2',
+                              fontWeight: 700,
+                              height: 42,
+                              padding: '0 20px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              borderRadius: 8,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <EyeOff size={16} />
+                            <span>Unpublish Lesson</span>
+                          </button>
+                        </>
+                      ) : selectedReviewLecture.status === 'APPROVED' ? (
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() => handlePublishLesson(selectedReviewLecture.id)}
+                          style={{
+                            background: '#2563EB',
+                            borderColor: '#2563EB',
+                            color: '#FFFFFF',
+                            fontWeight: 700,
+                            height: 42,
+                            padding: '0 26px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            borderRadius: 8,
+                            cursor: 'pointer'
+                          }}
+                          title="Publish approved lecture to enrolled students"
+                        >
+                          <UploadCloud size={16} />
+                          <span>Publish Lesson to Students</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          disabled={!hasVideo}
+                          onClick={() =>
+                            setApproveModal({
+                              open: true,
+                              lecture: selectedReviewLecture,
+                              isSubmitting: false
+                            })
+                          }
+                          style={{
+                            background: hasVideo ? '#16A34A' : '#94A3B8',
+                            borderColor: hasVideo ? '#16A34A' : '#94A3B8',
+                            color: '#FFFFFF',
+                            fontWeight: 700,
+                            height: 42,
+                            padding: '0 26px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            borderRadius: 8,
+                            cursor: hasVideo ? 'pointer' : 'not-allowed'
+                          }}
+                          title={!hasVideo ? 'Video unavailable - approval blocked' : 'Approve Lecture'}
+                        >
+                          <CheckCircle2 size={16} />
+                          <span>Approve</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4952,7 +5058,7 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
             {paymentsList.length > 0 ? (
               <table className="data-table" style={{ width: '100%' }}>
                 <thead>
@@ -5098,7 +5204,7 @@ export default function AdminDashboardPage() {
             <div
               style={{
                 background: '#FFFFFF',
-                borderRadius: 14,
+                borderRadius: 8,
                 border: '1px solid #E2E8F0',
                 padding: '16px 20px',
                 marginBottom: 20,
@@ -5215,7 +5321,7 @@ export default function AdminDashboardPage() {
             <div
               style={{
                 background: '#FFFFFF',
-                borderRadius: 16,
+                borderRadius: 8,
                 border: '1px solid #E2E8F0',
                 overflow: 'hidden',
                 boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
@@ -5570,6 +5676,13 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ========================================================================= */}
+      {/* 6.11. SUPPORT TICKETS & CONTACT ENQUIRIES GOVERNANCE */}
+      {/* ========================================================================= */}
+      {activeTab === 'support' && (
+        <AdminSupportManager showToast={showToast} />
+      )}
+
+      {/* ========================================================================= */}
       {/* 7. NOTIFICATIONS / ANNOUNCEMENTS */}
       {/* ========================================================================= */}
       {activeTab === 'notifications' && (
@@ -5583,7 +5696,7 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 28, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', padding: 28, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
             <form onSubmit={handleBroadcastAnnouncement}>
               <div className="form-field-group">
                 <label className="form-label">Announcement Title</label>
@@ -5647,7 +5760,7 @@ export default function AdminDashboardPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 20, marginBottom: 24 }}>
             {/* Revenue breakdown by course */}
-            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+            <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
               <h4 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 16px 0', color: '#0F172A' }}>
                 Course Revenue Attribution
               </h4>
@@ -5668,7 +5781,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Course stats */}
-            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+            <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
               <h4 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 16px 0', color: '#0F172A' }}>
                 Enrollments & Module Breakdown
               </h4>
@@ -5857,7 +5970,7 @@ export default function AdminDashboardPage() {
             <div
               style={{
                 background: '#FFFFFF',
-                borderRadius: 14,
+                borderRadius: 8,
                 border: '1px solid #E2E8F0',
                 padding: '16px 20px',
                 marginBottom: 20,
@@ -5983,7 +6096,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Requests List */}
-            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+            <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
               {filteredRequests.length > 0 ? (
                 <div style={{ overflowX: 'auto' }}>
                   <table className="data-table" style={{ width: '100%', minWidth: 900 }}>
@@ -6329,7 +6442,7 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
             {auditLogs.length > 0 ? (
               <table className="data-table" style={{ width: '100%' }}>
                 <thead>
@@ -6377,7 +6490,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 24 }}>
-            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+            <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
               <h3 style={{ fontSize: '1.15rem', marginBottom: 6, color: '#0F172A', fontWeight: 800 }}>
                 Active Authenticated Sessions ({activeSessions.length})
               </h3>
@@ -6406,7 +6519,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
+            <div style={{ background: '#FFFFFF', borderRadius: 8, border: '1px solid #E2E8F0', padding: 24, boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)' }}>
               <h3 style={{ fontSize: '1.15rem', marginBottom: 6, color: '#0F172A', fontWeight: 800 }}>
                 Infrastructure Security
               </h3>
@@ -6544,7 +6657,7 @@ export default function AdminDashboardPage() {
               <div
                 style={{
                   background: '#FFFFFF',
-                  borderRadius: 16,
+                  borderRadius: 8,
                   border: '1px solid #E2E8F0',
                   boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
                   overflow: 'hidden'
@@ -6687,7 +6800,7 @@ export default function AdminDashboardPage() {
                 <div
                   style={{
                     background: '#FFFFFF',
-                    borderRadius: 16,
+                    borderRadius: 8,
                     border: '1px solid #E2E8F0',
                     padding: 24,
                     boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
@@ -6774,7 +6887,7 @@ export default function AdminDashboardPage() {
                 <div
                   style={{
                     background: '#FFFFFF',
-                    borderRadius: 16,
+                    borderRadius: 8,
                     border: '1px solid #E2E8F0',
                     padding: 24,
                     boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
@@ -6847,7 +6960,7 @@ export default function AdminDashboardPage() {
               <div
                 style={{
                   background: '#FFFFFF',
-                  borderRadius: 16,
+                  borderRadius: 8,
                   border: '1px solid #E2E8F0',
                   padding: 28,
                   boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
@@ -6901,7 +7014,7 @@ export default function AdminDashboardPage() {
             <div
               style={{
                 background: '#FFFFFF',
-                borderRadius: 16,
+                borderRadius: 8,
                 border: '1px solid #E2E8F0',
                 padding: '32px',
                 boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
@@ -7500,7 +7613,7 @@ export default function AdminDashboardPage() {
               maxHeight: '90vh',
               display: 'flex',
               flexDirection: 'column',
-              borderRadius: 16,
+              borderRadius: 8,
               overflow: 'hidden',
               background: '#FFFFFF',
               boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)'
@@ -8738,7 +8851,7 @@ export default function AdminDashboardPage() {
         <div className="razorpay-modal-overlay" style={{ zIndex: 2500 }} onClick={() => !approveModal.isSubmitting && setApproveModal({ open: false, lecture: null, isSubmitting: false })}>
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 480, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            style={{ maxWidth: 480, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
@@ -8823,7 +8936,7 @@ export default function AdminDashboardPage() {
         <div className="razorpay-modal-overlay" style={{ zIndex: 2500 }} onClick={() => !requestChangesModal.isSubmitting && setRequestChangesModal({ open: false, lecture: null, feedback: '', quickReason: '', error: '', isSubmitting: false })}>
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 540, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            style={{ maxWidth: 540, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
@@ -8988,7 +9101,7 @@ export default function AdminDashboardPage() {
         <div className="razorpay-modal-overlay" onClick={() => !unpublishModal.isSubmitting && setUnpublishModal({ open: false, lectureId: null, reason: '', error: '', isSubmitting: false })}>
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 480, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            style={{ maxWidth: 480, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
@@ -9060,7 +9173,7 @@ export default function AdminDashboardPage() {
         <div className="razorpay-modal-overlay" onClick={() => !deleteOfferModal.isSubmitting && setDeleteOfferModal({ open: false, offer: null, isSubmitting: false })}>
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 440, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            style={{ maxWidth: 440, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
@@ -9119,7 +9232,7 @@ export default function AdminDashboardPage() {
         <div className="razorpay-modal-overlay" onClick={() => !adminSectionModal.isSaving && setAdminSectionModal((prev) => ({ ...prev, open: false }))}>
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 480, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            style={{ maxWidth: 480, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
@@ -9203,7 +9316,7 @@ export default function AdminDashboardPage() {
         <div className="razorpay-modal-overlay" onClick={() => !adminLectureModal.isSaving && !adminLectureModal.isUploading && setAdminLectureModal((prev) => ({ ...prev, open: false }))}>
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 560, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            style={{ maxWidth: 560, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
@@ -9407,7 +9520,7 @@ export default function AdminDashboardPage() {
         <div className="razorpay-modal-overlay" onClick={() => !adminDeleteCurriculumModal.isSubmitting && setAdminDeleteCurriculumModal((prev) => ({ ...prev, open: false }))}>
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 440, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            style={{ maxWidth: 440, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
@@ -9510,7 +9623,7 @@ export default function AdminDashboardPage() {
         >
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 520, background: '#FFFFFF', borderRadius: 16, overflow: 'hidden' }}
+            style={{ maxWidth: 520, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div

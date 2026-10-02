@@ -17,7 +17,7 @@ export default function TermsPage() {
           </p>
         </div>
 
-        <div className="card" style={{ padding: 40, borderRadius: 16, border: '1px solid var(--color-border)', lineHeight: 1.8, color: 'var(--color-text-secondary)' }}>
+        <div className="card" style={{ padding: 40, borderRadius: 8, border: '1px solid var(--color-border)', lineHeight: 1.8, color: 'var(--color-text-secondary)' }}>
           <h2 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', fontWeight: 700, marginBottom: 12 }}>1. Acceptance of Terms</h2>
           <p style={{ marginBottom: 24 }}>
             By registering for an account, accessing courses, or utilizing services offered by aivortex, you agree to be bound by these Terms of Service. If you do not agree, do not utilize the platform.

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { GraduationCap, Lock, Mail, ArrowLeft, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react'
+import { GraduationCap, Lock, Mail, ArrowLeft, KeyRound, CheckCircle2, AlertCircle, BookOpen, Shield } from 'lucide-react'
 import BrandLogo from '../../components/common/BrandLogo'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
@@ -40,7 +40,7 @@ export default function UnifiedLoginPage() {
     }
   }, [resetTokenParam])
 
-  // If already authenticated, redirect to appropriate role dashboard
+  // If already authenticated, redirect to appropriate role dashboard or preserved target
   useEffect(() => {
     if (isAuthenticated && existingUser && mode === 'login') {
       const role = (existingUser?.role || '').toLowerCase()
@@ -49,10 +49,14 @@ export default function UnifiedLoginPage() {
       } else if (role === 'admin') {
         navigate('/admin/dashboard', { replace: true })
       } else {
-        navigate('/student/dashboard', { replace: true })
+        if (redirectParam) {
+          navigate(redirectParam + (enrollParam ? '?enroll=true' : ''), { replace: true })
+        } else {
+          navigate('/student/dashboard', { replace: true })
+        }
       }
     }
-  }, [isAuthenticated, existingUser, mode, navigate])
+  }, [isAuthenticated, existingUser, mode, navigate, redirectParam, enrollParam])
 
   const handleLoginSuccess = (user) => {
     const role = (user?.role || '').toLowerCase()
@@ -72,11 +76,18 @@ export default function UnifiedLoginPage() {
     }
   }
 
-  const handleQuickDemo = (role) => {
+  const handleQuickDemo = async (role) => {
     if (demoLogin) {
-      const res = demoLogin(role)
-      if (res?.success && res?.user) {
-        handleLoginSuccess(res.user)
+      setIsSubmitting(true)
+      try {
+        const res = await demoLogin(role)
+        if (res?.success && res?.user) {
+          handleLoginSuccess(res.user)
+        }
+      } catch (err) {
+        showToast(err.message || 'Demo login failed. Please verify server connection.', 'error')
+      } finally {
+        setIsSubmitting(false)
       }
     }
   }
@@ -175,9 +186,9 @@ export default function UnifiedLoginPage() {
           width: '100%',
           maxWidth: 480,
           background: '#FFFFFF',
-          borderRadius: 20,
+          borderRadius: 'var(--radius-lg, 8px)',
           border: '1px solid var(--color-border)',
-          boxShadow: 'var(--shadow-xl)',
+          boxShadow: 'var(--shadow-lg)',
           padding: '36px 32px',
           boxSizing: 'border-box'
         }}
@@ -244,7 +255,7 @@ export default function UnifiedLoginPage() {
                   className="btn btn-outline btn-sm"
                   style={{ fontSize: '0.78rem', padding: '6px 4px', textAlign: 'center', fontWeight: 600, background: '#FFFFFF' }}
                 >
-                  🎓 Student
+                  <GraduationCap size={14} style={{ marginRight: 4 }} /> Student
                 </button>
                 <button
                   type="button"
@@ -253,7 +264,7 @@ export default function UnifiedLoginPage() {
                   className="btn btn-outline btn-sm"
                   style={{ fontSize: '0.78rem', padding: '6px 4px', textAlign: 'center', fontWeight: 600, background: '#FFFFFF' }}
                 >
-                  🎬 Creator
+                  <BookOpen size={14} style={{ marginRight: 4 }} /> Creator
                 </button>
                 <button
                   type="button"
@@ -262,7 +273,7 @@ export default function UnifiedLoginPage() {
                   className="btn btn-outline btn-sm"
                   style={{ fontSize: '0.78rem', padding: '6px 4px', textAlign: 'center', fontWeight: 600, background: '#FFFFFF' }}
                 >
-                  ⚡ Admin
+                  <Shield size={14} style={{ marginRight: 4 }} /> Admin
                 </button>
               </div>
             </div>

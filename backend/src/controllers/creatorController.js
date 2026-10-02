@@ -385,6 +385,14 @@ export async function deleteLesson(req, res, next) {
       where: { id: lessonId }
     })
 
+    if (lesson.s3Key) {
+      try {
+        await s3Service.deleteObject(lesson.s3Key)
+      } catch (s3Err) {
+        console.warn('S3 object deletion warning for lesson:', s3Err.message)
+      }
+    }
+
     return successResponse(res, null, 'Lesson deleted successfully')
   } catch (err) {
     next(err)

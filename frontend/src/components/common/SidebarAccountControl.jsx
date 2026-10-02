@@ -45,12 +45,14 @@ export default function SidebarAccountControl({
   }, [open])
 
   // Derive user identity values
-  const displayName = user?.name || (role === 'admin' ? 'Administrator' : 'Creator')
-  const displayEmail = user?.email || (role === 'admin' ? 'admin@apexlearn.com' : 'creator@apexlearn.com')
+  const displayName = user?.name || (role === 'admin' ? 'Administrator' : role === 'creator' ? 'Creator' : 'Student')
+  const displayEmail = user?.email || (role === 'admin' ? 'admin@apexlearn.com' : role === 'creator' ? 'creator@apexlearn.com' : 'student@apexlearn.com')
   const roleLabel =
     role === 'admin'
       ? (user?.role === 'SUPERADMIN' ? 'Super Administrator' : 'Administrator')
-      : 'Creator'
+      : role === 'creator'
+      ? 'Course Creator'
+      : 'Enrolled Scholar'
 
   const userPhoto = user?.avatar || user?.profilePhoto || user?.photo || user?.image
   const initial = displayName.charAt(0).toUpperCase()
@@ -63,8 +65,10 @@ export default function SidebarAccountControl({
     setOpen(false)
     if (role === 'admin') {
       navigate('/admin/profile?mode=view')
-    } else {
+    } else if (role === 'creator') {
       navigate('/creator/profile')
+    } else {
+      navigate('/student/profile')
     }
   }
 
@@ -72,8 +76,10 @@ export default function SidebarAccountControl({
     setOpen(false)
     if (role === 'admin') {
       navigate('/admin/security')
-    } else {
+    } else if (role === 'creator') {
       navigate('/creator/profile')
+    } else {
+      navigate('/student/profile')
     }
   }
 
@@ -238,7 +244,7 @@ export default function SidebarAccountControl({
             maxWidth: '260px',
             background: isDark ? '#1E293B' : '#FFFFFF',
             border: `1px solid ${isDark ? '#334155' : '#E2E8F0'}`,
-            borderRadius: '10px',
+            borderRadius: '8px',
             boxShadow: isDark
               ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3)'
               : '0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.05)',

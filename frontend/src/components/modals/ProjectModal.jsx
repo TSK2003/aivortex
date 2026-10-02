@@ -18,7 +18,7 @@ export default function ProjectModal({ project, isOpen, onClose }) {
     <div className="modal-overlay" id="project-modal-overlay" onClick={onClose}>
       <div
         className="modal-dialog"
-        style={{ maxWidth: 740, borderRadius: 16 }}
+        style={{ maxWidth: 740, borderRadius: 8 }}
         role="dialog"
         aria-label="Project Details"
         onClick={(e) => e.stopPropagation()}

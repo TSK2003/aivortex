@@ -154,6 +154,130 @@ export async function getMyCourses(req, res, next) {
   }
 }
 
+// 2b. Course Curriculum with Playlists and Student Completion Status
+export async function getCourseCurriculum(req, res, next) {
+  try {
+    const studentId = req.user.id
+    const { courseId } = req.params
+
+    const course = await prisma.course.findFirst({
+      where: {
+        OR: [{ id: courseId }, { slug: courseId }]
+      },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        category: true,
+        level: true,
+        thumbnail: true,
+        shortDescription: true,
+        certificateEnabled: true,
+        status: true
+      }
+    })
+
+    if (!course) {
+      throw new NotFoundError('Course not found')
+    }
+
+    let enrollment = null
+    if (req.user.role === 'STUDENT') {
+      enrollment = await prisma.enrollment.findUnique({
+        where: {
+          studentId_courseId: { studentId, courseId: course.id }
+        },
+        include: {
+          lessonProgress: true
+        }
+      })
+
+      if (!enrollment) {
+        throw new ForbiddenError('You must be enrolled in this course to access the curriculum.')
+      }
+
+      if (enrollment.expiresAt && new Date(enrollment.expiresAt) < new Date()) {
+        throw new ForbiddenError('Your course enrollment access period has expired.')
+      }
+    } else {
+      enrollment = await prisma.enrollment.findUnique({
+        where: {
+          studentId_courseId: { studentId, courseId: course.id }
+        },
+        include: {
+          lessonProgress: true
+        }
+      })
+    }
+
+    const playlists = await prisma.playlist.findMany({
+      where: {
+        courseId: course.id,
+        ...(req.user.role === 'ADMIN' ? {} : { status: 'PUBLISHED' })
+      },
+      orderBy: { orderIndex: 'asc' },
+      include: {
+        lessons: {
+          where: req.user.role === 'ADMIN' ? {} : { status: 'PUBLISHED' },
+          orderBy: { orderIndex: 'asc' },
+          include: {
+            quizzes: {
+              select: { id: true, title: true, passingScore: true, maxAttempts: true }
+            },
+            resources: true
+          }
+        }
+      }
+    })
+
+    const progressMap = new Map()
+    if (enrollment?.lessonProgress) {
+      enrollment.lessonProgress.forEach((lp) => {
+        progressMap.set(lp.lessonId, lp)
+      })
+    }
+
+    const enrichedPlaylists = playlists.map((pl) => ({
+      id: pl.id,
+      title: pl.title,
+      description: pl.description,
+      orderIndex: pl.orderIndex,
+      lessons: pl.lessons.map((les) => {
+        const prog = progressMap.get(les.id)
+        return {
+          id: les.id,
+          title: les.title,
+          description: les.description,
+          duration: les.duration,
+          durationSeconds: les.durationSeconds,
+          orderIndex: les.orderIndex,
+          isPreview: les.isPreview,
+          isCompleted: prog?.isCompleted || false,
+          lastPositionSec: prog?.lastPositionSec || 0,
+          watchSeconds: prog?.watchSeconds || 0,
+          quizzes: les.quizzes,
+          resources: les.resources
+        }
+      })
+    }))
+
+    return successResponse(res, {
+      course,
+      playlists: enrichedPlaylists,
+      enrollment: enrollment
+        ? {
+            id: enrollment.id,
+            progressPercent: enrollment.progressPercent,
+            status: enrollment.status,
+            enrolledAt: enrollment.enrolledAt
+          }
+        : null
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
 // 3. Granular Lesson Progression & Percentage Calculation
 export async function toggleLessonProgress(req, res, next) {
   try {

@@ -193,14 +193,14 @@ export default function CoursesPage() {
           <div
             style={{
               background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%)',
-              borderRadius: 16,
+              borderRadius: 8,
               padding: '16px 24px',
               marginBottom: 32,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               color: '#FFFFFF',
-              boxShadow: '0 10px 25px -5px rgba(67, 56, 202, 0.3)',
+              boxShadow: 'var(--shadow-md)',
               flexWrap: 'wrap',
               gap: 12
             }}
@@ -232,7 +232,7 @@ export default function CoursesPage() {
               style={{
                 background: 'rgba(255,255,255,0.1)',
                 padding: '6px 14px',
-                borderRadius: 20,
+                borderRadius: 6,
                 fontSize: '0.75rem',
                 fontWeight: 700,
                 letterSpacing: '0.04em',
@@ -365,7 +365,7 @@ export default function CoursesPage() {
           <div
             style={{
               padding: '24px',
-              borderRadius: 16,
+              borderRadius: 8,
               background: '#FEF2F2',
               border: '1px solid #FECACA',
               color: '#991B1B',
