@@ -3,154 +3,108 @@ import { useTheme } from '../../contexts/ThemeContext'
 
 /**
  * Modern production-grade StatCard component for Admin Portal.
- * Clean, minimal, high-contrast, accessible.
+ * Clean, minimal, high-contrast, accessible. Brand: Black & White only.
  */
 export default function StatCard({
   title,
   value,
   icon: Icon,
   subtext,
-  badge,
-  badgeType = 'neutral', // 'success' | 'warning' | 'info' | 'danger' | 'neutral'
   iconBg = '#EFF6FF',
   iconColor = '#2563EB',
   onClick
 }) {
   const { isDark } = useTheme()
 
-  const getBadgeStyle = () => {
-    if (isDark) {
-      switch (badgeType) {
-        case 'success':
-          return { background: 'rgba(16, 185, 129, 0.15)', color: '#34D399', border: '1px solid rgba(16, 185, 129, 0.3)' }
-        case 'warning':
-          return { background: 'rgba(245, 158, 11, 0.15)', color: '#FBBF24', border: '1px solid rgba(245, 158, 11, 0.3)' }
-        case 'danger':
-          return { background: 'rgba(239, 68, 68, 0.15)', color: '#F87171', border: '1px solid rgba(239, 68, 68, 0.3)' }
-        case 'info':
-          return { background: 'rgba(59, 130, 246, 0.15)', color: '#60A5FA', border: '1px solid rgba(59, 130, 246, 0.3)' }
-        default:
-          return { background: '#162032', color: '#94A3B8', border: '1px solid #1E293B' }
-      }
-    }
-
-    switch (badgeType) {
-      case 'success':
-        return { background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }
-      case 'warning':
-        return { background: '#FFFBEB', color: '#D97706', border: '1px solid #FDE68A' }
-      case 'danger':
-        return { background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }
-      case 'info':
-        return { background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE' }
-      default:
-        return { background: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0' }
-    }
-  }
-
   return (
     <div
       onClick={onClick}
       className="stat-card"
       style={{
-        background: 'var(--color-bg-card, #FFFFFF)',
-        borderRadius: '8px',
-        border: '1px solid var(--color-border, #E2E8F0)',
-        padding: '20px 24px',
-        boxShadow: 'var(--shadow-sm)',
+        background: isDark ? '#1C1D21' : '#FFFFFF',
+        borderRadius: '14px',
+        border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #E5E7EB',
+        padding: '22px 24px',
+        boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+        transition: 'border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease',
         cursor: onClick ? 'pointer' : 'default',
         position: 'relative',
         overflow: 'hidden'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'var(--color-border-hover, #CBD5E1)'
-        e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)'
+        e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.25)' : '#CBD5E1'
+        e.currentTarget.style.boxShadow = isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 4px 12px rgba(0,0,0,0.06)'
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'var(--color-border, #E2E8F0)'
-        e.currentTarget.style.boxShadow = 'var(--shadow-sm)'
+        e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB'
+        e.currentTarget.style.boxShadow = isDark ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.04)'
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-        <span
-          style={{
-            fontSize: '0.8125rem',
-            fontWeight: 700,
-            color: 'var(--color-text-tertiary, #64748B)',
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            transition: 'color 0.3s ease'
-          }}
-        >
-          {title}
-        </span>
+      {/* Top Row: Icon on LEFT, Title on RIGHT */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
         {Icon && (
           <div
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: '8px',
-              background: isDark ? 'rgba(59, 130, 246, 0.15)' : iconBg,
-              color: isDark ? '#60A5FA' : iconColor,
+              width: 44,
+              height: 44,
+              borderRadius: '10px',
+              background: isDark ? 'rgba(255, 255, 255, 0.08)' : iconBg,
+              color: isDark ? '#FFFFFF' : iconColor,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0
             }}
           >
-            <Icon size={20} strokeWidth={2.2} />
+            <Icon size={22} strokeWidth={2.2} />
           </div>
         )}
+        <span
+          style={{
+            fontSize: '0.78rem',
+            fontWeight: 800,
+            color: isDark ? '#9B9DA3' : '#475569',
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            lineHeight: 1.25,
+            maxWidth: 120,
+            display: 'block'
+          }}
+        >
+          {title}
+        </span>
       </div>
 
+      {/* Middle & Bottom: Extra Large Number + Subtext */}
       <div>
         <div
           style={{
-            fontSize: '1.75rem',
-            fontWeight: 800,
-            color: 'var(--color-text, #0F172A)',
-            letterSpacing: '-0.02em',
-            lineHeight: 1.1,
+            fontSize: '2.85rem',
+            fontWeight: 900,
+            color: isDark ? '#FFFFFF' : '#0F172A',
+            letterSpacing: '-0.03em',
+            lineHeight: 1.05,
             marginBottom: 8
           }}
         >
           {value ?? '—'}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          {badge && (
-            <span
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                padding: '2px 8px',
-                borderRadius: '6px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                transition: 'background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease',
-                ...getBadgeStyle()
-              }}
-            >
-              {badge}
-            </span>
-          )}
-          {subtext && (
-            <span
-              style={{
-                fontSize: '0.8125rem',
-                color: 'var(--color-text-secondary, #64748B)',
-                fontWeight: 500,
-                transition: 'color 0.3s ease'
-              }}
-            >
-              {subtext}
-            </span>
-          )}
-        </div>
+        {subtext && (
+          <div
+            style={{
+              fontSize: '0.8125rem',
+              color: isDark ? '#94A3B8' : '#64748B',
+              fontWeight: 500,
+              lineHeight: 1.35
+            }}
+          >
+            {subtext}
+          </div>
+        )}
       </div>
     </div>
   )

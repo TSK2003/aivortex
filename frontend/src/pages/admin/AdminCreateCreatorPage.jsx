@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+﻿import { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
   Users,
@@ -186,7 +186,7 @@ export default function AdminCreateCreatorPage() {
 
   // Password strength calculation
   const passwordStrength = useMemo(() => {
-    if (!password) return { score: 0, label: 'None', color: '#94A3B8' }
+    if (!password) return { score: 0, label: 'None', color: '#9B9DA3' }
     let score = 0
     if (password.length >= 8) score += 1
     if (password.length >= 12) score += 1
@@ -194,10 +194,10 @@ export default function AdminCreateCreatorPage() {
     if (/[0-9]/.test(password)) score += 1
     if (/[^A-Za-z0-9]/.test(password)) score += 1
 
-    if (score <= 2) return { score: 25, label: 'Weak', color: '#EF4444' }
-    if (score === 3) return { score: 50, label: 'Moderate', color: '#F59E0B' }
-    if (score === 4) return { score: 75, label: 'Strong', color: '#10B981' }
-    return { score: 100, label: 'Excellent', color: '#059669' }
+    if (score <= 2) return { score: 25, label: 'Weak', color: '#2D2F33' }
+    if (score === 3) return { score: 50, label: 'Moderate', color: '#4B4D52' }
+    if (score === 4) return { score: 75, label: 'Strong', color: '#2D2F33' }
+    return { score: 100, label: 'Excellent', color: '#2D2F33' }
   }, [password])
 
   // Validation
@@ -337,8 +337,8 @@ export default function AdminCreateCreatorPage() {
               width: 64,
               height: 64,
               borderRadius: '50%',
-              background: '#DCFCE7',
-              color: '#16A34A',
+              background: '#EFEFEF',
+              color: '#2D2F33',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -348,10 +348,10 @@ export default function AdminCreateCreatorPage() {
             <CheckCircle2 size={36} />
           </div>
 
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#15171A', marginBottom: 8 }}>
             Creator Account Created Successfully!
           </h2>
-          <p style={{ color: '#64748B', fontSize: '0.9rem', maxWidth: 560, margin: '0 auto 24px auto' }}>
+          <p style={{ color: '#6B6D73', fontSize: '0.9rem', maxWidth: 560, margin: '0 auto 24px auto' }}>
             The account for <strong>{creator.name}</strong> is now created and ready for portal access.
           </p>
 
@@ -363,16 +363,16 @@ export default function AdminCreateCreatorPage() {
                 margin: '0 auto 24px auto',
                 padding: '14px 18px',
                 borderRadius: 8,
-                background: '#EFF6FF',
-                border: '1px solid #BFDBFE',
+                background: '#F4F4F5',
+                border: '1px solid #E4E4E7',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
                 textAlign: 'left'
               }}
             >
-              <Mail size={20} style={{ color: '#2563EB', flexShrink: 0 }} />
-              <div style={{ fontSize: '0.875rem', color: '#1E40AF', fontWeight: 600 }}>
+              <Mail size={20} style={{ color: '#15171A', flexShrink: 0 }} />
+              <div style={{ fontSize: '0.875rem', color: '#15171A', fontWeight: 600 }}>
                 Login credentials have been sent to the creator's registered email (<strong>{creator.email}</strong>).
               </div>
             </div>
@@ -381,7 +381,7 @@ export default function AdminCreateCreatorPage() {
           {/* Credentials Display Card */}
           <div
             style={{
-              background: '#F8FAFC',
+              background: '#F8F8F8',
               border: '1px solid #E2E8F0',
               borderRadius: 8,
               padding: 24,
@@ -391,8 +391,8 @@ export default function AdminCreateCreatorPage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Lock size={18} style={{ color: '#2563EB' }} />
-                <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0F172A' }}>
+                <Lock size={18} style={{ color: '#15171A' }} />
+                <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#15171A' }}>
                   Account Credentials
                 </span>
               </div>
@@ -400,11 +400,11 @@ export default function AdminCreateCreatorPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
               <div>
-                <label style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                <label style={{ fontSize: '0.75rem', color: '#6B6D73', fontWeight: 600, display: 'block', marginBottom: 4 }}>
                   CREATOR USER ID
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <code style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0F172A', background: '#FFFFFF', padding: '6px 12px', borderRadius: 8, border: '1px solid #CBD5E1', flex: 1 }}>
+                  <code style={{ fontSize: '0.9rem', fontWeight: 700, color: '#15171A', background: '#FFFFFF', padding: '6px 12px', borderRadius: 8, border: '1px solid #CBD5E1', flex: 1 }}>
                     {creator.id}
                   </code>
                   <button
@@ -414,17 +414,17 @@ export default function AdminCreateCreatorPage() {
                     style={{ height: 34, padding: '0 10px' }}
                     title="Copy User ID"
                   >
-                    {copiedKey === 'id' ? <Check size={14} style={{ color: '#16A34A' }} /> : <Copy size={14} />}
+                    {copiedKey === 'id' ? <Check size={14} style={{ color: '#2D2F33' }} /> : <Copy size={14} />}
                   </button>
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                <label style={{ fontSize: '0.75rem', color: '#6B6D73', fontWeight: 600, display: 'block', marginBottom: 4 }}>
                   REGISTERED EMAIL
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <code style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0F172A', background: '#FFFFFF', padding: '6px 12px', borderRadius: 8, border: '1px solid #CBD5E1', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <code style={{ fontSize: '0.9rem', fontWeight: 700, color: '#15171A', background: '#FFFFFF', padding: '6px 12px', borderRadius: 8, border: '1px solid #CBD5E1', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {creator.email}
                   </code>
                   <button
@@ -434,17 +434,17 @@ export default function AdminCreateCreatorPage() {
                     style={{ height: 34, padding: '0 10px' }}
                     title="Copy Email"
                   >
-                    {copiedKey === 'email' ? <Check size={14} style={{ color: '#16A34A' }} /> : <Copy size={14} />}
+                    {copiedKey === 'email' ? <Check size={14} style={{ color: '#2D2F33' }} /> : <Copy size={14} />}
                   </button>
                 </div>
               </div>
 
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                <label style={{ fontSize: '0.75rem', color: '#6B6D73', fontWeight: 600, display: 'block', marginBottom: 4 }}>
                   INITIAL PASSWORD
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <code style={{ fontSize: '0.95rem', fontWeight: 700, color: '#2563EB', background: '#FFFFFF', padding: '8px 14px', borderRadius: 8, border: '1px solid #CBD5E1', flex: 1 }}>
+                  <code style={{ fontSize: '0.95rem', fontWeight: 700, color: '#15171A', background: '#FFFFFF', padding: '8px 14px', borderRadius: 8, border: '1px solid #CBD5E1', flex: 1 }}>
                     {initialPassword}
                   </code>
                   <button
@@ -453,7 +453,7 @@ export default function AdminCreateCreatorPage() {
                     className="btn btn-outline btn-sm"
                     style={{ height: 38, padding: '0 14px', fontWeight: 600 }}
                   >
-                    {copiedKey === 'pw' ? <Check size={16} style={{ color: '#16A34A' }} /> : <Copy size={16} />}
+                    {copiedKey === 'pw' ? <Check size={16} style={{ color: '#2D2F33' }} /> : <Copy size={16} />}
                     <span style={{ marginLeft: 6 }}>Copy Password</span>
                   </button>
                 </div>
@@ -466,15 +466,15 @@ export default function AdminCreateCreatorPage() {
                 marginTop: 20,
                 padding: '12px 16px',
                 borderRadius: 10,
-                background: emailStatus?.sent ? '#EFF6FF' : '#FFFBEB',
-                border: `1px solid ${emailStatus?.sent ? '#BFDBFE' : '#FDE68A'}`,
+                background: emailStatus?.sent ? '#F4F4F5' : '#F4F4F5',
+                border: `1px solid ${emailStatus?.sent ? '#E4E4E7' : '#E4E4E7'}`,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12
               }}
             >
-              <Mail size={18} style={{ color: emailStatus?.sent ? '#2563EB' : '#D97706' }} />
-              <div style={{ fontSize: '0.8125rem', color: '#1E293B', flex: 1 }}>
+              <Mail size={18} style={{ color: emailStatus?.sent ? '#15171A' : '#4B4D52' }} />
+              <div style={{ fontSize: '0.8125rem', color: '#2D2F33', flex: 1 }}>
                 {emailStatus?.sent ? (
                   <span>
                     <strong>Invitation Dispatched:</strong> An onboarding email containing portal access details and credentials was sent to <strong>{creator.email}</strong>.
@@ -540,28 +540,28 @@ export default function AdminCreateCreatorPage() {
             alignItems: 'center',
             gap: 8,
             fontSize: '0.8125rem',
-            color: '#64748B',
+            color: '#6B6D73',
             marginBottom: 12
           }}
         >
           <Link
             to="/admin/creators"
             style={{
-              color: '#64748B',
+              color: '#6B6D73',
               textDecoration: 'none',
               fontWeight: 600,
               display: 'inline-flex',
               alignItems: 'center',
               gap: 4
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#2563EB')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#64748B')}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#15171A')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#6B6D73')}
           >
             <ArrowLeft size={14} />
             <span>Creator Management</span>
           </Link>
-          <ChevronRight size={14} style={{ color: '#CBD5E1' }} />
-          <span style={{ color: '#0F172A', fontWeight: 700 }}>Create Creator</span>
+          <ChevronRight size={14} style={{ color: '#D5D5D8' }} />
+          <span style={{ color: '#15171A', fontWeight: 700 }}>Create Creator</span>
         </nav>
 
         <div style={{ paddingBottom: 20, borderBottom: '1px solid #E2E8F0' }}>
@@ -569,14 +569,14 @@ export default function AdminCreateCreatorPage() {
             style={{
               fontSize: '1.75rem',
               fontWeight: 800,
-              color: '#0F172A',
+              color: '#15171A',
               letterSpacing: '-0.02em',
               margin: '0 0 6px 0'
             }}
           >
             Create Creator Account
           </h1>
-          <p style={{ color: '#64748B', fontSize: '0.9375rem', margin: 0 }}>
+          <p style={{ color: '#6B6D73', fontSize: '0.9375rem', margin: 0 }}>
             Create and provision a new creator account for the platform.
           </p>
         </div>
@@ -622,8 +622,8 @@ export default function AdminCreateCreatorPage() {
                   width: 38,
                   height: 38,
                   borderRadius: 10,
-                  background: '#EFF6FF',
-                  color: '#2563EB',
+                  background: '#F4F4F5',
+                  color: '#15171A',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -632,10 +632,10 @@ export default function AdminCreateCreatorPage() {
                 <Users size={20} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#15171A', margin: 0 }}>
                   Section 1 — Creator Profile
                 </h2>
-                <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: '2px 0 0 0' }}>
+                <p style={{ fontSize: '0.8125rem', color: '#6B6D73', margin: '2px 0 0 0' }}>
                   Instructor identity, public credentials, and academic background.
                 </p>
               </div>
@@ -644,8 +644,8 @@ export default function AdminCreateCreatorPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
               {/* Full Name */}
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#1E293B' }}>
-                  Full Name <span style={{ color: '#EF4444' }}>*</span>
+                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#2D2F33' }}>
+                  Full Name <span style={{ color: '#2D2F33' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -660,12 +660,12 @@ export default function AdminCreateCreatorPage() {
                   style={{
                     width: '100%',
                     height: 44,
-                    borderColor: touched.name && errors.name ? '#EF4444' : '#CBD5E1'
+                    borderColor: touched.name && errors.name ? '#2D2F33' : '#D5D5D8'
                   }}
                   required
                 />
                 {touched.name && errors.name && (
-                  <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <p style={{ color: '#2D2F33', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                     <AlertCircle size={12} /> {errors.name}
                   </p>
                 )}
@@ -673,14 +673,15 @@ export default function AdminCreateCreatorPage() {
 
               {/* Email Address */}
               <div>
-                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#1E293B' }}>
-                  Email Address <span style={{ color: '#EF4444' }}>*</span>
+                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#2D2F33' }}>
+                  Email Address <span style={{ color: '#2D2F33' }}>*</span>
                 </label>
                 <input
                   type="email"
                   placeholder="e.g. creator@apexlearn.edu"
                   className="form-input"
                   value={email}
+                  autoComplete="off"
                   onChange={(e) => {
                     setEmail(e.target.value)
                     if (errors.email) setErrors((prev) => ({ ...prev, email: null }))
@@ -689,12 +690,12 @@ export default function AdminCreateCreatorPage() {
                   style={{
                     width: '100%',
                     height: 44,
-                    borderColor: touched.email && errors.email ? '#EF4444' : '#CBD5E1'
+                    borderColor: touched.email && errors.email ? '#2D2F33' : '#D5D5D8'
                   }}
                   required
                 />
                 {touched.email && errors.email && (
-                  <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <p style={{ color: '#2D2F33', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                     <AlertCircle size={12} /> {errors.email}
                   </p>
                 )}
@@ -702,7 +703,7 @@ export default function AdminCreateCreatorPage() {
 
               {/* Phone Number */}
               <div>
-                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#1E293B' }}>
+                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#2D2F33' }}>
                   Phone Number
                 </label>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -717,13 +718,13 @@ export default function AdminCreateCreatorPage() {
                         alignItems: 'center',
                         gap: 6,
                         padding: '0 10px',
-                        background: '#F8FAFC',
+                        background: '#F8F8F8',
                         border: '1px solid #CBD5E1',
                         borderRadius: 8,
                         cursor: 'pointer',
                         fontSize: '0.875rem',
                         fontWeight: 600,
-                        color: '#0F172A',
+                        color: '#15171A',
                         whiteSpace: 'nowrap',
                         boxSizing: 'border-box',
                         flexShrink: 0
@@ -735,7 +736,7 @@ export default function AdminCreateCreatorPage() {
                       <ChevronDown
                         size={14}
                         style={{
-                          color: '#64748B',
+                          color: '#6B6D73',
                           transition: 'transform 0.2s',
                           transform: isCountryDropdownOpen ? 'rotate(180deg)' : 'none'
                         }}
@@ -790,12 +791,12 @@ export default function AdminCreateCreatorPage() {
                               padding: '7px 12px',
                               fontSize: '0.8125rem',
                               cursor: 'pointer',
-                              background: c.dialCode === selectedCountry.dialCode ? '#EFF6FF' : 'transparent',
-                              color: c.dialCode === selectedCountry.dialCode ? '#1D4ED8' : '#1E293B',
+                              background: c.dialCode === selectedCountry.dialCode ? '#F4F4F5' : 'transparent',
+                              color: c.dialCode === selectedCountry.dialCode ? '#15171A' : '#2D2F33',
                               fontWeight: c.dialCode === selectedCountry.dialCode ? 600 : 400
                             }}
                             onMouseEnter={(e) => {
-                              if (c.dialCode !== selectedCountry.dialCode) e.currentTarget.style.background = '#F8FAFC'
+                              if (c.dialCode !== selectedCountry.dialCode) e.currentTarget.style.background = '#F8F8F8'
                             }}
                             onMouseLeave={(e) => {
                               if (c.dialCode !== selectedCountry.dialCode) e.currentTarget.style.background = 'transparent'
@@ -805,7 +806,7 @@ export default function AdminCreateCreatorPage() {
                               <span style={{ fontSize: '1rem', lineHeight: 1 }}>{c.flag}</span>
                               <span style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{c.name}</span>
                             </div>
-                            <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, marginLeft: 8 }}>
+                            <span style={{ fontSize: '0.75rem', color: '#6B6D73', fontWeight: 600, marginLeft: 8 }}>
                               {c.dialCode}
                             </span>
                           </div>
@@ -823,7 +824,7 @@ export default function AdminCreateCreatorPage() {
                         left: 12,
                         top: '50%',
                         transform: 'translateY(-50%)',
-                        color: touched.phone && errors.phone ? '#EF4444' : '#94A3B8',
+                        color: touched.phone && errors.phone ? '#2D2F33' : '#9B9DA3',
                         pointerEvents: 'none'
                       }}
                     />
@@ -838,7 +839,7 @@ export default function AdminCreateCreatorPage() {
                         width: '100%',
                         height: 44,
                         paddingLeft: 34,
-                        borderColor: touched.phone && errors.phone ? '#EF4444' : '#CBD5E1',
+                        borderColor: touched.phone && errors.phone ? '#2D2F33' : '#D5D5D8',
                         fontSize: '0.875rem'
                       }}
                     />
@@ -846,11 +847,11 @@ export default function AdminCreateCreatorPage() {
                 </div>
 
                 {touched.phone && errors.phone ? (
-                  <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <p style={{ color: '#2D2F33', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                     <AlertCircle size={12} /> {errors.phone}
                   </p>
                 ) : (
-                  <span style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: 4, display: 'block' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#9B9DA3', marginTop: 4, display: 'block' }}>
                     Select country code and enter a valid phone number.
                   </span>
                 )}
@@ -858,8 +859,8 @@ export default function AdminCreateCreatorPage() {
 
               {/* Professional Title / Specialization */}
               <div>
-                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#1E293B' }}>
-                  Professional Title / Specialization <span style={{ color: '#EF4444' }}>*</span>
+                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#2D2F33' }}>
+                  Professional Title / Specialization <span style={{ color: '#2D2F33' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -874,12 +875,12 @@ export default function AdminCreateCreatorPage() {
                   style={{
                     width: '100%',
                     height: 44,
-                    borderColor: touched.specialization && errors.specialization ? '#EF4444' : '#CBD5E1'
+                    borderColor: touched.specialization && errors.specialization ? '#2D2F33' : '#D5D5D8'
                   }}
                   required
                 />
                 {touched.specialization && errors.specialization && (
-                  <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <p style={{ color: '#2D2F33', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                     <AlertCircle size={12} /> {errors.specialization}
                   </p>
                 )}
@@ -887,7 +888,7 @@ export default function AdminCreateCreatorPage() {
 
               {/* Organization / Affiliation */}
               <div>
-                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#1E293B' }}>
+                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#2D2F33' }}>
                   Organization / Affiliation
                 </label>
                 <input
@@ -902,7 +903,7 @@ export default function AdminCreateCreatorPage() {
 
               {/* Profile Photo Upload & URL */}
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#1E293B' }}>
+                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#2D2F33' }}>
                   Profile Photo
                 </label>
                 <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 8 }}>
@@ -911,8 +912,8 @@ export default function AdminCreateCreatorPage() {
                       width: 52,
                       height: 52,
                       borderRadius: '50%',
-                      background: '#F1F5F9',
-                      color: '#1E293B',
+                      background: '#F2F2F2',
+                      color: '#2D2F33',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -933,7 +934,7 @@ export default function AdminCreateCreatorPage() {
                         }}
                       />
                     ) : (
-                      getCreatorInitials(name) || <User size={22} style={{ color: '#64748B' }} />
+                      getCreatorInitials(name) || <User size={22} style={{ color: '#6B6D73' }} />
                     )}
                   </div>
 
@@ -945,7 +946,7 @@ export default function AdminCreateCreatorPage() {
                           alignItems: 'center',
                           gap: 6,
                           background: '#FFFFFF',
-                          color: '#2563EB',
+                          color: '#15171A',
                           border: '1px solid #CBD5E1',
                           borderRadius: 8,
                           padding: '7px 14px',
@@ -956,12 +957,12 @@ export default function AdminCreateCreatorPage() {
                           transition: 'all 0.15s ease'
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#EFF6FF'
-                          e.currentTarget.style.borderColor = '#93C5FD'
+                          e.currentTarget.style.background = '#F4F4F5'
+                          e.currentTarget.style.borderColor = '#D5D5D8'
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.background = '#FFFFFF'
-                          e.currentTarget.style.borderColor = '#CBD5E1'
+                          e.currentTarget.style.borderColor = '#D5D5D8'
                         }}
                       >
                         <Camera size={14} />
@@ -1000,8 +1001,8 @@ export default function AdminCreateCreatorPage() {
                             alignItems: 'center',
                             gap: 5,
                             background: '#FFFFFF',
-                            color: '#DC2626',
-                            border: '1px solid #FECACA',
+                            color: '#15171A',
+                            border: '1px solid #E4E4E7',
                             borderRadius: 8,
                             padding: '7px 12px',
                             fontSize: '0.8125rem',
@@ -1009,12 +1010,12 @@ export default function AdminCreateCreatorPage() {
                             cursor: 'pointer'
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#FEF2F2'
-                            e.currentTarget.style.borderColor = '#FCA5A5'
+                            e.currentTarget.style.background = '#EFEFEF'
+                            e.currentTarget.style.borderColor = '#D5D5D8'
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.background = '#FFFFFF'
-                            e.currentTarget.style.borderColor = '#FECACA'
+                            e.currentTarget.style.borderColor = '#E4E4E7'
                           }}
                         >
                           <Trash2 size={13} />
@@ -1022,7 +1023,7 @@ export default function AdminCreateCreatorPage() {
                         </button>
                       )}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748B', lineHeight: 1.4 }}>
+                    <div style={{ fontSize: '0.75rem', color: '#6B6D73', lineHeight: 1.4 }}>
                       Supported formats: JPG, PNG, WebP. Maximum size: 2MB. If no photo is selected, initials avatar will be displayed.
                     </div>
                   </div>
@@ -1031,7 +1032,7 @@ export default function AdminCreateCreatorPage() {
 
               {/* Bio */}
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#1E293B' }}>
+                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.875rem', marginBottom: 6, color: '#2D2F33' }}>
                   Biography & Background
                 </label>
                 <textarea
@@ -1071,8 +1072,8 @@ export default function AdminCreateCreatorPage() {
                   width: 38,
                   height: 38,
                   borderRadius: 10,
-                  background: '#F0FDF4',
-                  color: '#16A34A',
+                  background: '#F4F4F5',
+                  color: '#2D2F33',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -1081,10 +1082,10 @@ export default function AdminCreateCreatorPage() {
                 <Lock size={20} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#15171A', margin: 0 }}>
                   Section 2 — Account Credentials
                 </h2>
-                <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: '2px 0 0 0' }}>
+                <p style={{ fontSize: '0.8125rem', color: '#6B6D73', margin: '2px 0 0 0' }}>
                   Assign or generate Creator User ID and Password.
                 </p>
               </div>
@@ -1094,7 +1095,7 @@ export default function AdminCreateCreatorPage() {
               {/* Creator User ID */}
               <div style={{ gridColumn: '1 / -1' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <label style={{ fontWeight: 700, fontSize: '0.875rem', color: '#1E293B', margin: 0 }}>
+                  <label style={{ fontWeight: 700, fontSize: '0.875rem', color: '#2D2F33', margin: 0 }}>
                     Creator User ID
                   </label>
                   <button
@@ -1104,7 +1105,7 @@ export default function AdminCreateCreatorPage() {
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: isGeneratingUserId ? '#94A3B8' : '#2563EB',
+                      color: isGeneratingUserId ? '#9B9DA3' : '#15171A',
                       fontSize: '0.75rem',
                       fontWeight: 700,
                       cursor: isGeneratingUserId ? 'not-allowed' : 'pointer',
@@ -1128,11 +1129,11 @@ export default function AdminCreateCreatorPage() {
                   }}
                   style={{ width: '100%', height: 44, fontFamily: 'monospace' }}
                 />
-                <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 4, marginBottom: 0 }}>
+                <p style={{ fontSize: '0.75rem', color: '#6B6D73', marginTop: 4, marginBottom: 0 }}>
                   Leave blank to auto-generate sequentially (e.g. CR-BAN-001), or specify a custom identifier.
                 </p>
                 {errors.userId && (
-                  <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4 }}>
+                  <p style={{ color: '#2D2F33', fontSize: '0.75rem', marginTop: 4 }}>
                     {errors.userId}
                   </p>
                 )}
@@ -1141,8 +1142,8 @@ export default function AdminCreateCreatorPage() {
               {/* Password * */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <label style={{ fontWeight: 700, fontSize: '0.875rem', color: '#1E293B', margin: 0 }}>
-                    Password <span style={{ color: '#EF4444' }}>*</span>
+                  <label style={{ fontWeight: 700, fontSize: '0.875rem', color: '#2D2F33', margin: 0 }}>
+                    Password <span style={{ color: '#2D2F33' }}>*</span>
                   </label>
                   <button
                     type="button"
@@ -1150,7 +1151,7 @@ export default function AdminCreateCreatorPage() {
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#2563EB',
+                      color: '#15171A',
                       fontSize: '0.75rem',
                       fontWeight: 700,
                       cursor: 'pointer',
@@ -1169,6 +1170,7 @@ export default function AdminCreateCreatorPage() {
                     placeholder="Enter or generate initial password"
                     className="form-input"
                     value={password}
+                    autoComplete="new-password"
                     onChange={(e) => {
                       const val = e.target.value
                       setPassword(val)
@@ -1184,7 +1186,7 @@ export default function AdminCreateCreatorPage() {
                       width: '100%',
                       height: 44,
                       paddingRight: 40,
-                      borderColor: touched.password && errors.password ? '#EF4444' : '#CBD5E1',
+                      borderColor: touched.password && errors.password ? '#2D2F33' : '#D5D5D8',
                       fontFamily: showPassword ? 'monospace' : 'inherit'
                     }}
                     required
@@ -1199,7 +1201,7 @@ export default function AdminCreateCreatorPage() {
                       transform: 'translateY(-50%)',
                       background: 'none',
                       border: 'none',
-                      color: '#64748B',
+                      color: '#6B6D73',
                       cursor: 'pointer',
                       padding: 4
                     }}
@@ -1213,10 +1215,10 @@ export default function AdminCreateCreatorPage() {
                 {password && (
                   <div style={{ marginTop: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginBottom: 3, fontWeight: 600 }}>
-                      <span style={{ color: '#64748B' }}>Password Strength:</span>
+                      <span style={{ color: '#6B6D73' }}>Password Strength:</span>
                       <span style={{ color: passwordStrength.color }}>{passwordStrength.label}</span>
                     </div>
-                    <div style={{ height: 4, width: '100%', background: '#E2E8F0', borderRadius: 2, overflow: 'hidden' }}>
+                    <div style={{ height: 4, width: '100%', background: '#E4E4E7', borderRadius: 2, overflow: 'hidden' }}>
                       <div
                         style={{
                           height: '100%',
@@ -1229,11 +1231,11 @@ export default function AdminCreateCreatorPage() {
                   </div>
                 )}
 
-                <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 6, marginBottom: 0 }}>
+                <p style={{ fontSize: '0.75rem', color: '#6B6D73', marginTop: 6, marginBottom: 0 }}>
                   Minimum 8 characters. Treated as the creator's initial account password.
                 </p>
                 {touched.password && errors.password && (
-                  <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <p style={{ color: '#2D2F33', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                     <AlertCircle size={12} /> {errors.password}
                   </p>
                 )}
@@ -1242,11 +1244,11 @@ export default function AdminCreateCreatorPage() {
               {/* Confirm Password * */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <label style={{ fontWeight: 700, fontSize: '0.875rem', color: '#1E293B', margin: 0 }}>
-                    Confirm Password <span style={{ color: '#EF4444' }}>*</span>
+                  <label style={{ fontWeight: 700, fontSize: '0.875rem', color: '#2D2F33', margin: 0 }}>
+                    Confirm Password <span style={{ color: '#2D2F33' }}>*</span>
                   </label>
                   {password && confirmPassword && password === confirmPassword && (
-                    <span style={{ color: '#16A34A', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ color: '#2D2F33', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <Check size={13} /> Passwords match
                     </span>
                   )}
@@ -1257,6 +1259,7 @@ export default function AdminCreateCreatorPage() {
                     placeholder="Re-enter initial password"
                     className="form-input"
                     value={confirmPassword}
+                    autoComplete="new-password"
                     onChange={(e) => {
                       const val = e.target.value
                       setConfirmPassword(val)
@@ -1272,7 +1275,7 @@ export default function AdminCreateCreatorPage() {
                       width: '100%',
                       height: 44,
                       paddingRight: 40,
-                      borderColor: touched.confirmPassword && errors.confirmPassword ? '#EF4444' : '#CBD5E1',
+                      borderColor: touched.confirmPassword && errors.confirmPassword ? '#2D2F33' : '#D5D5D8',
                       fontFamily: showConfirmPassword ? 'monospace' : 'inherit'
                     }}
                     required
@@ -1287,7 +1290,7 @@ export default function AdminCreateCreatorPage() {
                       transform: 'translateY(-50%)',
                       background: 'none',
                       border: 'none',
-                      color: '#64748B',
+                      color: '#6B6D73',
                       cursor: 'pointer',
                       padding: 4
                     }}
@@ -1297,11 +1300,11 @@ export default function AdminCreateCreatorPage() {
                   </button>
                 </div>
 
-                <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 6, marginBottom: 0 }}>
+                <p style={{ fontSize: '0.75rem', color: '#6B6D73', marginTop: 6, marginBottom: 0 }}>
                   Re-enter initial password to verify match.
                 </p>
                 {touched.confirmPassword && errors.confirmPassword && (
-                  <p style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <p style={{ color: '#2D2F33', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                     <AlertCircle size={12} /> {errors.confirmPassword}
                   </p>
                 )}
@@ -1334,8 +1337,8 @@ export default function AdminCreateCreatorPage() {
                   width: 38,
                   height: 38,
                   borderRadius: 10,
-                  background: '#F3E8FF',
-                  color: '#9333EA',
+                  background: '#EFEFEF',
+                  color: '#2D2F33',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -1344,10 +1347,10 @@ export default function AdminCreateCreatorPage() {
                 <Mail size={20} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#15171A', margin: 0 }}>
                   Section 3 — Credential Delivery / Email
                 </h2>
-                <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: '2px 0 0 0' }}>
+                <p style={{ fontSize: '0.8125rem', color: '#6B6D73', margin: '2px 0 0 0' }}>
                   Send the creator's login details to their registered email after the account is successfully created.
                 </p>
               </div>
@@ -1355,7 +1358,7 @@ export default function AdminCreateCreatorPage() {
 
             <div
               style={{
-                background: '#F8FAFC',
+                background: '#F8F8F8',
                 border: '1px solid #E2E8F0',
                 borderRadius: 12,
                 padding: 18
@@ -1369,7 +1372,7 @@ export default function AdminCreateCreatorPage() {
                   gap: 12,
                   cursor: 'pointer',
                   fontWeight: 600,
-                  color: '#1E293B',
+                  color: '#2D2F33',
                   fontSize: '0.9rem'
                 }}
               >
@@ -1382,18 +1385,18 @@ export default function AdminCreateCreatorPage() {
                     width: 18,
                     height: 18,
                     marginTop: 2,
-                    accentColor: '#2563EB',
+                    accentColor: '#15171A',
                     cursor: 'pointer'
                   }}
                 />
                 <div>
-                  <span style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.925rem' }}>
+                  <span style={{ fontWeight: 700, color: '#15171A', fontSize: '0.925rem' }}>
                     Send login credentials to creator's registered email
                   </span>
-                  <p style={{ fontSize: '0.8125rem', color: '#64748B', margin: '4px 0 0 0', fontWeight: 400 }}>
+                  <p style={{ fontSize: '0.8125rem', color: '#6B6D73', margin: '4px 0 0 0', fontWeight: 400 }}>
                     Recipient: <strong>{email.trim() || 'Creator’s registered email address'}</strong>
                   </p>
-                  <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: '4px 0 0 0', fontWeight: 400 }}>
+                  <p style={{ fontSize: '0.75rem', color: '#9B9DA3', margin: '4px 0 0 0', fontWeight: 400 }}>
                     Sends the creator's login details (User ID and password) to their registered email once the account is created.
                   </p>
                 </div>
@@ -1416,7 +1419,7 @@ export default function AdminCreateCreatorPage() {
               boxShadow: 'var(--shadow-sm)'
             }}
           >
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 16px 0' }}>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#6B6D73', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 16px 0' }}>
               Profile Card Preview
             </h3>
 
@@ -1426,15 +1429,15 @@ export default function AdminCreateCreatorPage() {
                   width: 72,
                   height: 72,
                   borderRadius: '50%',
-                  background: '#F1F5F9',
-                  color: '#1E293B',
+                  background: '#F2F2F2',
+                  color: '#2D2F33',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: '1.4rem',
                   fontWeight: 800,
                   margin: '0 auto 12px auto',
-                  border: '3px solid #EFF6FF',
+                  border: '3px solid #E4E4E7',
                   boxShadow: '0 2px 8px rgba(37, 99, 235, 0.15)',
                   overflow: 'hidden'
                 }}
@@ -1449,21 +1452,21 @@ export default function AdminCreateCreatorPage() {
                     }}
                   />
                 ) : (
-                  getCreatorInitials(name) || <User size={28} style={{ color: '#64748B' }} />
+                  getCreatorInitials(name) || <User size={28} style={{ color: '#6B6D73' }} />
                 )}
               </div>
-              <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0F172A', margin: '0 0 4px 0' }}>
+              <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#15171A', margin: '0 0 4px 0' }}>
                 {name.trim() || 'Dr. Instructor Name'}
               </h4>
-              <p style={{ fontSize: '0.8125rem', color: '#2563EB', fontWeight: 600, margin: '0 0 10px 0' }}>
+              <p style={{ fontSize: '0.8125rem', color: '#15171A', fontWeight: 600, margin: '0 0 10px 0' }}>
                 {specialization.trim() || 'Specialization / Faculty Role'}
               </p>
 
               <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <span
                   style={{
-                    background: '#F1F5F9',
-                    color: '#475569',
+                    background: '#F2F2F2',
+                    color: '#5A5C62',
                     padding: '3px 8px',
                     borderRadius: 6,
                     fontSize: '0.75rem',
@@ -1476,21 +1479,21 @@ export default function AdminCreateCreatorPage() {
               </div>
             </div>
 
-            <div style={{ paddingTop: 16, fontSize: '0.8125rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ paddingTop: 16, fontSize: '0.8125rem', color: '#5A5C62', display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div>
-                <span style={{ color: '#94A3B8', fontSize: '0.75rem', display: 'block' }}>Email:</span>
-                <span style={{ fontWeight: 600, color: '#0F172A' }}>{email.trim() || 'instructor@apexlearn.edu'}</span>
+                <span style={{ color: '#9B9DA3', fontSize: '0.75rem', display: 'block' }}>Email:</span>
+                <span style={{ fontWeight: 600, color: '#15171A' }}>{email.trim() || 'instructor@apexlearn.edu'}</span>
               </div>
               {organization && (
                 <div>
-                  <span style={{ color: '#94A3B8', fontSize: '0.75rem', display: 'block' }}>Affiliation:</span>
-                  <span style={{ fontWeight: 600, color: '#0F172A' }}>{organization.trim()}</span>
+                  <span style={{ color: '#9B9DA3', fontSize: '0.75rem', display: 'block' }}>Affiliation:</span>
+                  <span style={{ fontWeight: 600, color: '#15171A' }}>{organization.trim()}</span>
                 </div>
               )}
               {bio && (
                 <div>
-                  <span style={{ color: '#94A3B8', fontSize: '0.75rem', display: 'block' }}>Bio:</span>
-                  <p style={{ margin: '2px 0 0 0', lineHeight: 1.4, color: '#64748B' }}>{bio.trim()}</p>
+                  <span style={{ color: '#9B9DA3', fontSize: '0.75rem', display: 'block' }}>Bio:</span>
+                  <p style={{ margin: '2px 0 0 0', lineHeight: 1.4, color: '#6B6D73' }}>{bio.trim()}</p>
                 </div>
               )}
             </div>
@@ -1506,46 +1509,46 @@ export default function AdminCreateCreatorPage() {
               boxShadow: 'var(--shadow-sm)'
             }}
           >
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0F172A', margin: '0 0 14px 0' }}>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#15171A', margin: '0 0 14px 0' }}>
               Provisioning Checklist
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.8125rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {name.trim() ? <CheckCircle2 size={16} style={{ color: '#16A34A' }} /> : <AlertCircle size={16} style={{ color: '#CBD5E1' }} />}
-                <span style={{ color: name.trim() ? '#0F172A' : '#64748B', fontWeight: name.trim() ? 600 : 400 }}>
+                {name.trim() ? <CheckCircle2 size={16} style={{ color: '#2D2F33' }} /> : <AlertCircle size={16} style={{ color: '#D5D5D8' }} />}
+                <span style={{ color: name.trim() ? '#15171A' : '#6B6D73', fontWeight: name.trim() ? 600 : 400 }}>
                   Instructor name provided
                 </span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {email.trim() && !errors.email ? <CheckCircle2 size={16} style={{ color: '#16A34A' }} /> : <AlertCircle size={16} style={{ color: '#CBD5E1' }} />}
-                <span style={{ color: email.trim() ? '#0F172A' : '#64748B', fontWeight: email.trim() ? 600 : 400 }}>
+                {email.trim() && !errors.email ? <CheckCircle2 size={16} style={{ color: '#2D2F33' }} /> : <AlertCircle size={16} style={{ color: '#D5D5D8' }} />}
+                <span style={{ color: email.trim() ? '#15171A' : '#6B6D73', fontWeight: email.trim() ? 600 : 400 }}>
                   Valid institutional email
                 </span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {specialization.trim() ? <CheckCircle2 size={16} style={{ color: '#16A34A' }} /> : <AlertCircle size={16} style={{ color: '#CBD5E1' }} />}
-                <span style={{ color: specialization.trim() ? '#0F172A' : '#64748B', fontWeight: specialization.trim() ? 600 : 400 }}>
+                {specialization.trim() ? <CheckCircle2 size={16} style={{ color: '#2D2F33' }} /> : <AlertCircle size={16} style={{ color: '#D5D5D8' }} />}
+                <span style={{ color: specialization.trim() ? '#15171A' : '#6B6D73', fontWeight: specialization.trim() ? 600 : 400 }}>
                   Specialization & faculty title
                 </span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {userId.trim() ? <CheckCircle2 size={16} style={{ color: '#16A34A' }} /> : <CheckCircle2 size={16} style={{ color: '#94A3B8' }} />}
-                <span style={{ color: '#0F172A', fontWeight: 600 }}>
+                {userId.trim() ? <CheckCircle2 size={16} style={{ color: '#2D2F33' }} /> : <CheckCircle2 size={16} style={{ color: '#9B9DA3' }} />}
+                <span style={{ color: '#15171A', fontWeight: 600 }}>
                   {userId.trim() ? `User ID: ${userId.trim()}` : 'User ID: Auto Sequential'}
                 </span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {password.trim() && confirmPassword.trim() && password === confirmPassword ? (
-                  <CheckCircle2 size={16} style={{ color: '#16A34A' }} />
+                  <CheckCircle2 size={16} style={{ color: '#2D2F33' }} />
                 ) : (
-                  <AlertCircle size={16} style={{ color: '#CBD5E1' }} />
+                  <AlertCircle size={16} style={{ color: '#D5D5D8' }} />
                 )}
-                <span style={{ color: password.trim() ? '#0F172A' : '#64748B', fontWeight: password.trim() ? 600 : 400 }}>
+                <span style={{ color: password.trim() ? '#15171A' : '#6B6D73', fontWeight: password.trim() ? 600 : 400 }}>
                   {password.trim() && confirmPassword.trim() && password === confirmPassword
                     ? 'Initial password configured & confirmed'
                     : (password.trim() ? 'Password confirmation required' : 'Initial password required')}
@@ -1554,8 +1557,8 @@ export default function AdminCreateCreatorPage() {
 
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CheckCircle2 size={16} style={{ color: sendEmail ? '#2563EB' : '#94A3B8' }} />
-                <span style={{ color: '#0F172A', fontWeight: 600 }}>
+                <CheckCircle2 size={16} style={{ color: sendEmail ? '#15171A' : '#9B9DA3' }} />
+                <span style={{ color: '#15171A', fontWeight: 600 }}>
                   {sendEmail ? 'Email credentials dispatch enabled' : 'Manual credential handover'}
                 </span>
               </div>
@@ -1569,7 +1572,7 @@ export default function AdminCreateCreatorPage() {
       {/* ========================================================================= */}
       <div className="admin-sticky-action-bar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>
+          <span style={{ fontSize: '0.8125rem', color: '#6B6D73' }}>
             Complete the profile and credentials to create the creator account.
           </span>
         </div>

@@ -528,28 +528,28 @@ export default function AdminCreateCoursePage() {
             alignItems: 'center',
             gap: 8,
             fontSize: '0.8125rem',
-            color: '#64748B',
+            color: '#6B6D73',
             marginBottom: 12
           }}
         >
           <Link
             to="/admin/courses"
             style={{
-              color: '#64748B',
+              color: '#6B6D73',
               textDecoration: 'none',
               fontWeight: 600,
               display: 'inline-flex',
               alignItems: 'center',
               gap: 4
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#2563EB')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#64748B')}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#15171A')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#6B6D73')}
           >
             <ArrowLeft size={14} />
             <span>Course Management</span>
           </Link>
-          <ChevronRight size={14} style={{ color: '#CBD5E1' }} />
-          <span style={{ color: '#0F172A', fontWeight: 700 }}>
+          <ChevronRight size={14} style={{ color: '#D5D5D8' }} />
+          <span style={{ color: '#15171A', fontWeight: 700 }}>
             {isEditMode ? 'Edit Course' : 'Create Course'}
           </span>
         </nav>
@@ -565,14 +565,14 @@ export default function AdminCreateCoursePage() {
             style={{
               fontSize: '1.75rem',
               fontWeight: 800,
-              color: '#0F172A',
+              color: '#15171A',
               letterSpacing: '-0.02em',
               margin: '0 0 6px 0'
             }}
           >
             {isEditMode ? 'Edit Academic Course' : 'Create New Course'}
           </h1>
-          <p style={{ color: '#64748B', fontSize: '0.9375rem', margin: 0 }}>
+          <p style={{ color: '#6B6D73', fontSize: '0.9375rem', margin: 0 }}>
             {isEditMode
               ? 'Update curriculum parameters, instruction language, pricing tiers, and assigned faculty instructors.'
               : 'Create and configure a new academic course for the platform curriculum.'}
@@ -620,8 +620,8 @@ export default function AdminCreateCoursePage() {
                   width: 38,
                   height: 38,
                   borderRadius: 10,
-                  background: '#EFF6FF',
-                  color: '#2563EB',
+                  background: '#F4F4F5',
+                  color: '#15171A',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -630,10 +630,10 @@ export default function AdminCreateCoursePage() {
                 <BookOpen size={20} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#15171A', margin: 0 }}>
                   Section 1 — Basic Information
                 </h2>
-                <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>
+                <span style={{ fontSize: '0.8125rem', color: '#6B6D73' }}>
                   Core academic naming, categorization, and preview taxonomy.
                 </span>
               </div>
@@ -648,9 +648,9 @@ export default function AdminCreateCoursePage() {
                   style={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}
                 >
                   <span>
-                    Course Title <span style={{ color: '#EF4444' }}>*</span>
+                    Course Title <span style={{ color: '#2D2F33' }}>*</span>
                   </span>
-                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 500 }}>
+                  <span style={{ fontSize: '0.75rem', color: '#6B6D73', fontWeight: 500 }}>
                     {title.length}/100 characters
                   </span>
                 </label>
@@ -663,7 +663,7 @@ export default function AdminCreateCoursePage() {
                   onChange={handleTitleChange}
                   onBlur={() => setTouched((p) => ({ ...p, title: true }))}
                   maxLength={100}
-                  style={errors.title ? { borderColor: '#EF4444', background: '#FEF2F2' } : {}}
+                  style={errors.title ? { borderColor: '#2D2F33', background: '#EFEFEF' } : {}}
                   required
                 />
                 {errors.title && (
@@ -672,7 +672,7 @@ export default function AdminCreateCoursePage() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 4,
-                      color: '#EF4444',
+                      color: '#2D2F33',
                       fontSize: '0.75rem',
                       marginTop: 4,
                       fontWeight: 600
@@ -701,7 +701,7 @@ export default function AdminCreateCoursePage() {
                       setTouched((p) => ({ ...p, slug: true }))
                     }}
                   />
-                  <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: 4, display: 'block' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#9B9DA3', marginTop: 4, display: 'block' }}>
                     Path identifier for public course URL. Auto-generated from title.
                   </span>
                 </div>
@@ -725,7 +725,7 @@ export default function AdminCreateCoursePage() {
                     <option value="Cloud & DevOps">Cloud & DevOps</option>
                     <option value="Cybersecurity">Cybersecurity</option>
                   </select>
-                  <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: 4, display: 'block' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#9B9DA3', marginTop: 4, display: 'block' }}>
                     Assigns academic classification in platform catalog.
                   </span>
                 </div>
@@ -762,7 +762,7 @@ export default function AdminCreateCoursePage() {
                     buttonStyle={{
                       height: 42,
                       borderRadius: 8,
-                      borderColor: '#CBD5E1',
+                      borderColor: '#D5D5D8',
                       fontSize: '0.875rem'
                     }}
                     menuStyle={{
@@ -776,7 +776,7 @@ export default function AdminCreateCoursePage() {
                       style={{
                         display: 'block',
                         fontSize: '0.75rem',
-                        color: '#64748B',
+                        color: '#6B6D73',
                         marginTop: 5,
                         lineHeight: 1.35
                       }}
@@ -809,9 +809,9 @@ export default function AdminCreateCoursePage() {
                   style={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}
                 >
                   <span>
-                    Short Description <span style={{ color: '#EF4444' }}>*</span>
+                    Short Description <span style={{ color: '#2D2F33' }}>*</span>
                   </span>
-                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 500 }}>
+                  <span style={{ fontSize: '0.75rem', color: '#6B6D73', fontWeight: 500 }}>
                     {shortDescription.length}/300 characters
                   </span>
                 </label>
@@ -822,7 +822,7 @@ export default function AdminCreateCoursePage() {
                     minHeight: 80,
                     lineHeight: 1.5,
                     resize: 'vertical',
-                    ...(errors.shortDescription ? { borderColor: '#EF4444', background: '#FEF2F2' } : {})
+                    ...(errors.shortDescription ? { borderColor: '#2D2F33', background: '#EFEFEF' } : {})
                   }}
                   placeholder="Summary for catalog card (1-2 clear sentences summarizing student takeaways)..."
                   value={shortDescription}
@@ -841,7 +841,7 @@ export default function AdminCreateCoursePage() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 4,
-                      color: '#EF4444',
+                      color: '#2D2F33',
                       fontSize: '0.75rem',
                       marginTop: 4,
                       fontWeight: 600
@@ -880,8 +880,8 @@ export default function AdminCreateCoursePage() {
                   width: 38,
                   height: 38,
                   borderRadius: 10,
-                  background: '#ECFDF5',
-                  color: '#059669',
+                  background: '#F4F4F5',
+                  color: '#2D2F33',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -890,10 +890,10 @@ export default function AdminCreateCoursePage() {
                 <IndianRupee size={20} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#15171A', margin: 0 }}>
                   Section 2 — Course Pricing & Access
                 </h2>
-                <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>
+                <span style={{ fontSize: '0.8125rem', color: '#6B6D73' }}>
                   Configure tuition fees, scholarship waivers, and enrollment duration.
                 </span>
               </div>
@@ -902,9 +902,9 @@ export default function AdminCreateCoursePage() {
             {/* Free Course Toggle Banner */}
             <div
               style={{
-                background: isFree ? '#F0FDF4' : '#F8FAFC',
+                background: isFree ? '#F4F4F5' : '#F8F8F8',
                 border: '1px solid',
-                borderColor: isFree ? '#BBF7D0' : '#E2E8F0',
+                borderColor: isFree ? '#E4E4E7' : '#E4E4E7',
                 borderRadius: 12,
                 padding: '16px 20px',
                 marginBottom: 20,
@@ -917,12 +917,12 @@ export default function AdminCreateCoursePage() {
               }}
             >
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontWeight: 700, fontSize: '0.9375rem', color: '#15171A', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span>Free Course (100% Scholarship)</span>
                   {isFree && (
                     <span
                       style={{
-                        background: '#10B981',
+                        background: '#2D2F33',
                         color: '#FFFFFF',
                         fontSize: '0.6875rem',
                         fontWeight: 800,
@@ -934,7 +934,7 @@ export default function AdminCreateCoursePage() {
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: '0.8125rem', color: '#64748B', marginTop: 2 }}>
+                <div style={{ fontSize: '0.8125rem', color: '#6B6D73', marginTop: 2 }}>
                   When enabled, all students can enroll instantly without payment gateway verification.
                 </div>
               </div>
@@ -947,7 +947,7 @@ export default function AdminCreateCoursePage() {
                   cursor: 'pointer',
                   fontSize: '0.875rem',
                   fontWeight: 700,
-                  color: isFree ? '#059669' : '#475569'
+                  color: isFree ? '#2D2F33' : '#5A5C62'
                 }}
               >
                 <input
@@ -971,7 +971,7 @@ export default function AdminCreateCoursePage() {
               {/* Offer Price */}
               <div className="form-field-group">
                 <label htmlFor="input-offer-price" className="form-label" style={{ fontWeight: 700 }}>
-                  Offer Price (₹) {!isFree && <span style={{ color: '#EF4444' }}>*</span>}
+                  Offer Price (₹) {!isFree && <span style={{ color: '#2D2F33' }}>*</span>}
                 </label>
                 <div style={{ position: 'relative' }}>
                   <span
@@ -980,7 +980,7 @@ export default function AdminCreateCoursePage() {
                       left: 12,
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      color: '#64748B',
+                      color: '#6B6D73',
                       fontWeight: 700
                     }}
                   >
@@ -994,8 +994,8 @@ export default function AdminCreateCoursePage() {
                     className="form-input"
                     style={{
                       paddingLeft: 30,
-                      ...(isFree ? { background: '#F1F5F9', cursor: 'not-allowed', color: '#94A3B8' } : {}),
-                      ...(errors.price ? { borderColor: '#EF4444', background: '#FEF2F2' } : {})
+                      ...(isFree ? { background: '#F2F2F2', cursor: 'not-allowed', color: '#9B9DA3' } : {}),
+                      ...(errors.price ? { borderColor: '#2D2F33', background: '#EFEFEF' } : {})
                     }}
                     value={isFree ? 0 : price}
                     onChange={(e) => {
@@ -1007,7 +1007,7 @@ export default function AdminCreateCoursePage() {
                   />
                 </div>
                 {errors.price && (
-                  <span style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4, display: 'block', fontWeight: 600 }}>
+                  <span style={{ color: '#2D2F33', fontSize: '0.75rem', marginTop: 4, display: 'block', fontWeight: 600 }}>
                     {errors.price}
                   </span>
                 )}
@@ -1025,7 +1025,7 @@ export default function AdminCreateCoursePage() {
                       left: 12,
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      color: '#64748B',
+                      color: '#6B6D73',
                       fontWeight: 700
                     }}
                   >
@@ -1039,8 +1039,8 @@ export default function AdminCreateCoursePage() {
                     className="form-input"
                     style={{
                       paddingLeft: 30,
-                      ...(isFree ? { background: '#F1F5F9', cursor: 'not-allowed', color: '#94A3B8' } : {}),
-                      ...(errors.originalPrice ? { borderColor: '#EF4444', background: '#FEF2F2' } : {})
+                      ...(isFree ? { background: '#F2F2F2', cursor: 'not-allowed', color: '#9B9DA3' } : {}),
+                      ...(errors.originalPrice ? { borderColor: '#2D2F33', background: '#EFEFEF' } : {})
                     }}
                     value={isFree ? 0 : originalPrice}
                     onChange={(e) => {
@@ -1052,7 +1052,7 @@ export default function AdminCreateCoursePage() {
                   />
                 </div>
                 {errors.originalPrice && (
-                  <span style={{ color: '#EF4444', fontSize: '0.75rem', marginTop: 4, display: 'block', fontWeight: 600 }}>
+                  <span style={{ color: '#2D2F33', fontSize: '0.75rem', marginTop: 4, display: 'block', fontWeight: 600 }}>
                     {errors.originalPrice}
                   </span>
                 )}
@@ -1072,7 +1072,7 @@ export default function AdminCreateCoursePage() {
                   value={accessDurationDays}
                   onChange={(e) => setAccessDurationDays(e.target.value)}
                 />
-                <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: 4, display: 'block' }}>
+                <span style={{ fontSize: '0.75rem', color: '#9B9DA3', marginTop: 4, display: 'block' }}>
                   Default: 365 days. Set 0 for perpetual access.
                 </span>
               </div>
@@ -1087,20 +1087,20 @@ export default function AdminCreateCoursePage() {
                 flexWrap: 'wrap',
                 gap: 16,
                 padding: '14px 16px',
-                background: '#F8FAFC',
+                background: '#F8F8F8',
                 borderRadius: 10,
                 border: '1px solid #E2E8F0'
               }}
             >
               {/* Discount Indicator */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '0.8125rem', color: '#64748B', fontWeight: 600 }}>Calculated Discount:</span>
+                <span style={{ fontSize: '0.8125rem', color: '#6B6D73', fontWeight: 600 }}>Calculated Discount:</span>
                 <span
                   style={{
-                    background: discountPercent > 0 ? '#ECFDF5' : '#F1F5F9',
-                    color: discountPercent > 0 ? '#059669' : '#64748B',
+                    background: discountPercent > 0 ? '#F4F4F5' : '#F2F2F2',
+                    color: discountPercent > 0 ? '#2D2F33' : '#6B6D73',
                     border: '1px solid',
-                    borderColor: discountPercent > 0 ? '#A7F3D0' : '#E2E8F0',
+                    borderColor: discountPercent > 0 ? '#E4E4E7' : '#E4E4E7',
                     padding: '2px 10px',
                     borderRadius: 9999,
                     fontSize: '0.75rem',
@@ -1110,7 +1110,7 @@ export default function AdminCreateCoursePage() {
                   {isFree ? '100% OFF (Free)' : discountPercent > 0 ? `${discountPercent}% OFF` : 'No Discount'}
                 </span>
                 {!isFree && originalPrice > price && (
-                  <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>
+                  <span style={{ fontSize: '0.75rem', color: '#2D2F33', fontWeight: 600 }}>
                     Students save ₹{(Number(originalPrice) - Number(price)).toLocaleString('en-IN')}
                   </span>
                 )}
@@ -1124,7 +1124,7 @@ export default function AdminCreateCoursePage() {
                   gap: 8,
                   fontSize: '0.8125rem',
                   fontWeight: 700,
-                  color: '#334155',
+                  color: '#4B4D52',
                   cursor: 'pointer'
                 }}
               >
@@ -1134,7 +1134,7 @@ export default function AdminCreateCoursePage() {
                   onChange={(e) => setCertificateEnabled(e.target.checked)}
                   style={{ width: 17, height: 17, cursor: 'pointer' }}
                 />
-                <Award size={16} style={{ color: '#2563EB' }} />
+                <Award size={16} style={{ color: '#15171A' }} />
                 <span>Issue Certificate upon Completion</span>
               </label>
             </div>
@@ -1165,8 +1165,8 @@ export default function AdminCreateCoursePage() {
                   width: 38,
                   height: 38,
                   borderRadius: 10,
-                  background: '#F5F3FF',
-                  color: '#7C3AED',
+                  background: '#F4F4F5',
+                  color: '#2D2F33',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -1175,10 +1175,10 @@ export default function AdminCreateCoursePage() {
                 <Users size={20} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#15171A', margin: 0 }}>
                   Section 3 — Assign Faculty Instructor
                 </h2>
-                <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>
+                <span style={{ fontSize: '0.8125rem', color: '#6B6D73' }}>
                   Designate an accredited professor or researcher leading this program.
                 </span>
               </div>
@@ -1202,7 +1202,7 @@ export default function AdminCreateCoursePage() {
                   </option>
                 ))}
               </select>
-              <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: 4, display: 'block' }}>
+              <span style={{ fontSize: '0.75rem', color: '#9B9DA3', marginTop: 4, display: 'block' }}>
                 {loadingCreators
                   ? 'Loading registered faculty members...'
                   : `${creators.length} verified instructor(s) currently registered in database.`}
@@ -1215,7 +1215,7 @@ export default function AdminCreateCoursePage() {
                 style={{
                   marginTop: 16,
                   padding: '16px',
-                  background: '#F8FAFC',
+                  background: '#F8F8F8',
                   borderRadius: 12,
                   border: '1px solid #E2E8F0',
                   display: 'flex',
@@ -1242,24 +1242,24 @@ export default function AdminCreateCoursePage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <strong style={{ fontSize: '0.9375rem', color: '#0F172A' }}>{selectedCreator.name}</strong>
+                    <strong style={{ fontSize: '0.9375rem', color: '#15171A' }}>{selectedCreator.name}</strong>
                     <span
                       style={{
-                        background: '#ECFDF5',
-                        color: '#059669',
+                        background: '#F4F4F5',
+                        color: '#2D2F33',
                         fontSize: '0.6875rem',
                         fontWeight: 700,
                         padding: '1px 8px',
                         borderRadius: 6,
-                        border: '1px solid #A7F3D0'
+                        border: '1px solid #E4E4E7'
                       }}
                     >
                       Verified Faculty
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.8125rem', color: '#64748B', marginTop: 2 }}>{selectedCreator.email}</div>
+                  <div style={{ fontSize: '0.8125rem', color: '#6B6D73', marginTop: 2 }}>{selectedCreator.email}</div>
                   {selectedCreator.headline && (
-                    <div style={{ fontSize: '0.75rem', color: '#2563EB', fontWeight: 600, marginTop: 2 }}>
+                    <div style={{ fontSize: '0.75rem', color: '#15171A', fontWeight: 600, marginTop: 2 }}>
                       {selectedCreator.headline}
                     </div>
                   )}
@@ -1293,8 +1293,8 @@ export default function AdminCreateCoursePage() {
                   width: 38,
                   height: 38,
                   borderRadius: 10,
-                  background: '#FEF3C7',
-                  color: '#D97706',
+                  background: '#EFEFEF',
+                  color: '#4B4D52',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -1303,10 +1303,10 @@ export default function AdminCreateCoursePage() {
                 <FileText size={20} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#15171A', margin: 0 }}>
                   Section 4 — Course Description / Syllabus
                 </h2>
-                <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>
+                <span style={{ fontSize: '0.8125rem', color: '#6B6D73' }}>
                   Full curriculum breakdown, module structure, and prerequisite requirements.
                 </span>
               </div>
@@ -1319,7 +1319,7 @@ export default function AdminCreateCoursePage() {
                 style={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}
               >
                 <span>Full Syllabus Description</span>
-                <span style={{ fontSize: '0.75rem', color: '#64748B' }}>Supports detailed markdown & formatted text</span>
+                <span style={{ fontSize: '0.75rem', color: '#6B6D73' }}>Supports detailed markdown & formatted text</span>
               </label>
               <textarea
                 id="input-full-syllabus"
@@ -1334,7 +1334,7 @@ export default function AdminCreateCoursePage() {
                 value={fullDescription}
                 onChange={(e) => setFullDescription(e.target.value)}
               />
-              <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: 4, display: 'block' }}>
+              <span style={{ fontSize: '0.75rem', color: '#9B9DA3', marginTop: 4, display: 'block' }}>
                 Students review this detailed breakdown on the public enrollment syllabus tab before registration.
               </span>
             </div>
@@ -1376,10 +1376,10 @@ export default function AdminCreateCoursePage() {
                 <Sparkles size={20} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-0.02em' }}>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#15171A', margin: 0, letterSpacing: '-0.02em' }}>
                   COURSE MEDIA
                 </h2>
-                <span style={{ fontSize: '0.8125rem', color: '#64748B' }}>
+                <span style={{ fontSize: '0.8125rem', color: '#6B6D73' }}>
                   Upload and manage promotional Course Thumbnail and Course Preview Video for the public catalog.
                 </span>
               </div>
@@ -1406,18 +1406,18 @@ export default function AdminCreateCoursePage() {
               style={{
                 marginBottom: 26,
                 padding: 20,
-                background: '#F8FAFC',
+                background: '#F8F8F8',
                 borderRadius: 8,
                 border: '1px solid #E2E8F0'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
                 <div>
-                  <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-                    <ImageIcon size={18} style={{ color: '#2563EB' }} />
+                  <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#15171A', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                    <ImageIcon size={18} style={{ color: '#15171A' }} />
                     Course Thumbnail
                   </label>
-                  <div style={{ fontSize: '0.8125rem', color: '#64748B', marginTop: 2 }}>
+                  <div style={{ fontSize: '0.8125rem', color: '#6B6D73', marginTop: 2 }}>
                     Default cover image displayed across the public courses directory and course cards.
                   </div>
                 </div>
@@ -1457,8 +1457,8 @@ export default function AdminCreateCoursePage() {
                         gap: 6,
                         fontSize: '0.8125rem',
                         padding: '6px 12px',
-                        color: '#EF4444',
-                        borderColor: '#FECACA'
+                        color: '#2D2F33',
+                        borderColor: '#E4E4E7'
                       }}
                     >
                       <Trash2 size={14} /> Remove
@@ -1476,7 +1476,7 @@ export default function AdminCreateCoursePage() {
                   borderRadius: 10,
                   overflow: 'hidden',
                   position: 'relative',
-                  background: '#0F172A',
+                  background: '#15171A',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -1485,8 +1485,8 @@ export default function AdminCreateCoursePage() {
                 }}
               >
                 {thumbnailStatus === 'loading' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: '#94A3B8' }}>
-                    <Loader2 size={30} className="spinner-spin" style={{ color: '#38BDF8' }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: '#9B9DA3' }}>
+                    <Loader2 size={30} className="spinner-spin" style={{ color: '#9B9DA3' }} />
                     <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Loading image preview...</span>
                   </div>
                 )}
@@ -1500,8 +1500,8 @@ export default function AdminCreateCoursePage() {
                 )}
 
                 {thumbnailStatus === 'error' && (
-                  <div style={{ padding: '0 20px', textAlign: 'center', color: '#F87171' }}>
-                    <AlertCircle size={32} style={{ margin: '0 auto 8px', color: '#EF4444' }} />
+                  <div style={{ padding: '0 20px', textAlign: 'center', color: '#9B9DA3' }}>
+                    <AlertCircle size={32} style={{ margin: '0 auto 8px', color: '#2D2F33' }} />
                     <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, lineHeight: 1.4 }}>
                       {thumbnailError || 'Unable to load this image. Please check the URL or upload another image.'}
                     </p>
@@ -1516,15 +1516,15 @@ export default function AdminCreateCoursePage() {
                       flexDirection: 'column',
                       alignItems: 'center',
                       gap: 8,
-                      color: '#64748B',
+                      color: '#6B6D73',
                       cursor: 'pointer',
                       padding: 20,
                       textAlign: 'center'
                     }}
                   >
-                    <Upload size={32} style={{ color: '#94A3B8' }} />
-                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#2563EB' }}>Click to upload a course thumbnail image</span>
-                    <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>PNG, JPG, or WebP up to 10MB</span>
+                    <Upload size={32} style={{ color: '#9B9DA3' }} />
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#15171A' }}>Click to upload a course thumbnail image</span>
+                    <span style={{ fontSize: '0.75rem', color: '#9B9DA3' }}>PNG, JPG, or WebP up to 10MB</span>
                   </div>
                 )}
               </div>
@@ -1532,7 +1532,7 @@ export default function AdminCreateCoursePage() {
               {/* Direct URL input / Quick Presets */}
               <div style={{ marginTop: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>Quick presets:</span>
+                  <span style={{ fontSize: '0.75rem', color: '#6B6D73', fontWeight: 600 }}>Quick presets:</span>
                   {thumbnailPresets.map((p) => {
                     const isSelected = thumbnail === p.url
                     return (
@@ -1545,9 +1545,9 @@ export default function AdminCreateCoursePage() {
                           fontSize: '0.75rem',
                           cursor: 'pointer',
                           borderRadius: 6,
-                          borderColor: isSelected ? '#2563EB' : undefined,
-                          backgroundColor: isSelected ? '#EFF6FF' : undefined,
-                          color: isSelected ? '#1D4ED8' : undefined,
+                          borderColor: isSelected ? '#15171A' : undefined,
+                          backgroundColor: isSelected ? '#F4F4F5' : undefined,
+                          color: isSelected ? '#15171A' : undefined,
                           fontWeight: isSelected ? 700 : 500
                         }}
                         onClick={() => {
@@ -1570,18 +1570,18 @@ export default function AdminCreateCoursePage() {
               style={{
                 marginBottom: 24,
                 padding: 20,
-                background: '#F8FAFC',
+                background: '#F8F8F8',
                 borderRadius: 8,
                 border: '1px solid #E2E8F0'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
                 <div>
-                  <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-                    <Film size={18} style={{ color: '#8B5CF6' }} />
+                  <label style={{ fontSize: '0.95rem', fontWeight: 700, color: '#15171A', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                    <Film size={18} style={{ color: '#15171A' }} />
                     Course Preview Video
                   </label>
-                  <div style={{ fontSize: '0.8125rem', color: '#64748B', marginTop: 2 }}>
+                  <div style={{ fontSize: '0.8125rem', color: '#6B6D73', marginTop: 2 }}>
                     Short marketing/promo overview video (15s – 60s) played on course card hover.
                   </div>
                 </div>
@@ -1621,8 +1621,8 @@ export default function AdminCreateCoursePage() {
                         gap: 6,
                         fontSize: '0.8125rem',
                         padding: '6px 12px',
-                        color: '#EF4444',
-                        borderColor: '#FECACA'
+                        color: '#2D2F33',
+                        borderColor: '#E4E4E7'
                       }}
                     >
                       <Trash2 size={14} /> Remove
@@ -1634,8 +1634,8 @@ export default function AdminCreateCoursePage() {
               {/* Admin Helper Text Prompt Requirement 4 & 21 */}
               <div
                 style={{
-                  background: '#EFF6FF',
-                  border: '1px solid #BFDBFE',
+                  background: '#F4F4F5',
+                  border: '1px solid #E4E4E7',
                   borderRadius: 8,
                   padding: '10px 14px',
                   marginBottom: 16,
@@ -1644,10 +1644,10 @@ export default function AdminCreateCoursePage() {
                   gap: 10
                 }}
               >
-                <Sparkles size={16} style={{ color: '#2563EB', marginTop: 2, flexShrink: 0 }} />
-                <div style={{ fontSize: '0.8125rem', color: '#1E40AF', lineHeight: 1.5 }}>
+                <Sparkles size={16} style={{ color: '#15171A', marginTop: 2, flexShrink: 0 }} />
+                <div style={{ fontSize: '0.8125rem', color: '#15171A', lineHeight: 1.5 }}>
                   <strong>Admin Guidance:</strong> Upload a short course preview video. This video will play when users hover over the course card on the public Courses page.
-                  <div style={{ fontSize: '0.75rem', color: '#3B82F6', marginTop: 2 }}>
+                  <div style={{ fontSize: '0.75rem', color: '#4B4D52', marginTop: 2 }}>
                     Supported formats: <strong>MP4</strong>, <strong>WebM</strong> • Recommended duration: <strong>15s – 60s</strong> • Maximum size: <strong>50MB</strong>.
                     <br />
                     <em>(Notice: This is a promotional preview video only — separate from protected student course lecture videos).</em>
@@ -1694,8 +1694,8 @@ export default function AdminCreateCoursePage() {
                         gap: 6,
                         fontSize: '0.75rem',
                         fontWeight: 700,
-                        color: '#16A34A',
-                        background: '#DCFCE7',
+                        color: '#2D2F33',
+                        background: '#EFEFEF',
                         padding: '3px 10px',
                         borderRadius: 6
                       }}
@@ -1704,12 +1704,12 @@ export default function AdminCreateCoursePage() {
                     </span>
 
                     {videoDuration && (
-                      <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.75rem', color: '#6B6D73', fontWeight: 600 }}>
                         Duration: ~{videoDuration} seconds
                       </span>
                     )}
 
-                    <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#9B9DA3' }}>
                       Stored at: {previewVideoUrl.length > 40 ? previewVideoUrl.slice(0, 40) + '...' : previewVideoUrl}
                     </span>
                   </div>
@@ -1737,19 +1737,19 @@ export default function AdminCreateCoursePage() {
                 >
                   {isUploadingVideo ? (
                     <>
-                      <Loader2 size={32} className="spinner-spin" style={{ color: '#8B5CF6' }} />
-                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569' }}>
+                      <Loader2 size={32} className="spinner-spin" style={{ color: '#15171A' }} />
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#5A5C62' }}>
                         Uploading preview video to server...
                       </span>
-                      <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Please wait</span>
+                      <span style={{ fontSize: '0.75rem', color: '#9B9DA3' }}>Please wait</span>
                     </>
                   ) : (
                     <>
-                      <Film size={34} style={{ color: '#94A3B8' }} />
-                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#2563EB' }}>
+                      <Film size={34} style={{ color: '#9B9DA3' }} />
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#15171A' }}>
                         Click to select and upload a Course Preview Video
                       </span>
-                      <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#6B6D73' }}>
                         MP4 or WebM • 15s to 60s promo overview • Max 50MB
                       </span>
                     </>
@@ -1784,7 +1784,7 @@ export default function AdminCreateCoursePage() {
                   display: 'flex',
                   alignItems: 'center',
                   padding: '16px',
-                  background: '#F8FAFC',
+                  background: '#F8F8F8',
                   borderRadius: 12,
                   border: '1px solid #E2E8F0',
                   marginTop: 6
@@ -1798,7 +1798,7 @@ export default function AdminCreateCoursePage() {
                     cursor: 'pointer',
                     fontSize: '0.875rem',
                     fontWeight: 700,
-                    color: '#0F172A'
+                    color: '#15171A'
                   }}
                 >
                   <input
@@ -1831,22 +1831,22 @@ export default function AdminCreateCoursePage() {
             <div
               style={{
                 padding: '12px 16px',
-                background: '#F8FAFC',
+                background: '#F8F8F8',
                 borderBottom: '1px solid #E2E8F0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between'
               }}
             >
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#5A5C62', textTransform: 'uppercase' }}>
                 Catalog Card Preview
               </span>
               <span
                 style={{
                   fontSize: '0.6875rem',
                   fontWeight: 700,
-                  color: isFree ? '#059669' : '#2563EB',
-                  background: isFree ? '#ECFDF5' : '#EFF6FF',
+                  color: isFree ? '#2D2F33' : '#15171A',
+                  background: isFree ? '#F4F4F5' : '#F4F4F5',
                   padding: '1px 6px',
                   borderRadius: 4
                 }}
@@ -1856,10 +1856,10 @@ export default function AdminCreateCoursePage() {
             </div>
 
             {/* Thumbnail Box */}
-            <div style={{ position: 'relative', width: '100%', height: 160, background: '#1E293B', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', width: '100%', height: 160, background: '#2D2F33', overflow: 'hidden' }}>
               {thumbnailStatus === 'loading' && (
-                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0F172A', color: '#94A3B8' }}>
-                  <Loader2 size={24} className="spinner-spin" style={{ color: '#38BDF8', marginBottom: 6 }} />
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#15171A', color: '#9B9DA3' }}>
+                  <Loader2 size={24} className="spinner-spin" style={{ color: '#9B9DA3', marginBottom: 6 }} />
                   <span style={{ fontSize: '0.6875rem', fontWeight: 600 }}>Loading preview...</span>
                 </div>
               )}
@@ -1873,15 +1873,15 @@ export default function AdminCreateCoursePage() {
               )}
 
               {thumbnailStatus === 'error' && (
-                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0F172A', color: '#94A3B8', padding: 12, textAlign: 'center' }}>
-                  <AlertCircle size={24} style={{ color: '#EF4444', marginBottom: 6 }} />
-                  <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#F87171' }}>Image unavailable</span>
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#15171A', color: '#9B9DA3', padding: 12, textAlign: 'center' }}>
+                  <AlertCircle size={24} style={{ color: '#2D2F33', marginBottom: 6 }} />
+                  <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#9B9DA3' }}>Image unavailable</span>
                 </div>
               )}
 
               {thumbnailStatus === 'idle' && (
-                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#1E293B', color: '#94A3B8' }}>
-                  <ImageIcon size={26} style={{ color: '#64748B', marginBottom: 4 }} />
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#2D2F33', color: '#9B9DA3' }}>
+                  <ImageIcon size={26} style={{ color: '#6B6D73', marginBottom: 4 }} />
                   <span style={{ fontSize: '0.6875rem' }}>No thumbnail provided</span>
                 </div>
               )}
@@ -1891,13 +1891,13 @@ export default function AdminCreateCoursePage() {
                     position: 'absolute',
                     top: 10,
                     left: 10,
-                    background: '#FEF3C7',
-                    color: '#92400E',
+                    background: '#EFEFEF',
+                    color: '#4B4D52',
                     fontSize: '0.6875rem',
                     fontWeight: 800,
                     padding: '2px 8px',
                     borderRadius: 6,
-                    border: '1px solid #FDE68A',
+                    border: '1px solid #E4E4E7',
                     boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                   }}
                 >
@@ -1950,8 +1950,8 @@ export default function AdminCreateCoursePage() {
                   style={{
                     fontSize: '0.6875rem',
                     fontWeight: 700,
-                    color: '#2563EB',
-                    background: '#EFF6FF',
+                    color: '#15171A',
+                    background: '#F4F4F5',
                     padding: '2px 8px',
                     borderRadius: 6
                   }}
@@ -1964,21 +1964,21 @@ export default function AdminCreateCoursePage() {
                     fontWeight: 600,
                     color: '#0D9488',
                     background: '#F0FDFA',
-                    border: '1px solid #CCFBF1',
+                    border: '1px solid #E4E4E7',
                     padding: '2px 8px',
                     borderRadius: 6
                   }}
                 >
                   {language || 'English'}
                 </span>
-                <span style={{ fontSize: '0.6875rem', color: '#64748B' }}>• {level}</span>
+                <span style={{ fontSize: '0.6875rem', color: '#6B6D73' }}>• {level}</span>
               </div>
 
               <h4
                 style={{
                   fontSize: '1rem',
                   fontWeight: 800,
-                  color: '#0F172A',
+                  color: '#15171A',
                   margin: '0 0 8px 0',
                   lineHeight: 1.3
                 }}
@@ -1989,7 +1989,7 @@ export default function AdminCreateCoursePage() {
               <p
                 style={{
                   fontSize: '0.8125rem',
-                  color: '#64748B',
+                  color: '#6B6D73',
                   lineHeight: 1.4,
                   margin: '0 0 12px 0',
                   display: '-webkit-box',
@@ -2002,7 +2002,7 @@ export default function AdminCreateCoursePage() {
               </p>
 
               {/* Faculty Name */}
-              <div style={{ fontSize: '0.75rem', color: '#475569', marginBottom: 12 }}>
+              <div style={{ fontSize: '0.75rem', color: '#5A5C62', marginBottom: 12 }}>
                 Instructor: <strong>{selectedCreator ? selectedCreator.name : 'Unassigned'}</strong>
               </div>
 
@@ -2018,14 +2018,14 @@ export default function AdminCreateCoursePage() {
               >
                 <div>
                   {isFree ? (
-                    <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#059669' }}>FREE</span>
+                    <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#2D2F33' }}>FREE</span>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                      <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0F172A' }}>
+                      <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#15171A' }}>
                         ₹{Number(price).toLocaleString('en-IN')}
                       </span>
                       {Number(originalPrice) > Number(price) && (
-                        <span style={{ fontSize: '0.8125rem', color: '#94A3B8', textDecoration: 'line-through' }}>
+                        <span style={{ fontSize: '0.8125rem', color: '#9B9DA3', textDecoration: 'line-through' }}>
                           ₹{Number(originalPrice).toLocaleString('en-IN')}
                         </span>
                       )}
@@ -2040,7 +2040,7 @@ export default function AdminCreateCoursePage() {
                       alignItems: 'center',
                       gap: 4,
                       fontSize: '0.6875rem',
-                      color: '#059669',
+                      color: '#2D2F33',
                       fontWeight: 700
                     }}
                   >
@@ -2062,14 +2062,14 @@ export default function AdminCreateCoursePage() {
               boxShadow: 'var(--shadow-sm)'
             }}
           >
-            <h4 style={{ fontSize: '0.875rem', fontWeight: 800, color: '#0F172A', margin: '0 0 12px 0' }}>
+            <h4 style={{ fontSize: '0.875rem', fontWeight: 800, color: '#15171A', margin: '0 0 12px 0' }}>
               Publishing Readiness
             </h4>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.8125rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CheckCircle2 size={16} style={{ color: title.trim().length >= 5 ? '#10B981' : '#CBD5E1' }} />
-                <span style={{ color: title.trim().length >= 5 ? '#0F172A' : '#64748B' }}>
+                <CheckCircle2 size={16} style={{ color: title.trim().length >= 5 ? '#2D2F33' : '#D5D5D8' }} />
+                <span style={{ color: title.trim().length >= 5 ? '#15171A' : '#6B6D73' }}>
                   Course title defined (min. 5 chars)
                 </span>
               </div>
@@ -2077,9 +2077,9 @@ export default function AdminCreateCoursePage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <CheckCircle2
                   size={16}
-                  style={{ color: shortDescription.trim().length >= 15 ? '#10B981' : '#CBD5E1' }}
+                  style={{ color: shortDescription.trim().length >= 15 ? '#2D2F33' : '#D5D5D8' }}
                 />
-                <span style={{ color: shortDescription.trim().length >= 15 ? '#0F172A' : '#64748B' }}>
+                <span style={{ color: shortDescription.trim().length >= 15 ? '#15171A' : '#6B6D73' }}>
                   Short description provided
                 </span>
               </div>
@@ -2088,12 +2088,12 @@ export default function AdminCreateCoursePage() {
                 <CheckCircle2
                   size={16}
                   style={{
-                    color: isFree || (price !== '' && Number(price) >= 0) ? '#10B981' : '#CBD5E1'
+                    color: isFree || (price !== '' && Number(price) >= 0) ? '#2D2F33' : '#D5D5D8'
                   }}
                 />
                 <span
                   style={{
-                    color: isFree || (price !== '' && Number(price) >= 0) ? '#0F172A' : '#64748B'
+                    color: isFree || (price !== '' && Number(price) >= 0) ? '#15171A' : '#6B6D73'
                   }}
                 >
                   Tuition price configured
@@ -2101,8 +2101,8 @@ export default function AdminCreateCoursePage() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CheckCircle2 size={16} style={{ color: creatorId ? '#10B981' : '#CBD5E1' }} />
-                <span style={{ color: creatorId ? '#0F172A' : '#64748B' }}>
+                <CheckCircle2 size={16} style={{ color: creatorId ? '#2D2F33' : '#D5D5D8' }} />
+                <span style={{ color: creatorId ? '#15171A' : '#6B6D73' }}>
                   {creatorId ? 'Faculty assigned' : 'Faculty instructor assigned (optional)'}
                 </span>
               </div>
@@ -2121,10 +2121,10 @@ export default function AdminCreateCoursePage() {
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: '#F59E0B'
+              background: '#4B4D52'
             }}
           />
-          <span style={{ fontSize: '0.8125rem', color: '#475569', fontWeight: 600 }}>
+          <span style={{ fontSize: '0.8125rem', color: '#5A5C62', fontWeight: 600 }}>
             {isEditMode ? 'Editing' : 'Creating'} Academic Course in {submittingAction === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT'} mode
           </span>
         </div>

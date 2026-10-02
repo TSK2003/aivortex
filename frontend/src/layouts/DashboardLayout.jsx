@@ -196,7 +196,7 @@ export default function DashboardLayout({ role = 'student' }) {
   const currentNavSections = NAVIGATION_CONFIG[role] || NAVIGATION_CONFIG.student
 
   return (
-    <div className="dashboard-layout">
+    <div className={`dashboard-layout dashboard-layout-${role}`}>
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div

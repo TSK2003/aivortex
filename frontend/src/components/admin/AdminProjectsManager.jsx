@@ -455,10 +455,10 @@ export default function AdminProjectsManager({ showToast }) {
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h2 style={{ fontSize: '1.625rem', fontWeight: 800, color: '#0F172A', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: '1.625rem', fontWeight: 800, color: '#15171A', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
             Projects Management Center
           </h2>
-          <p style={{ color: '#64748B', fontSize: '0.875rem', margin: 0, fontWeight: 500 }}>
+          <p style={{ color: '#6B6D73', fontSize: '0.875rem', margin: 0, fontWeight: 500 }}>
             Author, publish, curate domain-specific capstones, and configure public category filters in real time.
           </p>
         </div>
@@ -500,42 +500,42 @@ export default function AdminProjectsManager({ showToast }) {
       {/* Metrics Bar */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 24 }}>
         <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 8, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ width: 42, height: 42, borderRadius: 8, background: '#F8FAFC', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 42, height: 42, borderRadius: 8, background: '#F8F8F8', color: '#5A5C62', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <FolderGit2 size={20} />
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Projects</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.1 }}>{counts.all}</div>
+            <div style={{ fontSize: '0.75rem', color: '#6B6D73', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Projects</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#15171A', lineHeight: 1.1 }}>{counts.all}</div>
           </div>
         </div>
 
-        <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 8, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 8, background: '#DCFCE7', color: '#15803D', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: '#F4F4F5', border: '1px solid #E4E4E7', borderRadius: 8, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 8, background: '#EFEFEF', color: '#2D2F33', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <CheckCircle2 size={20} />
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: '#166534', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Published & Live</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#15803D', lineHeight: 1.1 }}>{counts.published}</div>
+            <div style={{ fontSize: '0.75rem', color: '#15171A', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Published & Live</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#2D2F33', lineHeight: 1.1 }}>{counts.published}</div>
           </div>
         </div>
 
-        <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 8, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 8, background: '#FEF3C7', color: '#B45309', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: '#F4F4F5', border: '1px solid #E4E4E7', borderRadius: 8, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 8, background: '#EFEFEF', color: '#4B4D52', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Clock size={20} />
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: '#92400E', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Draft Projects</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#B45309', lineHeight: 1.1 }}>{counts.draft}</div>
+            <div style={{ fontSize: '0.75rem', color: '#4B4D52', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Draft Projects</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#4B4D52', lineHeight: 1.1 }}>{counts.draft}</div>
           </div>
         </div>
 
-        <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 8, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 8, background: '#DBEAFE', color: '#1D4ED8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: '#F4F4F5', border: '1px solid #E4E4E7', borderRadius: 8, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 8, background: '#EFEFEF', color: '#15171A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Tag size={20} />
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: '#1E40AF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Active Domains</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1D4ED8', lineHeight: 1.1 }}>{counts.categories}</div>
+            <div style={{ fontSize: '0.75rem', color: '#15171A', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Active Domains</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#15171A', lineHeight: 1.1 }}>{counts.categories}</div>
           </div>
         </div>
       </div>
@@ -558,7 +558,7 @@ export default function AdminProjectsManager({ showToast }) {
       >
         {/* Status Filter Tabs */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B', marginRight: 4 }}>Status:</span>
+          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#6B6D73', marginRight: 4 }}>Status:</span>
           {[
             { key: 'ALL', label: 'All Projects', count: counts.all },
             { key: 'PUBLISHED', label: 'Published', count: counts.published },
@@ -579,8 +579,8 @@ export default function AdminProjectsManager({ showToast }) {
                   border: 'none',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
-                  background: isActive ? '#0F172A' : '#F1F5F9',
-                  color: isActive ? '#FFFFFF' : '#475569',
+                  background: isActive ? '#15171A' : '#F2F2F2',
+                  color: isActive ? '#FFFFFF' : '#5A5C62',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6
@@ -593,8 +593,8 @@ export default function AdminProjectsManager({ showToast }) {
                     padding: '1px 6px',
                     borderRadius: 9999,
                     fontWeight: 700,
-                    background: isActive ? 'rgba(255,255,255,0.2)' : '#E2E8F0',
-                    color: isActive ? '#FFFFFF' : '#475569'
+                    background: isActive ? 'rgba(255,255,255,0.2)' : '#E4E4E7',
+                    color: isActive ? '#FFFFFF' : '#5A5C62'
                   }}
                 >
                   {s.count}
@@ -615,7 +615,7 @@ export default function AdminProjectsManager({ showToast }) {
               borderRadius: 8,
               border: '1px solid #CBD5E1',
               fontSize: '0.8125rem',
-              color: '#334155',
+              color: '#4B4D52',
               background: '#FFFFFF',
               fontWeight: 600,
               outline: 'none',
@@ -633,7 +633,7 @@ export default function AdminProjectsManager({ showToast }) {
           <div style={{ position: 'relative' }}>
             <Search
               size={14}
-              style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}
+              style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9B9DA3' }}
             />
             <input
               type="text"
@@ -666,22 +666,22 @@ export default function AdminProjectsManager({ showToast }) {
         }}
       >
         {loading ? (
-          <div style={{ padding: '48px 24px', textAlign: 'center', color: '#64748B' }}>
-            <RefreshCw size={24} className="spin" style={{ margin: '0 auto 12px auto', color: '#2563EB' }} />
+          <div style={{ padding: '48px 24px', textAlign: 'center', color: '#6B6D73' }}>
+            <RefreshCw size={24} className="spin" style={{ margin: '0 auto 12px auto', color: '#15171A' }} />
             <p style={{ margin: 0, fontWeight: 600 }}>Loading projects...</p>
           </div>
         ) : filteredProjects.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
             <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                  <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Project</th>
-                  <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Domain / Category</th>
-                  <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Level & Duration</th>
-                  <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Status</th>
-                  <th style={{ padding: '14px 18px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Enabled</th>
-                  <th style={{ padding: '14px 18px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Order</th>
-                  <th style={{ padding: '14px 18px', textAlign: 'right', fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Actions</th>
+                <tr style={{ background: '#F8F8F8', borderBottom: '1px solid #E2E8F0' }}>
+                  <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#5A5C62', textTransform: 'uppercase' }}>Project</th>
+                  <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#5A5C62', textTransform: 'uppercase' }}>Domain / Category</th>
+                  <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#5A5C62', textTransform: 'uppercase' }}>Level & Duration</th>
+                  <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#5A5C62', textTransform: 'uppercase' }}>Status</th>
+                  <th style={{ padding: '14px 18px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#5A5C62', textTransform: 'uppercase' }}>Enabled</th>
+                  <th style={{ padding: '14px 18px', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#5A5C62', textTransform: 'uppercase' }}>Order</th>
+                  <th style={{ padding: '14px 18px', textAlign: 'right', fontSize: '0.75rem', fontWeight: 700, color: '#5A5C62', textTransform: 'uppercase' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -702,15 +702,15 @@ export default function AdminProjectsManager({ showToast }) {
                               style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0, border: '1px solid #E2E8F0' }}
                             />
                           ) : (
-                            <div style={{ width: 40, height: 40, borderRadius: 8, background: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 8, background: '#F4F4F5', color: '#15171A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                               <FolderGit2 size={20} />
                             </div>
                           )}
                           <div style={{ overflow: 'hidden' }}>
-                            <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '0.875rem', lineHeight: 1.3 }}>
+                            <div style={{ fontWeight: 700, color: '#15171A', fontSize: '0.875rem', lineHeight: 1.3 }}>
                               {p.title}
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
+                            <div style={{ fontSize: '0.75rem', color: '#6B6D73', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
                               {p.summary || p.description}
                             </div>
                           </div>
@@ -725,9 +725,9 @@ export default function AdminProjectsManager({ showToast }) {
                             fontWeight: 700,
                             padding: '3px 10px',
                             borderRadius: 6,
-                            background: '#EFF6FF',
-                            color: '#1D4ED8',
-                            border: '1px solid #BFDBFE'
+                            background: '#F4F4F5',
+                            color: '#15171A',
+                            border: '1px solid #E4E4E7'
                           }}
                         >
                           {p.categoryName || p.categoryLabel || p.category}
@@ -735,9 +735,9 @@ export default function AdminProjectsManager({ showToast }) {
                       </td>
 
                       {/* Level & Duration */}
-                      <td style={{ padding: '16px 18px', fontSize: '0.8125rem', color: '#334155', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '16px 18px', fontSize: '0.8125rem', color: '#4B4D52', whiteSpace: 'nowrap' }}>
                         <div style={{ fontWeight: 600 }}>{p.difficulty || 'Advanced'}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{p.duration || '4 Weeks'}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#6B6D73' }}>{p.duration || '4 Weeks'}</div>
                       </td>
 
                       {/* Status */}
@@ -750,13 +750,13 @@ export default function AdminProjectsManager({ showToast }) {
                               gap: 6,
                               padding: '4px 10px',
                               borderRadius: 9999,
-                              background: '#DCFCE7',
-                              color: '#166534',
+                              background: '#15803D',
+                              color: '#FFFFFF',
                               fontSize: '0.75rem',
                               fontWeight: 700
                             }}
                           >
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16A34A' }} />
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.7)' }} />
                             Published
                           </span>
                         )}
@@ -768,13 +768,13 @@ export default function AdminProjectsManager({ showToast }) {
                               gap: 6,
                               padding: '4px 10px',
                               borderRadius: 9999,
-                              background: '#FEF3C7',
-                              color: '#92400E',
+                              background: '#B45309',
+                              color: '#FFFFFF',
                               fontSize: '0.75rem',
                               fontWeight: 700
                             }}
                           >
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B' }} />
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.7)' }} />
                             Draft
                           </span>
                         )}
@@ -786,8 +786,8 @@ export default function AdminProjectsManager({ showToast }) {
                               gap: 6,
                               padding: '4px 10px',
                               borderRadius: 9999,
-                              background: '#F1F5F9',
-                              color: '#64748B',
+                              background: '#6B7280',
+                              color: '#FFFFFF',
                               fontSize: '0.75rem',
                               fontWeight: 700
                             }}
@@ -804,7 +804,7 @@ export default function AdminProjectsManager({ showToast }) {
                           onClick={() => handleToggleEnable(p)}
                           style={{
                             border: 'none',
-                            background: p.isEnabled ? '#16A34A' : '#CBD5E1',
+                            background: p.isEnabled ? '#2D2F33' : '#D5D5D8',
                             width: 38,
                             height: 22,
                             borderRadius: 12,
@@ -830,7 +830,7 @@ export default function AdminProjectsManager({ showToast }) {
                       </td>
 
                       {/* Order */}
-                      <td style={{ padding: '16px 18px', textAlign: 'center', fontSize: '0.8125rem', fontWeight: 700, color: '#64748B' }}>
+                      <td style={{ padding: '16px 18px', textAlign: 'center', fontSize: '0.8125rem', fontWeight: 700, color: '#6B6D73' }}>
                         {p.orderIndex ?? 0}
                       </td>
 
@@ -842,7 +842,7 @@ export default function AdminProjectsManager({ showToast }) {
                             type="button"
                             onClick={() => setPreviewProject(p)}
                             className="btn btn-outline btn-sm"
-                            style={{ padding: '4px 8px', fontSize: '0.75rem', color: '#2563EB', borderColor: '#BFDBFE' }}
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', color: '#15171A', borderColor: '#E4E4E7' }}
                             title="Preview Project"
                           >
                             <Eye size={13} />
@@ -853,7 +853,7 @@ export default function AdminProjectsManager({ showToast }) {
                             type="button"
                             onClick={() => handleOpenEditModal(p)}
                             className="btn btn-outline btn-sm"
-                            style={{ padding: '4px 8px', fontSize: '0.75rem', color: '#0F172A' }}
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', color: '#15171A' }}
                             title="Edit Project"
                           >
                             <Edit3 size={13} />
@@ -868,8 +868,8 @@ export default function AdminProjectsManager({ showToast }) {
                               padding: '4px 8px',
                               fontSize: '0.72rem',
                               fontWeight: 700,
-                              color: isPublished ? '#92400E' : '#166534',
-                              borderColor: isPublished ? '#FDE68A' : '#BBF7D0'
+                              color: isPublished ? '#4B4D52' : '#15171A',
+                              borderColor: isPublished ? '#E4E4E7' : '#E4E4E7'
                             }}
                           >
                             {isPublished ? 'Unpublish' : 'Publish'}
@@ -880,7 +880,7 @@ export default function AdminProjectsManager({ showToast }) {
                             type="button"
                             onClick={() => setDeleteConfirmModal({ open: true, project: p, isSubmitting: false })}
                             className="btn btn-outline btn-sm"
-                            style={{ padding: '4px 8px', fontSize: '0.75rem', color: '#DC2626', borderColor: '#FECACA' }}
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', color: '#15171A', borderColor: '#E4E4E7' }}
                             title="Delete Project"
                           >
                             <Trash2 size={13} />
@@ -894,9 +894,9 @@ export default function AdminProjectsManager({ showToast }) {
             </table>
           </div>
         ) : (
-          <div style={{ padding: '48px 24px', textAlign: 'center', color: '#64748B' }}>
-            <FolderGit2 size={36} style={{ margin: '0 auto 12px auto', color: '#94A3B8', opacity: 0.6 }} />
-            <h4 style={{ margin: '0 0 6px 0', color: '#0F172A', fontSize: '1rem', fontWeight: 700 }}>No Projects Found</h4>
+          <div style={{ padding: '48px 24px', textAlign: 'center', color: '#6B6D73' }}>
+            <FolderGit2 size={36} style={{ margin: '0 auto 12px auto', color: '#9B9DA3', opacity: 0.6 }} />
+            <h4 style={{ margin: '0 0 6px 0', color: '#15171A', fontSize: '1rem', fontWeight: 700 }}>No Projects Found</h4>
             <p style={{ margin: 0, fontSize: '0.85rem' }}>
               {searchQuery || statusFilter !== 'ALL' || categoryFilter !== 'ALL'
                 ? 'No projects match your current filters.'
@@ -922,10 +922,10 @@ export default function AdminProjectsManager({ showToast }) {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9', position: 'sticky', top: 0, background: '#FFFFFF', zIndex: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: '#F4F4F5', color: '#15171A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <FolderGit2 size={18} />
                 </div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#15171A' }}>
                   {projectModal.mode === 'create' ? 'Create New Project' : 'Edit Project'}
                 </h3>
               </div>
@@ -933,7 +933,7 @@ export default function AdminProjectsManager({ showToast }) {
                 type="button"
                 className="btn-ghost"
                 onClick={() => !projectModal.isSubmitting && setProjectModal((prev) => ({ ...prev, open: false }))}
-                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
+                style={{ padding: 6, borderRadius: '50%', color: '#6B6D73' }}
               >
                 <X size={18} />
               </button>
@@ -942,7 +942,7 @@ export default function AdminProjectsManager({ showToast }) {
             <form onSubmit={handleSubmitProjectForm}>
               <div style={{ padding: '24px' }}>
                 {projectModal.error && (
-                  <div style={{ padding: '10px 14px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#991B1B', fontSize: '0.85rem', marginBottom: 18 }}>
+                  <div style={{ padding: '10px 14px', borderRadius: 8, background: '#EFEFEF', border: '1px solid #D5D5D8', color: '#15171A', fontSize: '0.85rem', marginBottom: 18 }}>
                     {projectModal.error}
                   </div>
                 )}
@@ -950,8 +950,8 @@ export default function AdminProjectsManager({ showToast }) {
                 {/* Title & Slug */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                      Project Title <span style={{ color: '#DC2626' }}>*</span>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
+                      Project Title <span style={{ color: '#15171A' }}>*</span>
                     </label>
                     <input
                       type="text"
@@ -964,7 +964,7 @@ export default function AdminProjectsManager({ showToast }) {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                       URL Slug (Optional)
                     </label>
                     <input
@@ -980,8 +980,8 @@ export default function AdminProjectsManager({ showToast }) {
                 {/* Category, Difficulty, Duration, Badge */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 16 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                      Domain Category <span style={{ color: '#DC2626' }}>*</span>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
+                      Domain Category <span style={{ color: '#15171A' }}>*</span>
                     </label>
                     <select
                       value={formState.categoryId || formState.category}
@@ -1008,7 +1008,7 @@ export default function AdminProjectsManager({ showToast }) {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                       Difficulty Level
                     </label>
                     <select
@@ -1023,7 +1023,7 @@ export default function AdminProjectsManager({ showToast }) {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                       Project Duration
                     </label>
                     <input
@@ -1036,7 +1036,7 @@ export default function AdminProjectsManager({ showToast }) {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                       Badge Label
                     </label>
                     <input
@@ -1051,8 +1051,8 @@ export default function AdminProjectsManager({ showToast }) {
 
                 {/* Short Description */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                    Short Summary (Public Card) <span style={{ color: '#DC2626' }}>*</span>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
+                    Short Summary (Public Card) <span style={{ color: '#15171A' }}>*</span>
                   </label>
                   <textarea
                     rows={2}
@@ -1066,7 +1066,7 @@ export default function AdminProjectsManager({ showToast }) {
 
                 {/* Detailed Description */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                     Detailed Description / Objectives
                   </label>
                   <textarea
@@ -1080,7 +1080,7 @@ export default function AdminProjectsManager({ showToast }) {
 
                 {/* System Architecture Blueprint */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                     System Architecture Description
                   </label>
                   <textarea
@@ -1094,7 +1094,7 @@ export default function AdminProjectsManager({ showToast }) {
 
                 {/* Technology & Skills Tags */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                     Technology / Skills Tags (Comma-separated)
                   </label>
                   <input
@@ -1109,7 +1109,7 @@ export default function AdminProjectsManager({ showToast }) {
                       const trimmed = t.trim()
                       if (!trimmed) return null
                       return (
-                        <span key={idx} style={{ fontSize: '0.72rem', background: '#F1F5F9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+                        <span key={idx} style={{ fontSize: '0.72rem', background: '#F2F2F2', color: '#5A5C62', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
                           {trimmed}
                         </span>
                       )
@@ -1119,7 +1119,7 @@ export default function AdminProjectsManager({ showToast }) {
 
                 {/* Deliverables Management */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                     Key Deliverables & Milestones
                   </label>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -1150,17 +1150,17 @@ export default function AdminProjectsManager({ showToast }) {
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           padding: '6px 12px',
-                          background: '#F8FAFC',
+                          background: '#F8F8F8',
                           borderRadius: 6,
                           border: '1px solid #E2E8F0',
                           fontSize: '0.82rem'
                         }}
                       >
-                        <span style={{ color: '#334155' }}>• {item}</span>
+                        <span style={{ color: '#4B4D52' }}>• {item}</span>
                         <button
                           type="button"
                           onClick={() => handleRemoveDeliverable(idx)}
-                          style={{ border: 'none', background: 'none', color: '#DC2626', cursor: 'pointer', padding: 2 }}
+                          style={{ border: 'none', background: 'none', color: '#15171A', cursor: 'pointer', padding: 2 }}
                         >
                           <X size={14} />
                         </button>
@@ -1172,7 +1172,7 @@ export default function AdminProjectsManager({ showToast }) {
                 {/* Links: GitHub, Demo, Architecture */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 16 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                       GitHub Link (Optional)
                     </label>
                     <input
@@ -1185,7 +1185,7 @@ export default function AdminProjectsManager({ showToast }) {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                       Live Demo Link (Optional)
                     </label>
                     <input
@@ -1198,7 +1198,7 @@ export default function AdminProjectsManager({ showToast }) {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                       CTA Button Text
                     </label>
                     <input
@@ -1213,7 +1213,7 @@ export default function AdminProjectsManager({ showToast }) {
 
                 {/* Thumbnail / Image Upload */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                     Project Thumbnail / Header Image
                   </label>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -1249,7 +1249,7 @@ export default function AdminProjectsManager({ showToast }) {
                       <button
                         type="button"
                         onClick={() => setFormState((prev) => ({ ...prev, thumbnailUrl: '' }))}
-                        style={{ border: 'none', background: 'none', color: '#DC2626', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}
+                        style={{ border: 'none', background: 'none', color: '#15171A', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}
                       >
                         Remove Image
                       </button>
@@ -1258,9 +1258,9 @@ export default function AdminProjectsManager({ showToast }) {
                 </div>
 
                 {/* Display Order, Status & Enabled */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 20, background: '#F8FAFC', padding: 16, borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 20, background: '#F8F8F8', padding: 16, borderRadius: 10, border: '1px solid #E2E8F0' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                       Display Order Index
                     </label>
                     <input
@@ -1273,7 +1273,7 @@ export default function AdminProjectsManager({ showToast }) {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
                       Publication Status
                     </label>
                     <select
@@ -1288,7 +1288,7 @@ export default function AdminProjectsManager({ showToast }) {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', fontWeight: 700, color: '#334155', cursor: 'pointer' }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', fontWeight: 700, color: '#4B4D52', cursor: 'pointer' }}>
                       <input
                         type="checkbox"
                         checked={formState.isEnabled}
@@ -1342,10 +1342,10 @@ export default function AdminProjectsManager({ showToast }) {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: '#F4F4F5', color: '#15171A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Tag size={18} />
                 </div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#15171A' }}>
                   Project Categories & Public Filter Tabs
                 </h3>
               </div>
@@ -1353,7 +1353,7 @@ export default function AdminProjectsManager({ showToast }) {
                 type="button"
                 className="btn-ghost"
                 onClick={() => !categoryModal.isSubmitting && setCategoryModal((prev) => ({ ...prev, open: false }))}
-                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
+                style={{ padding: 6, borderRadius: '50%', color: '#6B6D73' }}
               >
                 <X size={18} />
               </button>
@@ -1361,14 +1361,14 @@ export default function AdminProjectsManager({ showToast }) {
 
             <div style={{ padding: 24 }}>
               {categoryModal.error && (
-                <div style={{ padding: '8px 12px', borderRadius: 6, background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#991B1B', fontSize: '0.82rem', marginBottom: 16 }}>
+                <div style={{ padding: '8px 12px', borderRadius: 6, background: '#EFEFEF', border: '1px solid #D5D5D8', color: '#15171A', fontSize: '0.82rem', marginBottom: 16 }}>
                   {categoryModal.error}
                 </div>
               )}
 
               {/* Add / Edit Category Form */}
-              <form onSubmit={handleSaveCategory} style={{ background: '#F8FAFC', padding: 16, borderRadius: 10, border: '1px solid #E2E8F0', marginBottom: 20 }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: 12 }}>
+              <form onSubmit={handleSaveCategory} style={{ background: '#F8F8F8', padding: 16, borderRadius: 10, border: '1px solid #E2E8F0', marginBottom: 20 }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#15171A', marginBottom: 12 }}>
                   {categoryModal.editingCategory ? `Edit Category: ${categoryModal.editingCategory.name}` : 'Add New Category'}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 10 }}>
@@ -1417,7 +1417,7 @@ export default function AdminProjectsManager({ showToast }) {
               </form>
 
               {/* Existing Categories List */}
-              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', marginBottom: 10 }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#6B6D73', textTransform: 'uppercase', marginBottom: 10 }}>
                 Existing Categories ({categories.length})
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1436,11 +1436,11 @@ export default function AdminProjectsManager({ showToast }) {
                     }}
                   >
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#0F172A' }}>
-                        {c.name} <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 500 }}>({c.slug})</span>
+                      <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#15171A' }}>
+                        {c.name} <span style={{ fontSize: '0.75rem', color: '#6B6D73', fontWeight: 500 }}>({c.slug})</span>
                       </div>
                       {c.description && (
-                        <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>{c.description}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#6B6D73', marginTop: 2 }}>{c.description}</div>
                       )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1462,7 +1462,7 @@ export default function AdminProjectsManager({ showToast }) {
                         type="button"
                         className="btn btn-outline btn-sm"
                         onClick={() => handleDeleteCategory(c)}
-                        style={{ padding: '3px 8px', fontSize: '0.72rem', color: '#DC2626', borderColor: '#FECACA' }}
+                        style={{ padding: '3px 8px', fontSize: '0.72rem', color: '#15171A', borderColor: '#E4E4E7' }}
                       >
                         Remove
                       </button>
@@ -1490,22 +1490,22 @@ export default function AdminProjectsManager({ showToast }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 24px', borderBottom: '1px solid #F1F5F9' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: '#EFEFEF', color: '#15171A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <AlertCircle size={22} />
               </div>
               <div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#15171A' }}>
                   Delete Project?
                 </h3>
-                <span style={{ fontSize: '0.8rem', color: '#64748B' }}>
+                <span style={{ fontSize: '0.8rem', color: '#6B6D73' }}>
                   This action cannot be undone.
                 </span>
               </div>
             </div>
 
             <div style={{ padding: '20px 24px' }}>
-              <p style={{ margin: '0 0 20px 0', fontSize: '0.875rem', color: '#334155', lineHeight: 1.5 }}>
-                Are you sure you want to permanently remove <strong style={{ color: '#0F172A' }}>"{deleteConfirmModal.project?.title}"</strong>?
+              <p style={{ margin: '0 0 20px 0', fontSize: '0.875rem', color: '#4B4D52', lineHeight: 1.5 }}>
+                Are you sure you want to permanently remove <strong style={{ color: '#15171A' }}>"{deleteConfirmModal.project?.title}"</strong>?
               </p>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
@@ -1526,7 +1526,7 @@ export default function AdminProjectsManager({ showToast }) {
                   className="btn"
                   onClick={handleConfirmDeleteProject}
                   disabled={deleteConfirmModal.isSubmitting}
-                  style={{ background: '#DC2626', color: '#FFFFFF', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  style={{ background: '#15171A', color: '#FFFFFF', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
                   {deleteConfirmModal.isSubmitting ? <RefreshCw size={14} className="spin" /> : null}
                   <span>Delete Project</span>
