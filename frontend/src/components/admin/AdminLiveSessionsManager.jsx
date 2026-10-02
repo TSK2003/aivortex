@@ -462,7 +462,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary, #0F172A)', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Video size={24} color="#2563EB" />
+            <Video size={24} color="#15171A" />
             Live Sessions Management
           </h2>
           <p style={{ margin: '4px 0 0 0', color: 'var(--color-text-secondary, #64748B)', fontSize: '0.9rem' }}>
@@ -505,29 +505,29 @@ export default function AdminLiveSessionsManager({ showToast }) {
           {
             label: 'Upcoming / Active',
             value: metrics.upcoming,
-            color: '#16A34A',
-            bg: '#F0FDF4'
+            color: '#2D2F33',
+            bg: '#F4F4F5'
           },
           {
             label: 'RSVPs / Total Seats',
             value: (
               <span>
                 {metrics.totalRegistered}
-                <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#64748B', marginLeft: 3 }}>/ {metrics.totalSeats}</span>
+                <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#6B6D73', marginLeft: 3 }}>/ {metrics.totalSeats}</span>
               </span>
             ),
-            color: '#2563EB',
-            bg: '#EFF6FF'
+            color: '#15171A',
+            bg: '#F4F4F5'
           },
           {
             label: 'Draft / Concluded',
             value: (
               <span>
                 {metrics.draft}
-                <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#94A3B8', marginLeft: 4 }}>draft</span>
-                <span style={{ color: '#CBD5E1', margin: '0 4px' }}>·</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#9B9DA3', marginLeft: 4 }}>draft</span>
+                <span style={{ color: '#D5D5D8', margin: '0 4px' }}>·</span>
                 {metrics.completed}
-                <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#94A3B8', marginLeft: 4 }}>past</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#9B9DA3', marginLeft: 4 }}>past</span>
               </span>
             ),
             color: 'var(--color-primary, #0F172A)',
@@ -545,7 +545,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
               boxShadow: 'var(--shadow-sm)'
             }}
           >
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: card.color === 'var(--color-primary, #0F172A)' ? '#64748B' : card.color, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: card.color === 'var(--color-primary, #0F172A)' ? '#6B6D73' : card.color, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
               {card.label}
             </div>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: card.color, lineHeight: 1.1 }}>
@@ -584,10 +584,10 @@ export default function AdminLiveSessionsManager({ showToast }) {
                 borderRadius: '999px',
                 fontSize: '0.82rem',
                 fontWeight: 600,
-                border: statusFilter === tab.id ? '1.5px solid #2563EB' : '1.5px solid transparent',
+                border: statusFilter === tab.id ? '1.5px solid #15171A' : '1.5px solid transparent',
                 cursor: 'pointer',
-                background: statusFilter === tab.id ? '#EFF6FF' : 'var(--color-bg-subtle, #F1F5F9)',
-                color: statusFilter === tab.id ? '#2563EB' : 'var(--color-text-secondary, #64748B)',
+                background: statusFilter === tab.id ? '#F4F4F5' : 'var(--color-bg-subtle, #F1F5F9)',
+                color: statusFilter === tab.id ? '#15171A' : 'var(--color-text-secondary, #64748B)',
                 transition: 'all 0.15s ease'
               }}
             >
@@ -598,7 +598,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
 
         {/* Search */}
         <div style={{ position: 'relative', minWidth: 240 }}>
-          <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+          <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#9B9DA3' }} />
           <input
             type="text"
             placeholder="Search sessions or speaker..."
@@ -628,20 +628,20 @@ export default function AdminLiveSessionsManager({ showToast }) {
                   borderBottom: '2px solid var(--color-border, #E2E8F0)'
                 }}
               >
-                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', width: '4%', whiteSpace: 'nowrap' }}>#</th>
-                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', width: '30%' }}>Session</th>
-                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', width: '16%', whiteSpace: 'nowrap' }}>Date &amp; Time</th>
-                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', width: '18%' }}>Speaker</th>
-                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', width: '10%', whiteSpace: 'nowrap' }}>Seats</th>
-                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', width: '10%' }}>Status</th>
-                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', width: '12%', textAlign: 'right' }}>Actions</th>
+                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#6B6D73', textTransform: 'uppercase', letterSpacing: '0.06em', width: '4%', whiteSpace: 'nowrap' }}>#</th>
+                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#6B6D73', textTransform: 'uppercase', letterSpacing: '0.06em', width: '30%' }}>Session</th>
+                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#6B6D73', textTransform: 'uppercase', letterSpacing: '0.06em', width: '16%', whiteSpace: 'nowrap' }}>Date &amp; Time</th>
+                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#6B6D73', textTransform: 'uppercase', letterSpacing: '0.06em', width: '18%' }}>Speaker</th>
+                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#6B6D73', textTransform: 'uppercase', letterSpacing: '0.06em', width: '10%', whiteSpace: 'nowrap' }}>Seats</th>
+                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#6B6D73', textTransform: 'uppercase', letterSpacing: '0.06em', width: '10%' }}>Status</th>
+                <th style={{ padding: '12px 14px', fontWeight: 700, fontSize: '0.75rem', color: '#6B6D73', textTransform: 'uppercase', letterSpacing: '0.06em', width: '12%', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={7} style={{ padding: '48px 16px', textAlign: 'center', color: 'var(--color-text-secondary, #64748B)' }}>
-                    <RefreshCw size={22} className="spin" style={{ margin: '0 auto 8px auto', display: 'block', color: '#2563EB' }} />
+                    <RefreshCw size={22} className="spin" style={{ margin: '0 auto 8px auto', display: 'block', color: '#15171A' }} />
                     Loading masterclasses…
                   </td>
                 </tr>
@@ -664,22 +664,22 @@ export default function AdminLiveSessionsManager({ showToast }) {
                   const speakerName = session.speakerName || session.instructor || 'Lead Architect'
                   const speakerRole = session.speakerRole || 'Staff AI Specialist'
 
-                  // Seat color
-                  const seatColor = isFull ? '#DC2626' : seatsLeft <= 10 ? '#D97706' : '#16A34A'
-                  const barColor  = isFull ? '#DC2626' : seatsLeft <= 10 ? '#F59E0B' : '#2563EB'
+                  // Seat bar & text — neutral monochrome (brand colors only, status colors reserved for status pills)
+                  const seatColor = isFull ? '#15171A' : '#5A5C62'
+                  const barColor  = '#15171A'
 
-                  // Status pill config
+                  // Status pill config — dark green, yellow, red with white text
                   const statusConfig = isLive
-                    ? { label: 'Live Now', dot: '#16A34A', text: '#15803D', bg: '#DCFCE7' }
+                    ? { label: 'Live Now',   dot: 'rgba(255,255,255,0.8)', text: '#FFFFFF', bg: '#15803D', border: '#15803D' }
                     : isCancelled
-                    ? { label: 'Cancelled', dot: '#DC2626', text: '#991B1B', bg: '#FEE2E2' }
+                    ? { label: 'Cancelled',  dot: 'rgba(255,255,255,0.8)', text: '#FFFFFF', bg: '#B91C1C', border: '#B91C1C' }
                     : isCompleted
-                    ? { label: 'Completed', dot: '#94A3B8', text: '#475569', bg: '#F1F5F9' }
+                    ? { label: 'Completed',  dot: 'rgba(255,255,255,0.8)', text: '#FFFFFF', bg: '#15803D', border: '#15803D' }
                     : isDraft
-                    ? { label: 'Draft', dot: '#F59E0B', text: '#B45309', bg: '#FEF3C7' }
+                    ? { label: 'Draft',      dot: 'rgba(255,255,255,0.8)', text: '#FFFFFF', bg: '#6B7280', border: '#6B7280' }
                     : isFull
-                    ? { label: 'Seats Full', dot: '#DC2626', text: '#991B1B', bg: '#FEE2E2' }
-                    : { label: 'Upcoming', dot: '#16A34A', text: '#15803D', bg: '#DCFCE7' }
+                    ? { label: 'Seats Full', dot: 'rgba(255,255,255,0.8)', text: '#FFFFFF', bg: '#B91C1C', border: '#B91C1C' }
+                    : { label: 'Upcoming',   dot: 'rgba(255,255,255,0.8)', text: '#FFFFFF', bg: '#B45309', border: '#B45309' }
 
                   // Agenda count
                   const agendaCount = Array.isArray(session.agendaList)
@@ -689,7 +689,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                     : 3
 
                   // Icon-button shared style
-                  const iconBtn = (color = '#334155', bgColor = 'transparent', borderColor = '#E2E8F0') => ({
+                  const iconBtn = (color = '#4B4D52', bgColor = 'transparent', borderColor = '#E4E4E7') => ({
                     width: 30,
                     height: 30,
                     borderRadius: 7,
@@ -721,7 +721,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                           {/* Drag handle (visual only — acts as reorder trigger) */}
                           <span
                             title="Drag to reorder (use arrows to change order)"
-                            style={{ color: '#CBD5E1', cursor: 'grab', lineHeight: 1, fontSize: '1rem', letterSpacing: '-1px', userSelect: 'none' }}
+                            style={{ color: '#D5D5D8', cursor: 'grab', lineHeight: 1, fontSize: '1rem', letterSpacing: '-1px', userSelect: 'none' }}
                           >
                             ⋮⋮
                           </span>
@@ -734,8 +734,8 @@ export default function AdminLiveSessionsManager({ showToast }) {
                               minWidth: 24,
                               height: 24,
                               borderRadius: 6,
-                              background: '#F1F5F9',
-                              color: '#475569',
+                              background: '#F2F2F2',
+                              color: '#5A5C62',
                               fontWeight: 700,
                               fontSize: '0.78rem'
                             }}
@@ -756,7 +756,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                               borderRadius: 8,
                               flexShrink: 0,
                               overflow: 'hidden',
-                              background: 'linear-gradient(135deg, #0F172A 0%, #1E40AF 100%)',
+                              background: '#15171A',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -794,7 +794,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                             <div
                               style={{
                                 fontSize: '0.76rem',
-                                color: '#64748B',
+                                color: '#6B6D73',
                                 marginBottom: 6,
                                 display: '-webkit-box',
                                 WebkitLineClamp: 2,
@@ -810,12 +810,12 @@ export default function AdminLiveSessionsManager({ showToast }) {
                               <span
                                 style={{
                                   fontSize: '0.7rem',
-                                  color: '#2563EB',
+                                  color: '#15171A',
                                   fontWeight: 600,
-                                  background: '#EFF6FF',
+                                  background: '#F4F4F5',
                                   padding: '2px 7px',
                                   borderRadius: 4,
-                                  border: '1px solid #BFDBFE',
+                                  border: '1px solid #E4E4E7',
                                   whiteSpace: 'nowrap'
                                 }}
                               >
@@ -825,15 +825,15 @@ export default function AdminLiveSessionsManager({ showToast }) {
                                 <span
                                   style={{
                                     fontSize: '0.7rem',
-                                    color: '#059669',
+                                    color: '#2D2F33',
                                     fontWeight: 600,
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: 3,
-                                    background: '#ECFDF5',
+                                    background: '#F4F4F5',
                                     padding: '2px 7px',
                                     borderRadius: 4,
-                                    border: '1px solid #A7F3D0',
+                                    border: '1px solid #E4E4E7',
                                     whiteSpace: 'nowrap'
                                   }}
                                 >
@@ -849,7 +849,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                       {/* Date & Time — 2-line compact */}
                       <td style={{ padding: '16px 14px', verticalAlign: 'middle' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                          <Calendar size={13} color="#2563EB" style={{ flexShrink: 0 }} />
+                          <Calendar size={13} color="#15171A" style={{ flexShrink: 0 }} />
                           <span style={{ fontWeight: 600, fontSize: '0.83rem', color: 'var(--color-text, #1E293B)', whiteSpace: 'nowrap' }}>
                             {session.sessionDate
                               ? session.sessionDate
@@ -859,12 +859,12 @@ export default function AdminLiveSessionsManager({ showToast }) {
                           </span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Clock size={12} color="#94A3B8" style={{ flexShrink: 0 }} />
-                          <span style={{ fontSize: '0.77rem', color: '#64748B', whiteSpace: 'nowrap' }}>
+                          <Clock size={12} color="#9B9DA3" style={{ flexShrink: 0 }} />
+                          <span style={{ fontSize: '0.77rem', color: '#6B6D73', whiteSpace: 'nowrap' }}>
                             {session.startTime} – {session.endTime}
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: 2, paddingLeft: 19 }}>
+                        <div style={{ fontSize: '0.72rem', color: '#9B9DA3', marginTop: 2, paddingLeft: 19 }}>
                           {session.timezone || 'IST'}
                         </div>
                       </td>
@@ -885,15 +885,15 @@ export default function AdminLiveSessionsManager({ showToast }) {
                                 width: 34,
                                 height: 34,
                                 borderRadius: '50%',
-                                background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
-                                color: '#2563EB',
+                                background: '#F4F4F5',
+                                color: '#15171A',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 fontWeight: 800,
                                 fontSize: '0.88rem',
                                 flexShrink: 0,
-                                border: '2px solid #BFDBFE',
+                                border: '2px solid #E4E4E7',
                                 marginTop: 1
                               }}
                             >
@@ -918,7 +918,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                             <div
                               style={{
                                 fontSize: '0.74rem',
-                                color: '#64748B',
+                                color: '#6B6D73',
                                 lineHeight: 1.4,
                                 display: '-webkit-box',
                                 WebkitLineClamp: 2,
@@ -941,7 +941,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                           </span>
                         </div>
                         {/* Progress Bar */}
-                        <div style={{ width: '100%', height: 5, background: '#E2E8F0', borderRadius: 9999, overflow: 'hidden', marginBottom: 5 }}>
+                        <div style={{ width: '100%', height: 5, background: '#E4E4E7', borderRadius: 9999, overflow: 'hidden', marginBottom: 5 }}>
                           <div
                             style={{
                               width: `${fillPct}%`,
@@ -968,6 +968,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                             fontWeight: 700,
                             color: statusConfig.text,
                             background: statusConfig.bg,
+                            border: `1px solid ${statusConfig.border || '#E4E4E7'}`,
                             padding: '3px 9px',
                             borderRadius: '999px',
                             whiteSpace: 'nowrap'
@@ -985,9 +986,9 @@ export default function AdminLiveSessionsManager({ showToast }) {
                           <button
                             type="button"
                             onClick={() => setPreviewSession(session)}
-                            style={iconBtn('#334155', 'transparent', '#E2E8F0')}
+                            style={iconBtn('#4B4D52', 'transparent', '#E4E4E7')}
                             title="View Session"
-                            onMouseEnter={(e) => { e.currentTarget.style.background = '#F1F5F9' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#F2F2F2' }}
                             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                           >
                             <Eye size={14} />
@@ -997,10 +998,10 @@ export default function AdminLiveSessionsManager({ showToast }) {
                           <button
                             type="button"
                             onClick={() => handleOpenEditModal(session)}
-                            style={iconBtn('#2563EB', '#EFF6FF', '#BFDBFE')}
+                            style={iconBtn('#15171A', '#F4F4F5', '#E4E4E7')}
                             title="Edit Session"
-                            onMouseEnter={(e) => { e.currentTarget.style.background = '#DBEAFE' }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = '#EFF6FF' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#EFEFEF' }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = '#F4F4F5' }}
                           >
                             <Edit3 size={14} />
                           </button>
@@ -1009,9 +1010,9 @@ export default function AdminLiveSessionsManager({ showToast }) {
                           <button
                             type="button"
                             onClick={() => handleDuplicateSession(session)}
-                            style={iconBtn('#334155', 'transparent', '#E2E8F0')}
+                            style={iconBtn('#4B4D52', 'transparent', '#E4E4E7')}
                             title="Duplicate Session"
-                            onMouseEnter={(e) => { e.currentTarget.style.background = '#F1F5F9' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#F2F2F2' }}
                             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                           >
                             <Copy size={14} />
@@ -1028,14 +1029,14 @@ export default function AdminLiveSessionsManager({ showToast }) {
                                 borderRadius: 7,
                                 border: '1px solid #E2E8F0',
                                 background: 'transparent',
-                                color: '#475569',
+                                color: '#5A5C62',
                                 cursor: 'pointer',
                                 fontSize: '0.72rem',
                                 fontWeight: 700,
                                 whiteSpace: 'nowrap',
                                 transition: 'background 0.15s ease'
                               }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = '#F8FAFC' }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = '#F8F8F8' }}
                               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                               title="Mark as Completed"
                             >
@@ -1049,8 +1050,8 @@ export default function AdminLiveSessionsManager({ showToast }) {
                                 height: 30,
                                 padding: '0 8px',
                                 borderRadius: 7,
-                                border: '1px solid #A7F3D0',
-                                background: '#ECFDF5',
+                                border: '1px solid #E4E4E7',
+                                background: '#F4F4F5',
                                 color: '#065F46',
                                 cursor: 'pointer',
                                 fontSize: '0.72rem',
@@ -1071,14 +1072,14 @@ export default function AdminLiveSessionsManager({ showToast }) {
                                 borderRadius: 7,
                                 border: '1px solid #E2E8F0',
                                 background: 'transparent',
-                                color: '#2563EB',
+                                color: '#15171A',
                                 cursor: 'pointer',
                                 fontSize: '0.72rem',
                                 fontWeight: 700,
                                 whiteSpace: 'nowrap',
                                 transition: 'background 0.15s ease'
                               }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = '#EFF6FF' }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = '#F4F4F5' }}
                               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                               title="Reactivate Session"
                             >
@@ -1090,9 +1091,9 @@ export default function AdminLiveSessionsManager({ showToast }) {
                           <button
                             type="button"
                             onClick={() => setDeleteConfirmModal({ open: true, session, isSubmitting: false })}
-                            style={iconBtn('#DC2626', 'transparent', '#FCA5A5')}
+                            style={iconBtn('#15171A', 'transparent', '#D5D5D8')}
                             title="Delete Session"
-                            onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#EFEFEF' }}
                             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                           >
                             <Trash2 size={14} />
@@ -1149,7 +1150,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
               <button
                 type="button"
                 onClick={() => setSessionModal({ open: false, mode: 'create', session: null, isSubmitting: false, error: '' })}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B', padding: 6 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B6D73', padding: 6 }}
               >
                 <X size={20} />
               </button>
@@ -1159,9 +1160,9 @@ export default function AdminLiveSessionsManager({ showToast }) {
             {sessionModal.error && (
               <div
                 style={{
-                  background: '#FEE2E2',
-                  border: '1px solid #F87171',
-                  color: '#991B1B',
+                  background: '#EFEFEF',
+                  border: '1px solid #9B9DA3',
+                  color: '#15171A',
                   borderRadius: 8,
                   padding: '10px 14px',
                   marginBottom: 18,
@@ -1341,7 +1342,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
               {/* Row 3: Speaker Information */}
               <div style={{ background: 'var(--color-bg-subtle, #F8FAFC)', padding: 16, borderRadius: 8, marginBottom: 18, border: '1px solid var(--color-border, #E2E8F0)' }}>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary, #0F172A)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <User size={16} color="#2563EB" />
+                  <User size={16} color="#15171A" />
                   Speaker & Instructor Information
                 </div>
 
@@ -1410,9 +1411,9 @@ export default function AdminLiveSessionsManager({ showToast }) {
                           gap: 4,
                           padding: '8px 12px',
                           borderRadius: 6,
-                          background: '#EFF6FF',
-                          border: '1px solid #2563EB',
-                          color: '#2563EB',
+                          background: '#F4F4F5',
+                          border: '1px solid #15171A',
+                          color: '#15171A',
                           fontSize: '0.82rem',
                           fontWeight: 600,
                           cursor: isUploadingPhoto ? 'wait' : 'pointer',
@@ -1435,15 +1436,15 @@ export default function AdminLiveSessionsManager({ showToast }) {
               </div>
 
               {/* Row 4: Seats Capacity Management (Requirement 9) */}
-              <div style={{ background: '#F0FDF4', padding: 16, borderRadius: 8, marginBottom: 18, border: '1px solid #BBF7D0' }}>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#166534', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Users size={16} color="#16A34A" />
+              <div style={{ background: '#F4F4F5', padding: 16, borderRadius: 8, marginBottom: 18, border: '1px solid #E4E4E7' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#15171A', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Users size={16} color="#2D2F33" />
                   Seats Capacity & Registration Management
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, alignItems: 'center' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4, color: '#166534' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4, color: '#15171A' }}>
                       Total Seats *
                     </label>
                     <input
@@ -1456,7 +1457,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                         width: '100%',
                         padding: '8px 12px',
                         borderRadius: 6,
-                        border: '1px solid #86EFAC',
+                        border: '1px solid #E4E4E7',
                         fontSize: '0.9rem',
                         fontWeight: 700
                       }}
@@ -1464,7 +1465,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4, color: '#166534' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4, color: '#15171A' }}>
                       Registered Seats
                     </label>
                     <input
@@ -1476,16 +1477,16 @@ export default function AdminLiveSessionsManager({ showToast }) {
                         width: '100%',
                         padding: '8px 12px',
                         borderRadius: 6,
-                        border: '1px solid #86EFAC',
+                        border: '1px solid #E4E4E7',
                         fontSize: '0.9rem',
                         fontWeight: 700
                       }}
                     />
                   </div>
 
-                  <div style={{ padding: '8px 14px', background: '#DCFCE7', borderRadius: 8 }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#15803D' }}>Calculated Seats Left</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: formSeatsLeft === 0 ? '#DC2626' : '#166534' }}>
+                  <div style={{ padding: '8px 14px', background: '#EFEFEF', borderRadius: 8 }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#2D2F33' }}>Calculated Seats Left</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: formSeatsLeft === 0 ? '#15171A' : '#15171A' }}>
                       {formSeatsLeft === 0 ? '0 (FULL)' : `${formSeatsLeft} seats available`}
                     </div>
                   </div>
@@ -1498,7 +1499,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                       onChange={(e) => setFormState({ ...formState, isRegistrationOpen: e.target.checked })}
                       style={{ width: 18, height: 18, cursor: 'pointer' }}
                     />
-                    <label htmlFor="regOpenToggle" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#166534', cursor: 'pointer' }}>
+                    <label htmlFor="regOpenToggle" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#15171A', cursor: 'pointer' }}>
                       Registration Open
                     </label>
                   </div>
@@ -1530,7 +1531,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                         border: '1px solid var(--color-border, #E2E8F0)'
                       }}
                     >
-                      <span style={{ fontWeight: 700, color: '#2563EB', fontSize: '0.82rem', minWidth: 20 }}>
+                      <span style={{ fontWeight: 700, color: '#15171A', fontSize: '0.82rem', minWidth: 20 }}>
                         {index + 1}.
                       </span>
                       <input
@@ -1571,7 +1572,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                       <button
                         type="button"
                         onClick={() => handleRemoveAgendaItem(index)}
-                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#DC2626' }}
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#15171A' }}
                         title="Delete agenda item"
                       >
                         <Trash2 size={14} />
@@ -1800,13 +1801,13 @@ export default function AdminLiveSessionsManager({ showToast }) {
           >
             {/* Preview Banner */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid #E2E8F0', paddingBottom: 10 }}>
-              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#15171A', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <Sparkles size={14} /> Public Card Preview
               </span>
               <button
                 type="button"
                 onClick={() => setPreviewSession(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B', padding: 4 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B6D73', padding: 4 }}
               >
                 <X size={18} />
               </button>
@@ -1819,19 +1820,19 @@ export default function AdminLiveSessionsManager({ showToast }) {
               </span>
 
               {previewSession.status === 'CANCELLED' ? (
-                <span style={{ fontSize: '0.75rem', color: '#991B1B', fontWeight: 700, background: '#FEE2E2', padding: '3px 10px', borderRadius: 9999 }}>
+                <span style={{ fontSize: '0.75rem', color: '#15171A', fontWeight: 700, background: '#EFEFEF', padding: '3px 10px', borderRadius: 9999 }}>
                   Cancelled
                 </span>
               ) : previewSession.status === 'COMPLETED' ? (
-                <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 700, background: '#F1F5F9', padding: '3px 10px', borderRadius: 9999 }}>
+                <span style={{ fontSize: '0.75rem', color: '#5A5C62', fontWeight: 700, background: '#F2F2F2', padding: '3px 10px', borderRadius: 9999 }}>
                   Concluded
                 </span>
               ) : (previewSession.totalSeats - previewSession.registeredSeats <= 0) ? (
-                <span style={{ fontSize: '0.75rem', color: '#991B1B', fontWeight: 700, background: '#FEE2E2', padding: '3px 10px', borderRadius: 9999 }}>
+                <span style={{ fontSize: '0.75rem', color: '#15171A', fontWeight: 700, background: '#EFEFEF', padding: '3px 10px', borderRadius: 9999 }}>
                   Seats Full
                 </span>
               ) : (
-                <span style={{ fontSize: '0.78rem', color: '#DC2626', fontWeight: 700, background: '#FEE2E2', padding: '3px 10px', borderRadius: 9999 }}>
+                <span style={{ fontSize: '0.78rem', color: '#15171A', fontWeight: 700, background: '#EFEFEF', padding: '3px 10px', borderRadius: 9999 }}>
                   {Math.max(0, (previewSession.totalSeats || 50) - (previewSession.registeredSeats || 0))} seats left
                 </span>
               )}
@@ -1850,7 +1851,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                   style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid #E2E8F0' }}
                 />
               ) : (
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0, fontSize: '1.1rem' }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#F4F4F5', color: '#15171A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0, fontSize: '1.1rem' }}>
                   {(previewSession.speakerName || 'L').charAt(0).toUpperCase()}
                 </div>
               )}
@@ -1865,7 +1866,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
             </div>
 
             {/* Time & Duration */}
-            <div style={{ fontSize: '0.85rem', color: '#2563EB', fontWeight: 600, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: '0.85rem', color: '#15171A', fontWeight: 600, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
               <Clock size={15} />
               <span>
                 {previewSession.startTime && previewSession.endTime
@@ -1886,7 +1887,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                   'Interactive Q&A and code review'
                 ]).map((item, idx) => (
                   <li key={idx} style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary, #475569)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                    <span style={{ color: '#2563EB', fontWeight: 700 }}>•</span>
+                    <span style={{ color: '#15171A', fontWeight: 700 }}>•</span>
                     <span>{typeof item === 'string' ? item : item.title || JSON.stringify(item)}</span>
                   </li>
                 ))}
@@ -1933,7 +1934,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#EFEFEF', color: '#15171A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Trash2 size={20} />
               </div>
               <div>
@@ -1967,7 +1968,7 @@ export default function AdminLiveSessionsManager({ showToast }) {
                   padding: '9px 18px',
                   borderRadius: 8,
                   border: 'none',
-                  background: '#DC2626',
+                  background: '#15171A',
                   color: '#FFFFFF',
                   fontWeight: 700,
                   fontSize: '0.88rem',

@@ -394,6 +394,11 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ status })
       }),
+    updateStudentEnrollmentStatus: (studentId, enrollmentId, status) =>
+      request(`/admin/students/${studentId}/enrollments/${enrollmentId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      }),
     getCourses: () => request('/admin/courses'),
     createCourse: (data) =>
       request('/admin/courses', {

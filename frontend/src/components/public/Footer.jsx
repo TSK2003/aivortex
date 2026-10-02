@@ -59,7 +59,7 @@ export default function Footer() {
           {/* Col 1: Brand & Bio */}
           <div className="footer-brand">
             <Link to="/" onClick={handleHomeClick} style={{ textDecoration: 'none', display: 'inline-block', marginBottom: 12 }}>
-              <BrandLogo size="md" animated={false} />
+              <BrandLogo size="md" animated={true} />
             </Link>
             <p className="footer-desc">
               {footer.brandDesc || defaultFooterData.brandDesc}

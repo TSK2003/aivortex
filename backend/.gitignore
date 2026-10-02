@@ -19,3 +19,8 @@ coverage/
 *.pem
 *.key
 *.cert
+
+# Uploaded Media & Files
+uploads/*
+!uploads/**/.gitkeep
+

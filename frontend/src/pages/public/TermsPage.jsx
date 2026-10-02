@@ -13,7 +13,7 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
-            Last revised: September 2026 • Effective for all enrolled students, creators, and platform visitors.
+            Effective for all enrolled students, creators, and platform visitors.
           </p>
         </div>
 
@@ -35,7 +35,7 @@ export default function TermsPage() {
 
           <h2 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', fontWeight: 700, marginBottom: 12 }}>4. Payments & Refunds</h2>
           <p style={{ marginBottom: 24 }}>
-            All payments are processed securely through Razorpay. Course enrollments qualify for refund consideration within seven (7) days of purchase provided the student has completed less than 20% of video materials and has not triggered certificate issuance.
+            All payments are processed securely through Razorpay. Course enrollment fees are non-refundable once the enrollment is completed. To be eligible for the course completion certificate, learners must successfully complete the entire course, including all required modules and assessments.
           </p>
 
           <h2 style={{ fontSize: '1.3rem', color: 'var(--color-primary)', fontWeight: 700, marginBottom: 12 }}>5. Certification Standards</h2>

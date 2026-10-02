@@ -32,68 +32,86 @@ export default function AboutPage() {
     <div className="about-page" style={{ background: '#F8FAFC', color: '#0F172A', minHeight: '100vh', paddingBottom: 100 }}>
       
       {/* =====================================================================
-          1. HERO SECTION: Clean, human, executive typography
+          1. HERO SECTION: Full page view with online education background
           ===================================================================== */}
-      <section style={{ background: '#FFFFFF', borderBottom: '1px solid #E2E8F0', paddingTop: 64, paddingBottom: 64 }}>
-        <div className="container" style={{ maxWidth: 1080 }}>
-          <div style={{ maxWidth: 840, margin: '0 auto', textAlign: 'center' }}>
+      <section
+        className="about-hero-section"
+        style={{
+          position: 'relative',
+          minHeight: 'calc(100vh - 68px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: "linear-gradient(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.82)), url('/online-education-bg.jpg') center center / cover no-repeat",
+          borderBottom: '1px solid #E2E8F0',
+          padding: '80px 20px',
+          boxSizing: 'border-box',
+          overflow: 'hidden'
+        }}
+      >
+        <div className="container" style={{ maxWidth: 1080, position: 'relative', zIndex: 2, width: '100%' }}>
+          <div style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center' }}>
             
-            {/* Minimalist Corporate Eyebrow (No pill bubble, no sparkles) */}
+            {/* Minimalist Corporate Eyebrow */}
             <div
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 10,
-                fontSize: '0.78rem',
+                gap: 12,
+                fontSize: '0.82rem',
                 fontWeight: 700,
-                letterSpacing: '0.14em',
+                letterSpacing: '0.16em',
                 textTransform: 'uppercase',
-                color: '#475569',
-                marginBottom: 18
+                color: '#0F172A',
+                marginBottom: 20
               }}
             >
-              <span style={{ width: 20, height: 1.5, background: '#2563EB', display: 'inline-block' }} />
+              <span style={{ width: 24, height: 2, background: '#1D4ED8', display: 'inline-block' }} />
               <span>About Aivortex</span>
-              <span style={{ width: 20, height: 1.5, background: '#2563EB', display: 'inline-block' }} />
+              <span style={{ width: 24, height: 2, background: '#1D4ED8', display: 'inline-block' }} />
             </div>
 
-            {/* Main Headline */}
+            {/* Main Headline - Bold, Dark & Authoritative */}
             <h1
               style={{
-                fontSize: 'clamp(2.1rem, 4.5vw, 3.25rem)',
+                fontSize: 'clamp(2.3rem, 5vw, 3.5rem)',
                 fontWeight: 800,
-                color: '#0F172A',
-                letterSpacing: '-0.03em',
+                color: '#020617',
+                letterSpacing: '-0.035em',
                 lineHeight: 1.18,
-                margin: '0 0 22px 0'
+                margin: '0 0 24px 0',
+                textShadow: '0 1px 2px rgba(255, 255, 255, 0.8)'
               }}
             >
               Empowering the Next Generation to{' '}
-              <span style={{ color: '#1E40AF' }}>Learn, Build &amp; Innovate</span>
+              <span style={{ color: '#1D4ED8' }}>Learn, Build &amp; Innovate</span>
             </h1>
 
-            {/* Core Subtitle */}
+            {/* Core Subtitle - Dark Crisp Contrast */}
             <p
               style={{
-                fontSize: 'clamp(1.05rem, 2vw, 1.22rem)',
-                color: '#334155',
+                fontSize: 'clamp(1.1rem, 2.2vw, 1.3rem)',
+                color: '#0F172A',
                 lineHeight: 1.65,
-                fontWeight: 500,
-                marginBottom: 18
+                fontWeight: 600,
+                marginBottom: 22,
+                textShadow: '0 1px 2px rgba(255, 255, 255, 0.7)'
               }}
             >
               {data.hero?.subtitle ||
                 'Aivortex is an AI-focused learning platform designed to help students, professionals, and aspiring technology enthusiasts build practical skills for the rapidly evolving digital world.'}
             </p>
 
-            {/* Extended Brand Narrative */}
+            {/* Extended Brand Narrative - Darker Slate Contrast */}
             <p
               style={{
-                fontSize: '0.98rem',
-                color: '#64748B',
-                lineHeight: 1.75,
+                fontSize: '1.05rem',
+                color: '#1E293B',
+                lineHeight: 1.8,
+                fontWeight: 500,
                 margin: '0 auto',
-                maxWidth: 780
+                maxWidth: 800,
+                textShadow: '0 1px 2px rgba(255, 255, 255, 0.6)'
               }}
             >
               {data.hero?.introParagraph ||
@@ -823,7 +841,7 @@ export default function AboutPage() {
             <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link
                 to="/courses"
-                className="btn btn-primary"
+                className="btn btn-secondary"
                 style={{
                   padding: '12px 28px',
                   fontSize: '0.92rem',

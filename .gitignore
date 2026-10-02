@@ -94,3 +94,6 @@ test-results/
 *.db-journal
 *.dump
 *.sql.gz
+
+# Uploaded media files exceeding GitHub limit
+backend/uploads/courses/course-cloud-devops/

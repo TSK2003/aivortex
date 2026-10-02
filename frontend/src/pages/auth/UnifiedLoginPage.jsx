@@ -201,7 +201,7 @@ export default function UnifiedLoginPage() {
                 Sign In to aivortex
               </h1>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
-                Enter your credentials to access your authorized portal (Student, Creator, or Admin).
+                Enter your credentials to access your account.
               </p>
               {redirectParam && (
                 <div

@@ -1,33 +1,42 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { GraduationCap, ArrowLeft, ShieldCheck } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Eye, EyeOff, ArrowRight } from 'lucide-react'
 import BrandLogo from '../../components/common/BrandLogo'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
+import './StudentSignupPage.css'
 
 export default function StudentSignupPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [searchParams] = useSearchParams()
+  const redirectParam = searchParams.get('redirect')
+  const enrollParam = searchParams.get('enroll')
+
   const { signup } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!name || !email || !password) {
+    if (!name.trim() || !email.trim() || !password) {
       showToast('Please fill all required fields', 'error')
       return
     }
+    if (password.length < 8) {
+      showToast('Password must be at least 8 characters long', 'error')
+      return
+    }
+
     setIsSubmitting(true)
     try {
-      const res = await signup(name, email, password)
+      const res = await signup(name.trim(), email.trim(), password)
       if (res?.success) {
-        showToast(`Welcome to aivortex, ${name}! Your student account is active.`, 'success')
-        const searchParams = new URLSearchParams(window.location.search)
-        const redirectParam = searchParams.get('redirect')
-        const enrollParam = searchParams.get('enroll')
+        showToast(`Welcome to aivortex, ${name}! Your account is active.`, 'success')
         if (redirectParam) {
           navigate(redirectParam + (enrollParam ? '?enroll=true' : ''))
         } else {
@@ -44,152 +53,141 @@ export default function StudentSignupPage() {
   }
 
   return (
-    <div className="auth-page-container">
-      <div className="student-auth-layout">
-        {/* Visual Brand Side (Left) */}
-        <div className="auth-visual-side">
-          <div>
-            <Link to="/portal" style={{ textDecoration: 'none', display: 'inline-block' }}>
-              <BrandLogo theme="dark" size="md" />
-            </Link>
-          </div>
+    <div className="student-signup-page">
+      {/* Brand Header */}
+      <div className="signup-brand-header">
+        <Link to="/" title="aivortex Home">
+          <BrandLogo size="lg" />
+        </Link>
+      </div>
 
-          <div className="auth-testimonial-box">
-            <div style={{ color: '#38BDF8', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 12 }}>
-              VERIFIED STUDENT REVIEW
-            </div>
-            <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: '#F8FAFC', marginBottom: 16, fontStyle: 'italic' }}>
-              &ldquo;aivortex gave me the exact hands-on experience and verifiable credentials to transition into a full-time Machine Learning Engineer.&rdquo;
-            </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <img
-                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80"
-                style={{ width: 42, height: 42, borderRadius: '50%', border: '2px solid #38BDF8' }}
-                alt="Rahul Sharma"
-              />
-              <div>
-                <strong style={{ color: '#FFFFFF', fontSize: '0.95rem' }}>Rahul Sharma</strong>
-                <div style={{ fontSize: '0.8rem', color: '#94A3B8' }}>Student Scholar • Python for Data Science</div>
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: '0.8rem',
-              color: '#94A3B8',
-              borderTop: '1px solid rgba(255,255,255,0.1)',
-              paddingTop: 20
-            }}
-          >
-            <span>© 2026 aivortex. All rights reserved.</span>
-            <Link to="/" style={{ color: '#CBD5E1' }}>Back to Home</Link>
-          </div>
+      {/* Main Card */}
+      <div className="signup-card">
+        <div className="signup-header">
+          <h1 className="signup-title">Create an account</h1>
+          <p className="signup-subtitle">
+            Enter your details below to get started with aivortex.
+          </p>
         </div>
 
-        {/* Form Side (Right) */}
-        <div className="auth-form-side">
-          <div className="auth-card-inner">
-            <div style={{ marginBottom: 20 }}>
-              <Link
-                to="/portal"
-                className="auth-back-link"
-                style={{
-                  color: 'var(--color-text-secondary)',
-                  fontSize: '0.875rem',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  textDecoration: 'none',
-                  fontWeight: 600
-                }}
-              >
-                <ArrowLeft style={{ width: 16, height: 16 }} />
-                <span>Back to Portal Selection</span>
-              </Link>
-            </div>
-
-            <div className="auth-title-group">
-              <div
-                style={{
-                  fontFamily: 'var(--font-family-heading)',
-                  fontWeight: 800,
-                  fontSize: '0.85rem',
-                  color: 'var(--color-secondary)',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  marginBottom: 4
-                }}
-              >
-                APEXLEARN
-              </div>
-              <h2 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--color-text)', marginBottom: 6 }}>
-                CREATE ACCOUNT
-              </h2>
-              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-                Join thousands of engineers mastering production-grade AI & Data Science.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit}>
-              <div className="form-field-group">
-                <label className="form-label">Full Legal Name</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Rahul Sharma"
-                  required
-                />
-              </div>
-
-              <div className="form-field-group">
-                <label className="form-label">Email Address</label>
-                <input
-                  type="email"
-                  className="form-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  required
-                />
-              </div>
-
-              <div className="form-field-group">
-                <label className="form-label">Password</label>
-                <input
-                  type="password"
-                  className="form-input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="•••••••••••• (min 8 chars)"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary btn-lg"
-                style={{ width: '100%', marginTop: 12 }}
-                disabled={isSubmitting}
-              >
-                <ShieldCheck style={{ width: 18, height: 18 }} />
-                <span>{isSubmitting ? 'CREATING ACCOUNT...' : 'CREATE STUDENT ACCOUNT'}</span>
-              </button>
-            </form>
-
-            <div style={{ textAlign: 'center', marginTop: 24, fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
-              Already registered?{' '}
-              <Link to="/student/login" style={{ color: 'var(--color-secondary)', fontWeight: 700 }}>
-                Sign In to Existing Account
-              </Link>
+        <form onSubmit={handleSubmit} className="signup-form" noValidate>
+          {/* Full Name */}
+          <div className="signup-field">
+            <label className="signup-label" htmlFor="name-input">
+              Full Name
+            </label>
+            <div className="signup-input-wrap">
+              <input
+                id="name-input"
+                type="text"
+                className="signup-input"
+                placeholder="e.g. Rahul Sharma"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoFocus
+              />
             </div>
           </div>
+
+          {/* Email */}
+          <div className="signup-field">
+            <label className="signup-label" htmlFor="email-input">
+              Email Address
+            </label>
+            <div className="signup-input-wrap">
+              <input
+                id="email-input"
+                type="email"
+                className="signup-input"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Password */}
+          <div className="signup-field">
+            <label className="signup-label" htmlFor="password-input">
+              Password
+            </label>
+            <div className="signup-input-wrap">
+              <input
+                id="password-input"
+                type={showPassword ? 'text' : 'password'}
+                className="signup-input"
+                style={{ paddingRight: 40 }}
+                placeholder="At least 8 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="signup-eye-btn"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Terms Note */}
+          <p className="signup-terms-note">
+            By creating an account, you agree to our{' '}
+            <Link to="/terms" target="_blank" rel="noopener noreferrer">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link to="/privacy" target="_blank" rel="noopener noreferrer">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="signup-btn"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <span>Creating account...</span>
+            ) : (
+              <>
+                <span>Create account</span>
+                <ArrowRight size={16} />
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Card Footer Switch */}
+        <div className="signup-card-footer">
+          Already have an account?{' '}
+          <Link to="/student/login">
+            Sign in
+          </Link>
         </div>
       </div>
+
+      {/* Page Outer Footer */}
+      <footer className="signup-page-footer">
+        <div className="signup-page-footer-links">
+          <Link to="/terms">Terms</Link>
+          <span>•</span>
+          <Link to="/privacy">Privacy</Link>
+          <span>•</span>
+          <Link to="/contact">Support</Link>
+          <span>•</span>
+          <Link to="/">Home</Link>
+        </div>
+        <span>© 2026 aivortex. All rights reserved.</span>
+      </footer>
     </div>
   )
 }
