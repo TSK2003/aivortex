@@ -67,6 +67,8 @@ export default function AppRoutes() {
         <Route path="/creator/login" element={<UnifiedLoginPage />} />
         <Route path="/admin/login" element={<UnifiedLoginPage />} />
         <Route path="/student/signup" element={<StudentSignupPage />} />
+        <Route path="/signup" element={<StudentSignupPage />} />
+        <Route path="/register" element={<StudentSignupPage />} />
       </Route>
 
       {/* Student Portal (Protected) */}

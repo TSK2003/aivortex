@@ -26,14 +26,40 @@ export default function Navbar() {
   const { isAuthenticated, user, isStudent, isCreator, isAdmin, logout } = useAuth()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [scrollDirection, setScrollDirection] = useState('none')
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const userRef = useRef(null)
+  const lastScrollY = useRef(0)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 15)
+    let ticking = false
+
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0
+
+          // Smooth Apple Dynamic Island hysteresis transition
+          setScrolled((prev) => {
+            if (currentScrollY > 24) return true
+            if (currentScrollY < 10) return false
+            return prev
+          })
+
+          if (Math.abs(currentScrollY - lastScrollY.current) > 6) {
+            setScrollDirection(currentScrollY > lastScrollY.current ? 'down' : 'up')
+            lastScrollY.current = currentScrollY
+          }
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+
     window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
@@ -90,24 +116,44 @@ export default function Navbar() {
   const roleInfo = getRoleBadge()
 
   return (
-    <header id="site-header" className={`site-header ${scrolled ? 'scrolled' : ''}`}>
+    <header
+      id="site-header"
+      className={`site-header ${scrolled ? 'scrolled' : ''} ${scrollDirection === 'down' ? 'scroll-down' : 'scroll-up'}`}
+    >
       <div className="container header-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', whiteSpace: 'nowrap' }}>
 
-        {/* Brand Logo */}
-        <Link to="/" id="header-brand-link" style={{ flexShrink: 0, textDecoration: 'none' }} onClick={handleNavClick}>
+        {/* Brand Logo with Smooth Dynamic Scale */}
+        <Link
+          to="/"
+          id="header-brand-link"
+          style={{
+            flexShrink: 0,
+            textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            transform: scrolled ? 'scale(0.92)' : 'scale(1)',
+            transformOrigin: 'left center',
+            transition: 'transform 0.42s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}
+          onClick={handleNavClick}
+        >
           <BrandLogo size="md" />
         </Link>
 
         {/* Desktop Navigation Links */}
         <nav className="desktop-nav-wrap" style={{ flexGrow: 1, display: 'flex', justifyContent: 'center', margin: '0 16px' }}>
-          <ul className="nav-menu" style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px, 1.3vw, 22px)', margin: 0, padding: 0 }}>
+          <ul className="nav-menu" style={{ display: 'flex', alignItems: 'center', gap: scrolled ? 'clamp(8px, 1.1vw, 18px)' : 'clamp(10px, 1.3vw, 22px)', margin: 0, padding: 0, transition: 'gap 0.35s ease' }}>
             {navLinks.map((link) => (
               <li key={link.to}>
                 <NavLink
                   to={link.to}
                   className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                   end={link.to === '/'}
-                  style={{ fontSize: '0.875rem', fontWeight: 500 }}
+                  style={{
+                    fontSize: scrolled ? '0.84rem' : '0.875rem',
+                    fontWeight: 500,
+                    transition: 'font-size 0.35s ease, color 0.2s ease'
+                  }}
                   onClick={handleNavClick}
                 >
                   {link.label}
@@ -118,12 +164,21 @@ export default function Navbar() {
         </nav>
 
         {/* Right Side Actions */}
-        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: scrolled ? 8 : 10, flexShrink: 0, transition: 'gap 0.35s ease' }}>
 
           {/* Authenticated vs Guest Actions */}
           {isAuthenticated ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Link to={getDashboardPath()} className="btn btn-primary btn-sm" id="header-btn-dashboard" style={{ padding: '7px 14px' }}>
+              <Link
+                to={getDashboardPath()}
+                className="btn btn-primary btn-sm"
+                id="header-btn-dashboard"
+                style={{
+                  padding: scrolled ? '6px 14px' : '7px 14px',
+                  borderRadius: scrolled ? 9999 : 6,
+                  transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+              >
                 <LayoutDashboard size={14} style={{ marginRight: 5 }} />
                 <span>Dashboard</span>
               </Link>
@@ -269,11 +324,44 @@ export default function Navbar() {
               </div>
             </div>
           ) : (
-            <div className="header-guest-actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Link to="/login" className="btn btn-outline-blue btn-sm" id="header-btn-login" style={{ padding: '7px 18px', fontWeight: 600 }} onClick={handleNavClick}>
+            <div
+              className="header-guest-actions"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: scrolled ? 8 : 10,
+                transition: 'gap 0.3s ease'
+              }}
+            >
+              <Link
+                to="/login"
+                className="btn btn-outline-blue btn-sm"
+                id="header-btn-login"
+                style={{
+                  padding: scrolled ? '6px 16px' : '7px 18px',
+                  fontWeight: 600,
+                  fontSize: scrolled ? '0.82rem' : '0.85rem',
+                  borderRadius: scrolled ? 9999 : 6,
+                  transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+                onClick={handleNavClick}
+              >
                 Login
               </Link>
-              <Link to="/courses" className="btn btn-primary btn-sm" id="header-btn-get-started" style={{ padding: '7px 18px', fontWeight: 600 }} onClick={handleNavClick}>
+              <Link
+                to="/courses"
+                className="btn btn-primary btn-sm"
+                id="header-btn-get-started"
+                style={{
+                  padding: scrolled ? '6px 16px' : '7px 18px',
+                  fontWeight: 600,
+                  fontSize: scrolled ? '0.82rem' : '0.85rem',
+                  borderRadius: scrolled ? 9999 : 6,
+                  boxShadow: scrolled ? '0 4px 12px rgba(37, 99, 235, 0.28)' : '0 2px 6px rgba(37, 99, 235, 0.15)',
+                  transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+                onClick={handleNavClick}
+              >
                 Get Started
               </Link>
             </div>

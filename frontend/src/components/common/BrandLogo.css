@@ -1,5 +1,5 @@
 /* ========================================================================= */
-/* BrandLogo Component Styles & Opening Animation                            */
+/* BrandLogo Component Styles & Dynamic Emergence Animation                 */
 /* ========================================================================= */
 
 .brand-logo-component {
@@ -9,189 +9,120 @@
   line-height: 1;
   user-select: none;
   max-width: 100%;
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
 }
 
-/* Icon Wrap */
+/* Icon Wrap (The Big First A Logo) */
 .brand-logo-icon-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  will-change: transform, opacity;
+  position: relative;
+  z-index: 3;
+  will-change: transform;
   transform-origin: center center;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Text / Wordmark Wrap */
+.brand-logo-component:hover .brand-logo-icon-wrap {
+  transform: scale(1.06);
+}
+
+.brand-logo-big-a-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Text / Wordmark Wrap (The Company Name & Tagline) */
 .brand-logo-text-wrap {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  justify-content: flex-start;
   flex-shrink: 0;
   position: relative;
+  z-index: 1;
   overflow: visible;
   will-change: clip-path, transform, opacity;
+  transform-origin: left center;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.brand-logo-text-svg {
+.brand-logo-wordmark-img {
   display: block;
-  overflow: visible;
-}
-
-/* SVG Letter & Tagline positioning tokens */
-.brand-letter,
-.brand-tagline {
-  transform-box: fill-box;
-  transform-origin: center center;
-  will-change: transform, opacity;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
 }
 
 /* ------------------------------------------------------------------------- */
-/* WAITING STATE (While Fullscreen Intro Overlay is Active)                  */
+/* DYNAMIC ANIMATION: Company Name Emerges From Inside Big First A Logo      */
 /* ------------------------------------------------------------------------- */
-.brand-logo-waiting .brand-logo-icon-wrap,
-.brand-logo-waiting .brand-logo-text-wrap {
-  opacity: 0;
-  visibility: hidden;
+
+.brand-logo-animated .brand-logo-text-wrap {
+  animation: companyNameEmergeFromA 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* ------------------------------------------------------------------------- */
-/* ANIMATED OPENING SEQUENCE FOR NAVBAR / HEADER                             */
-/* ------------------------------------------------------------------------- */
-
-/* Phase 1: Standalone A Symbol appears smoothly */
-.brand-logo-animated .brand-logo-icon-wrap {
-  opacity: 0;
-  animation: brandLogoIconIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes brandLogoIconIn {
+@keyframes companyNameEmergeFromA {
   0% {
     opacity: 0;
-    transform: scale(0.88);
+    transform: translate3d(-36px, 0, 0) scale(0.90);
+    clip-path: inset(0 100% 0 0);
+  }
+  35% {
+    opacity: 1;
   }
   100% {
     opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    clip-path: inset(0 0% 0 0);
+  }
+}
+
+/* Dynamic Energy Pulse on the Big A during emergence */
+.brand-logo-animated .brand-logo-icon-wrap {
+  animation: bigAPulse 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes bigAPulse {
+  0% {
+    transform: scale(0.92);
+  }
+  40% {
+    transform: scale(1.08);
+  }
+  75% {
+    transform: scale(0.98);
+  }
+  100% {
     transform: scale(1);
   }
 }
 
-/* Phase 2: Wordmark emerges horizontally from the right edge of the A symbol */
-.brand-logo-animated .brand-logo-text-wrap {
-  clip-path: inset(0 100% 0 0);
-  animation: brandLogoTextUnmask 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards;
-}
-
-@keyframes brandLogoTextUnmask {
-  0% {
-    clip-path: inset(0 100% 0 0);
-    transform: translate3d(-14px, 0, 0);
-  }
-  100% {
-    clip-path: inset(0 0% 0 0);
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-/* Letter progressive staggered flow: i -> v -> o -> r -> t -> e -> x */
-.brand-logo-animated .brand-letter {
-  opacity: 0;
-  transform: translate3d(-10px, 0, 0);
-  animation: brandLetterIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes brandLetterIn {
-  0% {
-    opacity: 0;
-    transform: translate3d(-10px, 0, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-.brand-logo-animated .brand-letter-i { animation-delay: 0.28s; }
-.brand-logo-animated .brand-letter-v { animation-delay: 0.34s; }
-.brand-logo-animated .brand-letter-o { animation-delay: 0.40s; }
-.brand-logo-animated .brand-letter-r { animation-delay: 0.46s; }
-.brand-logo-animated .brand-letter-t { animation-delay: 0.52s; }
-.brand-logo-animated .brand-letter-e { animation-delay: 0.58s; }
-.brand-logo-animated .brand-letter-x { animation-delay: 0.64s; }
-
-/* Phase 3: LEARN. GROW. INNOVATE. reveals at the down */
-.brand-logo-animated .brand-tagline {
-  opacity: 0;
-  transform: translate3d(0, 7px, 0);
-  animation: brandTaglineIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.70s forwards;
-}
-
-@keyframes brandTaglineIn {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 7px, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
 /* ------------------------------------------------------------------------- */
-/* SETTLED / DONE / STATIC STATE                                             */
+/* RESPONSIVE SCALING                                                        */
 /* ------------------------------------------------------------------------- */
-.brand-logo-component:not(.brand-logo-animated):not(.brand-logo-waiting) .brand-logo-icon-wrap,
-.brand-logo-component:not(.brand-logo-animated):not(.brand-logo-waiting) .brand-logo-text-wrap,
-.brand-logo-component:not(.brand-logo-animated):not(.brand-logo-waiting) .brand-letter,
-.brand-logo-component:not(.brand-logo-animated):not(.brand-logo-waiting) .brand-tagline {
-  opacity: 1 !important;
-  visibility: visible !important;
-  clip-path: none !important;
-  transform: none !important;
-}
-
-/* Micro-interaction on hover */
-.brand-logo-component:hover .brand-logo-icon-wrap {
-  transform: scale(1.04);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* ------------------------------------------------------------------------- */
-/* RESPONSIVE SCALING FOR MOBILE & SMALL VIEWPORTS                           */
-/* ------------------------------------------------------------------------- */
-.brand-logo-component {
-  --logo-scale: 1;
-}
-
 @media (max-width: 640px) {
   .brand-logo-component {
-    --logo-scale: 0.82;
+    --logo-scale: 0.9;
   }
 }
 
-@media (max-width: 400px) {
-  .brand-logo-component {
-    --logo-scale: 0.72;
-  }
-}
-
-@media (max-width: 340px) {
-  .brand-logo-component {
-    --logo-scale: 0.65;
-  }
-}
-
-/* ------------------------------------------------------------------------- */
-/* ACCESSIBILITY: REDUCED MOTION                                             */
-/* ------------------------------------------------------------------------- */
+/* Accessibility: respect user prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   .brand-logo-animated .brand-logo-icon-wrap,
-  .brand-logo-animated .brand-logo-text-wrap,
-  .brand-logo-animated .brand-letter,
-  .brand-logo-animated .brand-tagline {
+  .brand-logo-animated .brand-logo-text-wrap {
     animation: none !important;
+    transform: none !important;
     clip-path: none !important;
     opacity: 1 !important;
-    visibility: visible !important;
-    transform: none !important;
   }
 }

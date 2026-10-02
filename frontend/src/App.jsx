@@ -13,7 +13,6 @@ export default function App() {
         <AuthProvider>
           <ToastProvider>
             <ScrollToTop />
-            <IvortexIntro />
             <AppRoutes />
           </ToastProvider>
         </AuthProvider>

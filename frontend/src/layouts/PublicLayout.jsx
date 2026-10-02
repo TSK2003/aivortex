@@ -8,12 +8,14 @@ import Footer from '../components/public/Footer'
  */
 export default function PublicLayout() {
   return (
-    <>
+    <div className="public-layout-root" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
-      <main>
+      {/* Spacer so page content starts cleanly below the fixed navbar */}
+      <div className="site-header-spacer" style={{ height: 68, flexShrink: 0 }} aria-hidden="true" />
+      <main style={{ flex: 1 }}>
         <Outlet />
       </main>
       <Footer />
-    </>
+    </div>
   )
 }
