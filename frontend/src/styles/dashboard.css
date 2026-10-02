@@ -1865,6 +1865,25 @@ button {
 [data-theme='dark'] .btn-outline:hover {
   background: var(--color-bg-subtle, #162033) !important;
   border-color: #3B82F6 !important;
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme='dark'] .btn-ghost:hover {
+  background: var(--color-bg-subtle) !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme='dark'] .btn-secondary,
+[data-theme='dark'] .btn-outline {
+  background: var(--color-bg-card) !important;
+  border-color: var(--color-input-border) !important;
+  color: var(--color-text) !important;
+}
+
+[data-theme='dark'] .btn-secondary:hover,
+[data-theme='dark'] .btn-outline:hover {
+  background: var(--color-bg-subtle) !important;
+  border-color: var(--color-border-hover) !important;
   color: #FFFFFF !important;
 }
 

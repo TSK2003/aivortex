@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Lock, Mail, ArrowLeft, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react'
+import { GraduationCap, Lock, Mail, ArrowLeft, KeyRound, CheckCircle2, AlertCircle, BookOpen, Shield } from 'lucide-react'
 import BrandLogo from '../../components/common/BrandLogo'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
@@ -31,6 +32,7 @@ export default function UnifiedLoginPage() {
   const [resetLoading, setResetLoading] = useState(false)
 
   const { login, user: existingUser, isAuthenticated } = useAuth()
+  const { login, demoLogin, user: existingUser, isAuthenticated } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
 
@@ -72,6 +74,22 @@ export default function UnifiedLoginPage() {
         navigate(redirectParam + (enrollParam ? '?enroll=true' : ''))
       } else {
         navigate('/student/dashboard')
+      }
+    }
+  }
+
+  const handleQuickDemo = async (role) => {
+    if (demoLogin) {
+      setIsSubmitting(true)
+      try {
+        const res = await demoLogin(role)
+        if (res?.success && res?.user) {
+          handleLoginSuccess(res.user)
+        }
+      } catch (err) {
+        showToast(err.message || 'Demo login failed. Please verify server connection.', 'error')
+      } finally {
+        setIsSubmitting(false)
       }
     }
   }
@@ -203,6 +221,63 @@ export default function UnifiedLoginPage() {
                   Please sign in to proceed with your course enrollment.
                 </div>
               )}
+            </div>
+
+            {/* Quick Demo Access Bar */}
+            <div
+              style={{
+                marginBottom: 20,
+                padding: '12px 14px',
+                background: '#F8FAFC',
+                borderRadius: 12,
+                border: '1px solid #E2E8F0'
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 8,
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: '#475569',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}
+              >
+                <span>Instant Demo Access</span>
+                <span style={{ fontSize: '0.7rem', color: '#2563EB', fontWeight: 600 }}>1-Click Login</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                <button
+                  type="button"
+                  id="btn-demo-student"
+                  onClick={() => handleQuickDemo('student')}
+                  className="btn btn-outline btn-sm"
+                  style={{ fontSize: '0.78rem', padding: '6px 4px', textAlign: 'center', fontWeight: 600, background: '#FFFFFF' }}
+                >
+                  <GraduationCap size={14} style={{ marginRight: 4 }} /> Student
+                </button>
+                <button
+                  type="button"
+                  id="btn-demo-creator"
+                  onClick={() => handleQuickDemo('creator')}
+                  className="btn btn-outline btn-sm"
+                  style={{ fontSize: '0.78rem', padding: '6px 4px', textAlign: 'center', fontWeight: 600, background: '#FFFFFF' }}
+                >
+                  <BookOpen size={14} style={{ marginRight: 4 }} /> Creator
+                </button>
+                <button
+                  type="button"
+                  id="btn-demo-admin"
+                  onClick={() => handleQuickDemo('admin')}
+                  className="btn btn-outline btn-sm"
+                  style={{ fontSize: '0.78rem', padding: '6px 4px', textAlign: 'center', fontWeight: 600, background: '#FFFFFF' }}
+                >
+                  <Shield size={14} style={{ marginRight: 4 }} /> Admin
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleLoginSubmit}>
