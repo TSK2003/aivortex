@@ -225,44 +225,31 @@ export async function getCourseBySlug(req, res, next) {
   }
 }
 
-// 3. Verifiable Digital Credential Lookup (Authentic Database Check with Strict Public Projection)
+// 3. Verifiable Digital Credential Lookup (Authentic Database Check)
 export async function verifyCertificate(req, res, next) {
   try {
-    const rawCode = req.params.code || req.query.code
+    const { code } = req.params
 
-    if (!rawCode || typeof rawCode !== 'string' || !rawCode.trim()) {
-      throw new BadRequestError('Certificate verification code is required.')
+    if (!code || !code.trim()) {
+      throw new BadRequestError('Certificate verification code is required')
     }
 
-    const cleanCode = rawCode.trim().toUpperCase()
+    const cleanCode = code.trim().toUpperCase()
 
-    // Enforce reasonable bounds to prevent payload abuse
-    if (cleanCode.length > 80) {
-      throw new BadRequestError('Certificate code exceeds maximum allowed length.')
-    }
-
-    // Enforce strict character set: alphanumeric, hyphens, underscores, slashes, dots
-    if (!/^[A-Z0-9_\-\/\.]+$/.test(cleanCode)) {
-      throw new BadRequestError('Certificate code contains invalid characters.')
-    }
-
-    // STRICT PROJECTION: Explicitly select ONLY public display fields.
-    // Never join User or Course tables, avoiding any risk of leaking student emails, phone numbers,
-    // passwords, auth tokens, or internal database UUIDs.
     const certificate = await prisma.certificate.findUnique({
       where: { certificateCode: cleanCode },
-      select: {
-        certificateCode: true,
-        studentName: true,
-        courseTitle: true,
-        issueDate: true,
-        status: true,
-        verificationUrl: true
+      include: {
+        course: {
+          select: { id: true, title: true, slug: true, duration: true }
+        },
+        student: {
+          select: { name: true }
+        }
       }
     })
 
-    if (!certificate || certificate.status !== 'VALID') {
-      throw new NotFoundError('Certificate not found or invalid.')
+    if (!certificate) {
+      throw new NotFoundError(`No active credential matches Certificate Code '${cleanCode}' in the official registry.`)
     }
 
     return successResponse(
@@ -274,7 +261,7 @@ export async function verifyCertificate(req, res, next) {
           courseTitle: certificate.courseTitle,
           issueDate: certificate.issueDate,
           status: certificate.status,
-          verificationUrl: certificate.verificationUrl || `/certificates?code=${certificate.certificateCode}`,
+          verificationUrl: certificate.verificationUrl,
           accreditation: 'aivortex Academic Accreditation Board'
         }
       },
@@ -313,7 +300,7 @@ export async function getLiveSessions(req, res, next) {
 // 6. Public Contact & Admissions Enquiry
 export async function submitContactEnquiry(req, res, next) {
   try {
-    const { name, email, phone, subject, message } = req.body
+    const { name, email, subject, message } = req.body
 
     if (!name || !email || !message) {
       throw new BadRequestError('Name, email, and message are required')
@@ -323,7 +310,6 @@ export async function submitContactEnquiry(req, res, next) {
       data: {
         name: name.trim(),
         email: email.trim().toLowerCase(),
-        phone: phone ? phone.trim() : null,
         subject: subject ? subject.trim() : 'General Technical Inquiry',
         message: message.trim(),
         status: 'NEW'

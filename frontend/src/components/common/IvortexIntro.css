@@ -1,0 +1,243 @@
+/* ========================================================================= */
+/* IVORTEX — Premium Opening Animation Styles                               */
+/* ========================================================================= */
+
+.ivortex-intro-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999999;
+  background-color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              visibility 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
+}
+
+.ivortex-intro-overlay.ivortex-intro-exiting {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Skip hint (subtle, accessible) */
+.ivortex-intro-skip-hint {
+  position: absolute;
+  bottom: 28px;
+  right: 28px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94A3B8;
+  background: transparent;
+  border: 1px solid #E2E8F0;
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s ease, color 0.2s ease, border-color 0.2s ease;
+  z-index: 10;
+}
+
+.ivortex-intro-skip-hint:hover {
+  color: #0F172A;
+  border-color: #CBD5E1;
+}
+
+.ivortex-intro-overlay:hover .ivortex-intro-skip-hint {
+  opacity: 0.75;
+}
+
+/* Master Centered Stage */
+.ivortex-intro-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Master Logo Lockup Container */
+/* Proportions from Reference Image 3:
+   - A symbol: 39w x 36h (aspect 1.0833)
+   - ivortex wordmark: 170w x 28h (aspect 6.0714)
+   - Gap between A and ivortex: 9px (25% of A height)
+   - Optical center adjustment: wordmark center is ~5.5% lower than A center
+*/
+.ivortex-intro-lockup {
+  --logo-h: clamp(48px, 6.5vw, 76px);
+  --symbol-w: calc(var(--logo-h) * (290 / 266));
+  --wordmark-h: calc(var(--logo-h) * (28 / 36));
+  --wordmark-w: calc(var(--wordmark-h) * (583 / 98));
+  --gap: calc(var(--logo-h) * (9 / 36));
+  --shift-x: calc((var(--gap) + var(--wordmark-w)) / 2);
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  will-change: transform;
+  transform: translate3d(var(--shift-x), 0, 0);
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 92vw;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .ivortex-intro-lockup {
+    --logo-h: clamp(24px, 7vw, 36px);
+    max-width: 88vw;
+  }
+  .ivortex-intro-skip-hint {
+    bottom: 18px;
+    right: 18px;
+    font-size: 0.7rem;
+    padding: 5px 12px;
+  }
+}
+
+/* When wordmark emerges (Phase 2 & Phase 3), the lockup shifts to 0, centering the full logo */
+.ivortex-intro-lockup.phase-emerging,
+.ivortex-intro-lockup.phase-settled {
+  transform: translate3d(0, 0, 0);
+}
+
+/* Standalone A Symbol Container */
+.ivortex-symbol-container {
+  position: relative;
+  width: var(--symbol-w);
+  height: var(--logo-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  will-change: transform, opacity;
+  transform-origin: center center;
+}
+
+.ivortex-symbol-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* Standalone A Symbol Animation:
+   Phase 1: Scale from 92% to 100% of initial presence (~1.12x lockup size), opacity 0 -> 100% over 600ms
+   Phase 2: Scale from 1.12x down to 1.0x seamlessly as lockup forms
+*/
+.ivortex-symbol-container {
+  opacity: 0;
+  transform: scale(1.02);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ivortex-symbol-container.phase-initial {
+  opacity: 1;
+  transform: scale(1.10);
+}
+
+.ivortex-symbol-container.phase-emerging,
+.ivortex-symbol-container.phase-settled {
+  opacity: 1;
+  transform: scale(1.0);
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Wordmark Container */
+.ivortex-wordmark-container {
+  position: relative;
+  width: var(--wordmark-w);
+  height: var(--wordmark-h);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  /* Optical alignment matching Reference Image 3 */
+  transform: translateY(calc(var(--logo-h) * 0.055));
+  will-change: clip-path, opacity, transform;
+}
+
+/* Horizontal unmasking clip-path revealing from the A towards the right */
+.ivortex-wordmark-reveal-mask {
+  width: 100%;
+  height: 100%;
+  display: block;
+  clip-path: inset(0 100% 0 0);
+  will-change: clip-path, transform;
+  transform: translate3d(-18px, 0, 0);
+  transition: clip-path 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ivortex-wordmark-container.phase-emerging .ivortex-wordmark-reveal-mask,
+.ivortex-wordmark-container.phase-settled .ivortex-wordmark-reveal-mask {
+  clip-path: inset(0 0% 0 0);
+  transform: translate3d(0, 0, 0);
+}
+
+.ivortex-wordmark-svg {
+  width: var(--wordmark-w);
+  height: var(--wordmark-h);
+  display: block;
+  overflow: visible;
+}
+
+/* Letter staggered progressive reveal from the A outwards to the right */
+.ivortex-letter {
+  will-change: transform, opacity;
+  opacity: 0;
+  transform: translate3d(-14px, 0, 0);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ivortex-wordmark-container.phase-emerging .ivortex-letter,
+.ivortex-wordmark-container.phase-settled .ivortex-letter {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Stagger delays for letters: i -> v -> o -> r -> t -> e -> x */
+.ivortex-letter-i { transition-delay: 0.04s; }
+.ivortex-letter-v { transition-delay: 0.09s; }
+.ivortex-letter-o { transition-delay: 0.14s; }
+.ivortex-letter-r { transition-delay: 0.19s; }
+.ivortex-letter-t { transition-delay: 0.24s; }
+.ivortex-letter-e { transition-delay: 0.29s; }
+.ivortex-letter-x { transition-delay: 0.34s; }
+
+/* Reduced Motion Mode (Accessible) */
+@media (prefers-reduced-motion: reduce) {
+  .ivortex-intro-overlay {
+    transition: opacity 0.3s ease;
+  }
+  .ivortex-intro-lockup {
+    transform: none !important;
+    transition: none !important;
+  }
+  .ivortex-symbol-container {
+    transform: none !important;
+    opacity: 1 !important;
+    transition: none !important;
+  }
+  .ivortex-wordmark-reveal-mask {
+    clip-path: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .ivortex-letter {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

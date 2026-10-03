@@ -43,9 +43,8 @@ router.get('/courses/:slug', getCourseBySlug)
 router.get('/offers', getActiveOffers)
 router.post('/offers/validate', generalLimiter, validateOfferCode)
 
-// Public Credential Verification (supports /certificates/:code and /certificates?code=...)
+// Public Credential Verification
 router.get('/certificates/:code', generalLimiter, verifyCertificate)
-router.get('/certificates', generalLimiter, verifyCertificate)
 
 // Dynamic Admin-Managed Domain Projects & Categories
 router.get('/projects/categories', getPublicProjectCategories)

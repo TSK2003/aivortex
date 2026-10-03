@@ -1,0 +1,8 @@
+/* Official Neuropol Font Definition (Classic by Ray Larabie) */
+@font-face {
+  font-family: 'Neuropol';
+  src: url('/fonts/neuropol.otf') format('opentype');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}

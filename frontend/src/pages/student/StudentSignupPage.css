@@ -1,0 +1,245 @@
+/* ========================================================================= */
+/* StudentSignupPage - Clean, Attractive & Professional Auth Experience      */
+/* ========================================================================= */
+
+.student-signup-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #F8FAFC;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(14, 165, 233, 0.04) 0%, transparent 50%);
+  font-family: var(--font-family-body, 'Inter', -apple-system, sans-serif);
+  color: #0F172A;
+  padding: 48px 16px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* Brand Header */
+.signup-brand-header {
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.signup-brand-header a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+/* Main Card */
+.signup-card {
+  width: 100%;
+  max-width: 440px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 
+    0 4px 6px -1px rgba(15, 23, 42, 0.03),
+    0 20px 35px -10px rgba(15, 23, 42, 0.06);
+  padding: 36px 32px;
+  box-sizing: border-box;
+}
+
+/* Card Header */
+.signup-header {
+  margin-bottom: 24px;
+}
+
+.signup-title {
+  font-family: var(--font-family-heading, 'Plus Jakarta Sans', sans-serif);
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: #0F172A;
+  letter-spacing: -0.025em;
+  margin: 0 0 6px 0;
+  line-height: 1.25;
+}
+
+.signup-subtitle {
+  font-size: 0.875rem;
+  color: #64748B;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Form */
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.signup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.signup-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.signup-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.signup-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  color: #0F172A;
+  outline: none;
+  transition: all 0.15s ease-in-out;
+  box-sizing: border-box;
+}
+
+.signup-input::placeholder {
+  color: #94A3B8;
+  font-size: 0.875rem;
+}
+
+.signup-input:focus {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* Password Toggle */
+.signup-eye-btn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  padding: 6px;
+  color: #94A3B8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+
+.signup-eye-btn:hover {
+  color: #334155;
+}
+
+/* Terms Text */
+.signup-terms-note {
+  font-size: 0.775rem;
+  color: #64748B;
+  line-height: 1.45;
+  margin-top: 2px;
+}
+
+.signup-terms-note a {
+  color: #2563EB;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.signup-terms-note a:hover {
+  text-decoration: underline;
+}
+
+/* Submit Button */
+.signup-btn {
+  width: 100%;
+  height: 46px;
+  background: #0F172A;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease-in-out;
+  margin-top: 4px;
+}
+
+.signup-btn:hover:not(:disabled) {
+  background: #1E293B;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  transform: translateY(-1px);
+}
+
+.signup-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.signup-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Footer Switch */
+.signup-card-footer {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #F1F5F9;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: #64748B;
+}
+
+.signup-card-footer a {
+  color: #2563EB;
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 4px;
+}
+
+.signup-card-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Page Outer Footer */
+.signup-page-footer {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: #94A3B8;
+}
+
+.signup-page-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.signup-page-footer a {
+  color: #64748B;
+  text-decoration: none;
+}
+
+.signup-page-footer a:hover {
+  color: #0F172A;
+}
+
+@media (max-width: 480px) {
+  .signup-card {
+    padding: 28px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+}

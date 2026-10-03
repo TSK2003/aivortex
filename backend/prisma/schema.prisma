@@ -725,7 +725,6 @@ model ContactEnquiry {
   id        String   @id @default(uuid())
   name      String
   email     String
-  phone     String?
   subject   String
   message   String   @db.Text
   status    String   @default("NEW") // NEW, IN_PROGRESS, RESOLVED
@@ -733,7 +732,6 @@ model ContactEnquiry {
 
   @@index([status])
   @@index([email])
-  @@index([phone])
 }
 
 // ----------------------------------------------------

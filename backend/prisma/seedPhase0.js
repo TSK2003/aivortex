@@ -9,8 +9,8 @@ async function main() {
                          dbUrl.includes('railway.app') ||
                          (!dbUrl.includes('localhost') && !dbUrl.includes('127.0.0.1'))
 
-  if ((process.env.NODE_ENV === 'production' || isProductionDb) && !process.env.ALLOW_SEED_OVERRIDE) {
-    console.error('CRITICAL: Phase 0 development seed cannot be executed in production environment or against non-local database without ALLOW_SEED_OVERRIDE=true!')
+  if (process.env.NODE_ENV === 'production' || (isProductionDb && !process.env.ALLOW_SEED_OVERRIDE)) {
+    console.error('CRITICAL: Phase 0 development seed cannot be executed in production environment or against non-local database!')
     process.exit(1)
   }
 

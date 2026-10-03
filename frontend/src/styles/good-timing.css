@@ -1,0 +1,73 @@
+/* Good Timing W00 SemiBold (Primary Requested Brand Font) */
+@font-face {
+  font-family: 'Good Timing W00 SemiBold';
+  src: url('/fonts/good-timing-semibold.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Good Timing SemiBold';
+  src: url('/fonts/good-timing-semibold.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Good Timing W00 UltraLight';
+  src: url('/fonts/good-timing-ultralight.woff2') format('woff2');
+  font-weight: 100 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Good Timing W00 Light';
+  src: url('/fonts/good-timing-light.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Good Timing W00 Regular';
+  src: url('/fonts/good-timing-regular.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Unified 'Good Timing' family mapping */
+@font-face {
+  font-family: 'Good Timing';
+  src: url('/fonts/good-timing-ultralight.woff2') format('woff2');
+  font-weight: 100 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Good Timing';
+  src: url('/fonts/good-timing-light.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Good Timing';
+  src: url('/fonts/good-timing-regular.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Good Timing';
+  src: url('/fonts/good-timing-semibold.woff2') format('woff2');
+  font-weight: 600 900;
+  font-style: normal;
+  font-display: swap;
+}

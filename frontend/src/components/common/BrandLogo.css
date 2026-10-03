@@ -1,0 +1,128 @@
+/* ========================================================================= */
+/* BrandLogo Component Styles & Dynamic Emergence Animation                 */
+/* ========================================================================= */
+
+.brand-logo-component {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  line-height: 1;
+  user-select: none;
+  max-width: 100%;
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
+}
+
+/* Icon Wrap (The Big First A Logo) */
+.brand-logo-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 3;
+  will-change: transform;
+  transform-origin: center center;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.brand-logo-component:hover .brand-logo-icon-wrap {
+  transform: scale(1.06);
+}
+
+.brand-logo-big-a-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Text / Wordmark Wrap (The Company Name & Tagline) */
+.brand-logo-text-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+  will-change: clip-path, transform, opacity;
+  transform-origin: left center;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.brand-logo-wordmark-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ------------------------------------------------------------------------- */
+/* DYNAMIC ANIMATION: Company Name Emerges From Inside Big First A Logo      */
+/* ------------------------------------------------------------------------- */
+
+.brand-logo-animated .brand-logo-text-wrap {
+  animation: companyNameEmergeFromA 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes companyNameEmergeFromA {
+  0% {
+    opacity: 0;
+    transform: translate3d(-36px, 0, 0) scale(0.90);
+    clip-path: inset(0 100% 0 0);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    clip-path: inset(0 0% 0 0);
+  }
+}
+
+/* Dynamic Energy Pulse on the Big A during emergence */
+.brand-logo-animated .brand-logo-icon-wrap {
+  animation: bigAPulse 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes bigAPulse {
+  0% {
+    transform: scale(0.92);
+  }
+  40% {
+    transform: scale(1.08);
+  }
+  75% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ------------------------------------------------------------------------- */
+/* RESPONSIVE SCALING                                                        */
+/* ------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .brand-logo-component {
+    --logo-scale: 0.9;
+  }
+}
+
+/* Accessibility: respect user prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .brand-logo-animated .brand-logo-icon-wrap,
+  .brand-logo-animated .brand-logo-text-wrap {
+    animation: none !important;
+    transform: none !important;
+    clip-path: none !important;
+    opacity: 1 !important;
+  }
+}
