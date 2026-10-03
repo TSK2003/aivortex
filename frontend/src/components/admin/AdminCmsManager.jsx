@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Layout,
   Globe,
@@ -596,7 +596,7 @@ export default function AdminCmsManager({ showToast }) {
                     </label>
                     <input
                       type="email"
-                      value={footerData.contactEmail || 'director@apexlearn.edu'}
+                      value={footerData.contactEmail || 'director@aivortex.com'}
                       onChange={(e) => {
                         setFooterData({ ...footerData, contactEmail: e.target.value })
                         markDirty()

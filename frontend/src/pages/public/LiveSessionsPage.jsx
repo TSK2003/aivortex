@@ -344,7 +344,7 @@ export default function LiveSessionsPage() {
                 <input
                   type="email"
                   required
-                  placeholder="scholar@apexlearn.edu"
+                  placeholder="scholar@aivortex.com"
                   className="form-control"
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: rsvpError ? '1px solid #EF4444' : '1px solid #CBD5E1', fontSize: '0.875rem' }}
                   value={emailInput}

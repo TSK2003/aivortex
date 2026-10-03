@@ -119,9 +119,9 @@ export async function demoLogin(req, res, next) {
 
     let email = 'rahul.sharma@example.com'
     if (targetRole === 'ADMIN') {
-      email = 'director@apexlearn.edu'
+      email = 'director@aivortex.com'
     } else if (targetRole === 'CREATOR') {
-      email = 'creator@apexlearn.edu'
+      email = 'creator@aivortex.com'
     }
 
     let user = await prisma.user.findFirst({

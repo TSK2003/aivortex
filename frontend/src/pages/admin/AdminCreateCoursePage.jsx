@@ -22,7 +22,10 @@ import {
   Upload,
   Trash2,
   Play,
-  Film
+  Film,
+  X,
+  UserCheck,
+  Plus
 } from 'lucide-react'
 import { useToast } from '../../contexts/ToastContext'
 import api from '../../services/api'
@@ -102,8 +105,8 @@ export default function AdminCreateCoursePage() {
   const [accessDurationDays, setAccessDurationDays] = useState(365)
   const [certificateEnabled, setCertificateEnabled] = useState(true)
 
-  // Faculty State
-  const [creatorId, setCreatorId] = useState('')
+  // Faculty State (Optional Multi-Select)
+  const [selectedCreatorIds, setSelectedCreatorIds] = useState([])
   const [creators, setCreators] = useState([])
   const [loadingCreators, setLoadingCreators] = useState(false)
 
@@ -177,7 +180,10 @@ export default function AdminCreateCoursePage() {
           setBadge(found.badge || 'Bestseller')
           setIsFeatured(Boolean(found.isFeatured))
           if (found.creators && found.creators.length > 0) {
-            setCreatorId(found.creators[0].creatorId || found.creators[0].creator?.id || '')
+            const ids = found.creators.map((c) => c.creatorId || c.creator?.id || c.id).filter(Boolean)
+            setSelectedCreatorIds(ids)
+          } else {
+            setSelectedCreatorIds([])
           }
         }
       } catch (err) {
@@ -217,10 +223,29 @@ export default function AdminCreateCoursePage() {
     return Math.round(((orig - cur) / orig) * 100)
   }, [isFree, price, originalPrice])
 
-  // Find currently selected instructor details
-  const selectedCreator = useMemo(() => {
-    return creators.find((c) => c.id === creatorId) || null
-  }, [creators, creatorId])
+  // Find currently selected instructors details
+  const selectedCreatorsList = useMemo(() => {
+    return creators.filter((c) => selectedCreatorIds.includes(c.id))
+  }, [creators, selectedCreatorIds])
+
+  const handleToggleCreator = (cId) => {
+    if (!cId) return
+    setSelectedCreatorIds((prev) =>
+      prev.includes(cId) ? prev.filter((id) => id !== cId) : [...prev, cId]
+    )
+  }
+
+  const handleRemoveCreator = (cId) => {
+    setSelectedCreatorIds((prev) => prev.filter((id) => id !== cId))
+  }
+
+  const handleSelectAllCreators = () => {
+    setSelectedCreatorIds(creators.map((c) => c.id))
+  }
+
+  const handleClearCreators = () => {
+    setSelectedCreatorIds([])
+  }
 
   // Helper to validate thumbnail URL format
   const validateThumbnailUrl = (url) => {
@@ -482,7 +507,7 @@ export default function AdminCreateCoursePage() {
         certificateEnabled: Boolean(certificateEnabled),
         shortDescription: shortDescription.trim(),
         fullDescription: fullDescription.trim() || shortDescription.trim(),
-        creatorIds: creatorId ? [creatorId] : []
+        creatorIds: selectedCreatorIds
       }
 
       if (isEditMode) {
@@ -1189,94 +1214,244 @@ export default function AdminCreateCoursePage() {
                 <Users size={20} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#15171A', margin: 0 }}>
-                  Section 3 — Assign Faculty Instructor
-                </h2>
-                <span style={{ fontSize: '0.8125rem', color: '#6B6D73' }}>
-                  Designate an accredited professor or researcher leading this program.
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#15171A', margin: 0 }}>
+                    Section 3 — Course Faculty & Instructors
+                  </h2>
+                  <span
+                    style={{
+                      background: '#F4F4F5',
+                      color: '#4B4D52',
+                      fontSize: '0.6875rem',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: 6,
+                      border: '1px solid #E4E4E7'
+                    }}
+                  >
+                    Optional
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.8125rem', color: '#6B6D73', marginTop: 2, display: 'block' }}>
+                  Assign one or more faculty instructors to this course, or leave unassigned. You can also assign individual creators to specific lectures when creating the curriculum.
                 </span>
               </div>
             </div>
 
             <div className="form-field-group">
-              <label htmlFor="select-course-instructor" className="form-label" style={{ fontWeight: 700 }}>
-                Lead Academic Instructor
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <label htmlFor="select-course-instructor" className="form-label" style={{ fontWeight: 700, margin: 0 }}>
+                  Select Instructors ({selectedCreatorIds.length} assigned)
+                </label>
+                {creators.length > 0 && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {selectedCreatorIds.length < creators.length && (
+                      <button
+                        type="button"
+                        onClick={handleSelectAllCreators}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          fontSize: '0.75rem',
+                          color: '#2563EB',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          padding: 0
+                        }}
+                      >
+                        Select All ({creators.length})
+                      </button>
+                    )}
+                    {selectedCreatorIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearCreators}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          fontSize: '0.75rem',
+                          color: '#DC2626',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          padding: 0
+                        }}
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <select
                 id="select-course-instructor"
                 className="form-input"
-                value={creatorId}
-                onChange={(e) => setCreatorId(e.target.value)}
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleToggleCreator(e.target.value)
+                  }
+                }}
                 disabled={loadingCreators}
               >
-                <option value="">-- Choose Instructor --</option>
-                {creators.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.email}) {c.headline ? `• ${c.headline}` : ''}
-                  </option>
-                ))}
+                <option value="">
+                  {selectedCreatorIds.length === 0
+                    ? '-- Choose an Instructor to Add (Optional) --'
+                    : '-- Add Another Instructor --'}
+                </option>
+                {creators.map((c) => {
+                  const isSelected = selectedCreatorIds.includes(c.id)
+                  return (
+                    <option key={c.id} value={c.id}>
+                      {isSelected ? '✓ ' : '+ '} {c.name} ({c.email}) {c.headline ? `• ${c.headline}` : ''}
+                    </option>
+                  )
+                })}
               </select>
+
               <span style={{ fontSize: '0.75rem', color: '#9B9DA3', marginTop: 4, display: 'block' }}>
                 {loadingCreators
                   ? 'Loading registered faculty members...'
-                  : `${creators.length} verified instructor(s) currently registered in database.`}
+                  : `${creators.length} verified instructor(s) available. Select any instructor above to add or remove.`}
               </span>
             </div>
 
-            {/* Selected Instructor Profile Snippet */}
-            {selectedCreator && (
+            {/* Selected Instructors List */}
+            {selectedCreatorsList.length > 0 ? (
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#15171A', marginBottom: 8 }}>
+                  Assigned Instructors ({selectedCreatorsList.length})
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                  {selectedCreatorsList.map((sc) => (
+                    <div
+                      key={sc.id}
+                      style={{
+                        padding: '12px 14px',
+                        background: '#F8F9FA',
+                        borderRadius: 10,
+                        border: '1px solid #E2E8F0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                        <div
+                          style={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #1E293B, #0F172A)',
+                            color: '#FFFFFF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 800,
+                            fontSize: '0.875rem',
+                            flexShrink: 0
+                          }}
+                        >
+                          {sc.name ? sc.name.slice(0, 2).toUpperCase() : 'FC'}
+                        </div>
+                        <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <strong
+                              style={{
+                                fontSize: '0.875rem',
+                                color: '#15171A',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}
+                            >
+                              {sc.name}
+                            </strong>
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '0.75rem',
+                              color: '#6B6D73',
+                              marginTop: 1,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}
+                          >
+                            {sc.email}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCreator(sc.id)}
+                        title="Remove instructor from course"
+                        style={{
+                          background: '#FFFFFF',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: '50%',
+                          width: 28,
+                          height: 28,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          color: '#6B6D73',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#DC2626'
+                          e.currentTarget.style.borderColor = '#FCA5A5'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#6B6D73'
+                          e.currentTarget.style.borderColor = '#E2E8F0'
+                        }}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
               <div
                 style={{
                   marginTop: 16,
-                  padding: '16px',
-                  background: '#F8F8F8',
-                  borderRadius: 12,
-                  border: '1px solid #E2E8F0',
+                  padding: '16px 20px',
+                  background: '#FAFAFA',
+                  borderRadius: 10,
+                  border: '1px dashed #CBD5E1',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 16
+                  gap: 12
                 }}
               >
                 <div
                   style={{
-                    width: 48,
-                    height: 48,
+                    width: 36,
+                    height: 36,
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #1E293B, #0F172A)',
-                    color: '#FFFFFF',
+                    background: '#F1F5F9',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontWeight: 800,
-                    fontSize: '1rem',
+                    color: '#64748B',
                     flexShrink: 0
                   }}
                 >
-                  {selectedCreator.name ? selectedCreator.name.slice(0, 2).toUpperCase() : 'FC'}
+                  <Users size={18} />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <strong style={{ fontSize: '0.9375rem', color: '#15171A' }}>{selectedCreator.name}</strong>
-                    <span
-                      style={{
-                        background: '#F4F4F5',
-                        color: '#2D2F33',
-                        fontSize: '0.6875rem',
-                        fontWeight: 700,
-                        padding: '1px 8px',
-                        borderRadius: 6,
-                        border: '1px solid #E4E4E7'
-                      }}
-                    >
-                      Verified Faculty
-                    </span>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>
+                    No instructors assigned to this course yet
                   </div>
-                  <div style={{ fontSize: '0.8125rem', color: '#6B6D73', marginTop: 2 }}>{selectedCreator.email}</div>
-                  {selectedCreator.headline && (
-                    <div style={{ fontSize: '0.75rem', color: '#15171A', fontWeight: 600, marginTop: 2 }}>
-                      {selectedCreator.headline}
-                    </div>
-                  )}
+                  <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: 2 }}>
+                    This is completely optional. You can create the course without an instructor, and assign specific creators directly to lectures later.
+                  </div>
                 </div>
               </div>
             )}
@@ -2017,7 +2192,7 @@ export default function AdminCreateCoursePage() {
 
               {/* Faculty Name */}
               <div style={{ fontSize: '0.75rem', color: '#5A5C62', marginBottom: 12 }}>
-                Instructor: <strong>{selectedCreator ? selectedCreator.name : 'Unassigned'}</strong>
+                Instructor(s): <strong>{selectedCreatorsList.length > 0 ? selectedCreatorsList.map(c => c.name).join(', ') : 'Unassigned (Optional)'}</strong>
               </div>
 
               {/* Price & Certificate Row */}
@@ -2115,9 +2290,9 @@ export default function AdminCreateCoursePage() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CheckCircle2 size={16} style={{ color: creatorId ? '#2D2F33' : '#D5D5D8' }} />
-                <span style={{ color: creatorId ? '#15171A' : '#6B6D73' }}>
-                  {creatorId ? 'Faculty assigned' : 'Faculty instructor assigned (optional)'}
+                <CheckCircle2 size={16} style={{ color: selectedCreatorIds.length > 0 ? '#10B981' : '#94A3B8' }} />
+                <span style={{ color: selectedCreatorIds.length > 0 ? '#15171A' : '#6B6D73' }}>
+                  {selectedCreatorIds.length > 0 ? `${selectedCreatorIds.length} Faculty assigned` : 'Course faculty (optional)'}
                 </span>
               </div>
             </div>

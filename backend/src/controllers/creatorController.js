@@ -11,26 +11,26 @@ export async function getAssignedCourses(req, res, next) {
   try {
     const creatorId = req.user.id
 
-    const assignments = await prisma.courseCreator.findMany({
-      where: { creatorId },
+    const coursesFound = await prisma.course.findMany({
+      where: {
+        OR: [
+          { creators: { some: { creatorId } } },
+          { playlists: { some: { lessons: { some: { creatorId } } } } }
+        ]
+      },
       include: {
-        course: {
+        playlists: {
+          orderBy: { orderIndex: 'asc' },
           include: {
-            playlists: {
-              orderBy: { orderIndex: 'asc' },
-              include: {
-                lessons: {
-                  orderBy: { orderIndex: 'asc' }
-                }
-              }
+            lessons: {
+              orderBy: { orderIndex: 'asc' }
             }
           }
         }
       }
     })
 
-    const courses = assignments.map((a) => {
-      const c = a.course
+    const courses = coursesFound.map((c) => {
       let totalLessons = 0
       let publishedLessons = 0
       c.playlists.forEach((p) => {
@@ -61,7 +61,10 @@ export async function getAssignedCourseById(req, res, next) {
       const assignment = await prisma.courseCreator.findUnique({
         where: { courseId_creatorId: { courseId, creatorId } }
       })
-      if (!assignment) {
+      const hasLessonInCourse = await prisma.lesson.findFirst({
+        where: { creatorId, playlist: { courseId } }
+      })
+      if (!assignment && !hasLessonInCourse) {
         throw new ForbiddenError('You are not authorized to view this course')
       }
     }
@@ -100,12 +103,15 @@ export async function createPlaylist(req, res, next) {
       throw new BadRequestError('Course ID and Section title are required')
     }
 
-    // Verify creator is assigned to this course (IDOR protection)
+    // Verify creator is assigned to this course or has lessons in it (IDOR protection)
     if (req.user.role !== 'ADMIN') {
       const assignment = await prisma.courseCreator.findUnique({
         where: { courseId_creatorId: { courseId, creatorId } }
       })
-      if (!assignment) {
+      const hasLessonInCourse = await prisma.lesson.findFirst({
+        where: { creatorId, playlist: { courseId } }
+      })
+      if (!assignment && !hasLessonInCourse) {
         throw new ForbiddenError('You are not authorized to create sections for this course')
       }
     }
@@ -221,7 +227,6 @@ export async function deletePlaylist(req, res, next) {
 // 3. Upload Video / Register Lesson
 export async function uploadVideo(req, res, next) {
   try {
-    const creatorId = req.user.id
     const {
       playlistId,
       title,
@@ -232,14 +237,19 @@ export async function uploadVideo(req, res, next) {
       videoUrl,
       s3Key,
       isPreview = false,
-      status
+      status,
+      creatorId: bodyCreatorId
     } = req.body
+
+    const creatorId = req.user.role === 'ADMIN'
+      ? (bodyCreatorId || null)
+      : req.user.id
 
     if (!playlistId || !title || !title.trim()) {
       throw new BadRequestError('Section ID and lecture title are required')
     }
 
-    if (status === 'APPROVED' || status === 'PUBLISHED') {
+    if (req.user.role !== 'ADMIN' && (status === 'APPROVED' || status === 'PUBLISHED')) {
       throw new ForbiddenError('Lessons cannot be created directly in APPROVED or PUBLISHED status')
     }
 
@@ -255,9 +265,12 @@ export async function uploadVideo(req, res, next) {
 
     if (req.user.role !== 'ADMIN') {
       const assignment = await prisma.courseCreator.findUnique({
-        where: { courseId_creatorId: { courseId: playlist.courseId, creatorId } }
+        where: { courseId_creatorId: { courseId: playlist.courseId, creatorId: req.user.id } }
       })
-      if (!assignment) {
+      const hasLessonInCourse = await prisma.lesson.findFirst({
+        where: { creatorId: req.user.id, playlist: { courseId: playlist.courseId } }
+      })
+      if (!assignment && !hasLessonInCourse) {
         throw new ForbiddenError('You are not authorized to upload lessons to this course')
       }
     }
@@ -272,6 +285,8 @@ export async function uploadVideo(req, res, next) {
     let resolvedStatus = 'DRAFT'
     if (!hasVideo) {
       resolvedStatus = 'INCOMPLETE'
+    } else if (req.user.role === 'ADMIN' && status === 'APPROVED') {
+      resolvedStatus = 'APPROVED'
     } else if (status === 'SUBMITTED_FOR_REVIEW') {
       resolvedStatus = 'SUBMITTED_FOR_REVIEW'
     } else if (status === 'UPLOADED') {
@@ -297,6 +312,11 @@ export async function uploadVideo(req, res, next) {
         s3Key: s3Key || null,
         isPreview: Boolean(isPreview),
         status: resolvedStatus
+      },
+      include: {
+        creator: {
+          select: { id: true, name: true, email: true, avatar: true }
+        }
       }
     })
 
@@ -305,12 +325,14 @@ export async function uploadVideo(req, res, next) {
       data: {
         lessonId: lesson.id,
         toStatus: resolvedStatus,
-        changedById: creatorId,
+        changedById: req.user.id,
         reason: !hasVideo
           ? 'Lecture created as incomplete (no video uploaded yet)'
           : resolvedStatus === 'SUBMITTED_FOR_REVIEW'
           ? 'Lecture submitted for Admin review'
-          : 'Lesson draft saved by Creator'
+          : resolvedStatus === 'APPROVED'
+          ? 'Lecture created with APPROVED status by Admin'
+          : 'Lesson draft saved'
       }
     })
 
@@ -323,7 +345,6 @@ export async function uploadVideo(req, res, next) {
 // 3b. Update Lesson (Edit Draft or Update after Changes Requested)
 export async function updateLesson(req, res, next) {
   try {
-    const creatorId = req.user.id
     const { lessonId } = req.params
     const {
       title,
@@ -334,7 +355,8 @@ export async function updateLesson(req, res, next) {
       videoUrl,
       s3Key,
       isPreview,
-      status
+      status,
+      creatorId: bodyCreatorId
     } = req.body
 
     const lesson = await prisma.lesson.findUnique({
@@ -345,9 +367,9 @@ export async function updateLesson(req, res, next) {
       throw new NotFoundError('Lesson not found')
     }
 
-    if (req.user.role !== 'ADMIN' && lesson.creatorId !== creatorId) {
+    if (req.user.role !== 'ADMIN' && lesson.creatorId !== req.user.id) {
       const assignment = await prisma.courseCreator.findUnique({
-        where: { courseId_creatorId: { courseId: lesson.playlist.courseId, creatorId } }
+        where: { courseId_creatorId: { courseId: lesson.playlist.courseId, creatorId: req.user.id } }
       })
       if (!assignment) {
         throw new ForbiddenError('You are not authorized to edit this lesson')
@@ -387,18 +409,29 @@ export async function updateLesson(req, res, next) {
       throw new BadRequestError('Upload a lecture video before submitting for review.')
     }
 
+    const updateData = {
+      ...(title ? { title: title.trim() } : {}),
+      ...(description !== undefined ? { description: description ? description.trim() : null } : {}),
+      ...(duration !== undefined ? { duration: hasVideo ? duration : '' } : {}),
+      ...(durationSeconds !== undefined ? { durationSeconds: hasVideo ? Number(durationSeconds) : 0 } : {}),
+      ...(orderIndex !== undefined ? { orderIndex: Number(orderIndex) } : {}),
+      ...(videoUrl !== undefined ? { videoUrl: cleanVideoUrl } : {}),
+      ...(s3Key !== undefined ? { s3Key } : {}),
+      ...(isPreview !== undefined ? { isPreview: Boolean(isPreview) } : {}),
+      ...(nextStatus ? { status: nextStatus } : {})
+    }
+
+    if (req.user.role === 'ADMIN' && bodyCreatorId !== undefined) {
+      updateData.creatorId = bodyCreatorId || null
+    }
+
     const updated = await prisma.lesson.update({
       where: { id: lessonId },
-      data: {
-        ...(title ? { title: title.trim() } : {}),
-        ...(description !== undefined ? { description: description ? description.trim() : null } : {}),
-        ...(duration !== undefined ? { duration: hasVideo ? duration : '' } : {}),
-        ...(durationSeconds !== undefined ? { durationSeconds: hasVideo ? Number(durationSeconds) : 0 } : {}),
-        ...(orderIndex !== undefined ? { orderIndex: Number(orderIndex) } : {}),
-        ...(videoUrl !== undefined ? { videoUrl: cleanVideoUrl } : {}),
-        ...(s3Key !== undefined ? { s3Key } : {}),
-        ...(isPreview !== undefined ? { isPreview: Boolean(isPreview) } : {}),
-        ...(nextStatus ? { status: nextStatus } : {})
+      data: updateData,
+      include: {
+        creator: {
+          select: { id: true, name: true, email: true, avatar: true }
+        }
       }
     })
 
@@ -585,7 +618,7 @@ export async function getCreatorProfile(req, res, next) {
         data: {
           userId: creatorId,
           specialization: 'Technical Instructor',
-          headline: 'Course Creator at ApexLearn',
+          headline: 'Course Creator at AIVORTEX',
           biography: ''
         }
       })
@@ -688,7 +721,7 @@ export async function requestProfileChange(req, res, next) {
         data: {
           userId: creatorId,
           specialization: 'Technical Instructor',
-          headline: 'Course Creator at ApexLearn',
+          headline: 'Course Creator at AIVORTEX',
           biography: ''
         }
       })

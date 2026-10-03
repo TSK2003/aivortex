@@ -136,7 +136,7 @@ export async function startVideoSession(req, res, next) {
 
     // 6. Student Watermark Payload (Separates display from audit IP per prompt specification)
     const watermark = {
-      displayId: `APEX-STU-${studentId.slice(0, 8).toUpperCase()}`,
+      displayId: `AIVORTEX-STU-${studentId.slice(0, 8).toUpperCase()}`,
       sessionTag: `SES-${newSessionId.slice(0, 6).toUpperCase()}`,
       displayText: `Student #${studentId.slice(0, 8).toUpperCase()} • Active Learner Stream`,
       timestamp: new Date().toISOString()

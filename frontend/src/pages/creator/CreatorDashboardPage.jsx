@@ -3515,7 +3515,7 @@ export default function CreatorDashboardPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                   <Mail size={14} style={{ color: '#64748B' }} />
                   <span style={{ fontSize: '0.875rem', color: '#334155', fontWeight: 600 }}>
-                    {currentCreator?.email || 'creator@apexlearn.com'}
+                    {currentCreator?.email || 'creator@aivortex.com'}
                   </span>
                   <span style={{ fontSize: '0.7rem', color: '#16A34A', background: '#DCFCE7', padding: '1px 6px', borderRadius: 4, fontWeight: 700, marginLeft: 4 }}>
                     Active Login Email

@@ -1667,6 +1667,20 @@ button {
   color: #FFFFFF !important;
 }
 
+[data-theme='dark'] .data-table td button[title*="Delete"],
+[data-theme='dark'] .data-table td button[aria-label*="Delete"] {
+  background-color: rgba(225, 29, 72, 0.12) !important;
+  border-color: rgba(225, 29, 72, 0.3) !important;
+  color: #FB7185 !important;
+}
+
+[data-theme='dark'] .data-table td button[title*="Delete"]:hover,
+[data-theme='dark'] .data-table td button[aria-label*="Delete"]:hover {
+  background-color: rgba(225, 29, 72, 0.22) !important;
+  border-color: rgba(225, 29, 72, 0.5) !important;
+  color: #FDA4AF !important;
+}
+
 /* 6. Form Inputs, Textareas, Search Bars & Filters */
 [data-theme='dark'] input[type="text"],
 [data-theme='dark'] input[type="search"],

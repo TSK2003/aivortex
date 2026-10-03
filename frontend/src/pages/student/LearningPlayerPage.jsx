@@ -159,7 +159,7 @@ export default function LearningPlayerPage() {
         if (sessionRes.success && sessionRes.data) {
           setSessionId(sessionRes.data.sessionId)
           setCurrentVideoUrl(sessionRes.data.streamUrl || sessionRes.data.videoUrl || currentLesson.videoUrl)
-          setWatermarkText(sessionRes.data.watermark?.displayText || `${student?.name || 'Verified Scholar'} • APEX-2026`)
+          setWatermarkText(sessionRes.data.watermark?.displayText || `${student?.name || 'Verified Scholar'} • AIVORTEX-2026`)
 
           // Restore last saved position if available (canonical resumePositionSec)
           const resumeSec = sessionRes.data.resumePositionSec ?? sessionRes.data.lastPositionSec ?? 0
