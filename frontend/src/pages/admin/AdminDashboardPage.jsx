@@ -221,6 +221,7 @@ export default function AdminDashboardPage() {
     uploadProgress: 0,
     isUploading: false,
     isPreview: false,
+    creatorId: '',
     isSaving: false,
     error: ''
   })
@@ -368,111 +369,192 @@ export default function AdminDashboardPage() {
     }
   }
 
-  // Convert technical enum statuses into human-readable compact chips with clean status dots
+  // Convert technical enum statuses into human-readable, executive compact chips with clean status dots
   const renderReviewStatusChip = (status) => {
-    switch (status) {
-      case 'SUBMITTED_FOR_REVIEW':
-        return (
+    const s = String(status || '').toUpperCase()
+    if (s === 'PUBLISHED') {
+      return (
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '3px 10px',
+            borderRadius: 9999,
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            letterSpacing: '0.01em',
+            background: '#ECFDF5',
+            color: '#065F46',
+            border: '1px solid #A7F3D0',
+            whiteSpace: 'nowrap'
+          }}
+        >
           <span
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '3px 10px',
-              borderRadius: 9999,
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              background: '#B45309',
-              color: '#FFFFFF',
-              border: '1px solid #B45309'
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: '#10B981',
+              boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.25)'
             }}
-          >
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.7)' }} />
-            Pending Review
-          </span>
-        )
-      case 'APPROVED':
-        return (
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '3px 10px',
-              borderRadius: 9999,
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              background: '#15803D',
-              color: '#FFFFFF',
-              border: '1px solid #15803D'
-            }}
-          >
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.7)' }} />
-            Approved
-          </span>
-        )
-      case 'RETURNED_FOR_EDIT':
-      case 'REJECTED':
-        return (
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '3px 10px',
-              borderRadius: 9999,
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              background: '#B91C1C',
-              color: '#FFFFFF',
-              border: '1px solid #B91C1C'
-            }}
-          >
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.7)' }} />
-            Changes Requested
-          </span>
-        )
-      case 'PUBLISHED':
-        return (
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '3px 10px',
-              borderRadius: 9999,
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              background: '#15803D',
-              color: '#FFFFFF',
-              border: '1px solid #15803D'
-            }}
-          >
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.7)' }} />
-            Published
-          </span>
-        )
-      default:
-        return (
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '3px 10px',
-              borderRadius: 9999,
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              background: '#F2F2F2',
-              color: '#5A5C62',
-              border: '1px solid #E4E4E7'
-            }}
-          >
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#6B6D73' }} />
-            Draft
-          </span>
-        )
+          />
+          Published
+        </span>
+      )
     }
+    if (s === 'SUBMITTED_FOR_REVIEW' || s === 'PENDING') {
+      return (
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '3px 10px',
+            borderRadius: 9999,
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            letterSpacing: '0.01em',
+            background: '#FFFBEB',
+            color: '#92400E',
+            border: '1px solid #FDE68A',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: '#F59E0B',
+              boxShadow: '0 0 0 2px rgba(245, 158, 11, 0.25)'
+            }}
+          />
+          Pending Review
+        </span>
+      )
+    }
+    if (s === 'APPROVED') {
+      return (
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '3px 10px',
+            borderRadius: 9999,
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            letterSpacing: '0.01em',
+            background: '#EFF6FF',
+            color: '#1E40AF',
+            border: '1px solid #BFDBFE',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: '#3B82F6',
+              boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.25)'
+            }}
+          />
+          Approved
+        </span>
+      )
+    }
+    if (s === 'RETURNED_FOR_EDIT' || s === 'REJECTED') {
+      return (
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '3px 10px',
+            borderRadius: 9999,
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            letterSpacing: '0.01em',
+            background: '#FEF2F2',
+            color: '#991B1B',
+            border: '1px solid #FECACA',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: '#EF4444',
+              boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.25)'
+            }}
+          />
+          Changes Requested
+        </span>
+      )
+    }
+    if (s === 'ARCHIVED' || s === 'UNPUBLISHED') {
+      return (
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '3px 10px',
+            borderRadius: 9999,
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            letterSpacing: '0.01em',
+            background: '#F1F5F9',
+            color: '#475569',
+            border: '1px solid #CBD5E1',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: '#64748B',
+              boxShadow: '0 0 0 2px rgba(100, 116, 139, 0.2)'
+            }}
+          />
+          Unpublished
+        </span>
+      )
+    }
+    return (
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '3px 10px',
+          borderRadius: 9999,
+          fontSize: '0.72rem',
+          fontWeight: 700,
+          letterSpacing: '0.01em',
+          background: '#F8FAFC',
+          color: '#64748B',
+          border: '1px solid #E2E8F0',
+          whiteSpace: 'nowrap'
+        }}
+      >
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: '#94A3B8'
+          }}
+        />
+        Draft
+      </span>
+    )
   }
 
   // Filtered Review Queue for Content Review Tab
@@ -616,6 +698,18 @@ export default function AdminDashboardPage() {
     }
   }, [location.pathname, location.search])
 
+  // Deep-link review lecture support (?reviewLectureId=... or ?lectureId=...)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const reviewId = searchParams.get('reviewLectureId') || searchParams.get('lectureId')
+    if (reviewId && verificationQueue.length > 0) {
+      const match = verificationQueue.find((v) => v.id === reviewId)
+      if (match) {
+        setSelectedReviewLecture(match)
+      }
+    }
+  }, [location.search, verificationQueue])
+
   // Standalone profile fetcher
   const fetchAdminProfile = async () => {
     try {
@@ -739,11 +833,11 @@ export default function AdminDashboardPage() {
 
   const currentDisplayUser = adminProfile || authUser || {
     name: 'Dr. Vikram Sen',
-    email: 'director@apexlearn.edu',
+    email: 'director@aivortex.com',
     role: 'ADMIN',
     status: 'ACTIVE',
     phone: '+91 98765 43210',
-    bio: 'Academic Director and Chief Learning Architect at ApexLearn Institute of Tech & AI, leading curriculum quality, faculty verification, and AI-assisted educational standards.',
+    bio: 'Academic Director and Chief Learning Architect at Aivortex Institute of Tech & AI, leading curriculum quality, faculty verification, and AI-assisted educational standards.',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }
@@ -829,7 +923,12 @@ export default function AdminDashboardPage() {
         setStudents([])
       }
       if (cRes.status === 'fulfilled' && cRes.value?.data?.courses) {
-        setCourses(cRes.value.data.courses)
+        const freshCourses = cRes.value.data.courses
+        setCourses(freshCourses)
+        setSelectedCurriculumCourse((prev) => {
+          if (!prev) return null
+          return freshCourses.find((c) => c.id === prev.id) || prev
+        })
       } else {
         setCourses([])
       }
@@ -1350,6 +1449,33 @@ export default function AdminDashboardPage() {
     })
   }
 
+  const handlePromptDeleteCreator = (cr) => {
+    setConfirmModal({
+      open: true,
+      title: 'Delete Creator Account?',
+      description: `Are you sure you want to permanently delete the creator account for ${cr.name} (${cr.email})? This action cannot be undone.`,
+      confirmText: 'Delete Account',
+      confirmColor: '#DC2626',
+      onConfirm: async () => {
+        try {
+          await api.admin.deleteCreator(cr.id)
+          showToast(`Creator account for ${cr.name} permanently deleted`, 'success')
+          setCreators((prev) => prev.filter((c) => c.id !== cr.id))
+          if (selectedViewCreator?.id === cr.id) {
+            setSelectedViewCreator(null)
+          }
+          if (selectedEditCreator?.id === cr.id) {
+            setSelectedEditCreator(null)
+            setEditCreatorForm(null)
+          }
+          loadAdminData()
+        } catch (err) {
+          showToast(err.message || 'Failed to delete creator account', 'error')
+        }
+      }
+    })
+  }
+
   const handlePromptResetCredentials = (cr) => {
     setConfirmModal({
       open: true,
@@ -1360,7 +1486,7 @@ export default function AdminDashboardPage() {
       onConfirm: async () => {
         try {
           const res = await api.admin.resetCreatorPassword(cr.id, { sendEmail: true })
-          const tempPassword = res.data?.tempPasswordGenerated || 'ApexTempPass2026!'
+          const tempPassword = res.data?.tempPasswordGenerated || 'AivortexTempPass2026!'
           setCredentialsNoticeModal({
             open: true,
             creatorName: cr.name,
@@ -1387,7 +1513,7 @@ export default function AdminDashboardPage() {
       onConfirm: async () => {
         try {
           const res = await api.admin.resendCreatorCredentials(cr.id)
-          const tempPassword = res.data?.tempPasswordGenerated || 'ApexCreator2026!'
+          const tempPassword = res.data?.tempPasswordGenerated || 'AivortexCreator2026!'
           setCredentialsNoticeModal({
             open: true,
             creatorName: cr.name,
@@ -1629,6 +1755,28 @@ export default function AdminDashboardPage() {
       if (selectedReviewLecture && selectedReviewLecture.id === lessonId) {
         setSelectedReviewLecture((prev) => ({ ...prev, status: 'PUBLISHED' }))
       }
+      setVerificationQueue((prev) =>
+        prev.map((v) => (v.id === lessonId ? { ...v, status: 'PUBLISHED' } : v))
+      )
+      setCourses((prevCourses) =>
+        prevCourses.map((c) => ({
+          ...c,
+          playlists: c.playlists?.map((p) => ({
+            ...p,
+            lessons: p.lessons?.map((l) => (l.id === lessonId ? { ...l, status: 'PUBLISHED' } : l))
+          }))
+        }))
+      )
+      setSelectedCurriculumCourse((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          playlists: prev.playlists?.map((p) => ({
+            ...p,
+            lessons: p.lessons?.map((l) => (l.id === lessonId ? { ...l, status: 'PUBLISHED' } : l))
+          }))
+        }
+      })
       loadAdminData()
     } catch (err) {
       showToast(err.message || 'Publish failed', 'error')
@@ -1637,13 +1785,36 @@ export default function AdminDashboardPage() {
 
   const handleConfirmUnpublish = async () => {
     if (!unpublishModal.lectureId) return
+    const targetLectureId = unpublishModal.lectureId
     try {
       setUnpublishModal((prev) => ({ ...prev, isSubmitting: true }))
-      await api.admin.unpublishLesson(unpublishModal.lectureId, unpublishModal.reason.trim() || 'Unpublished by Admin')
-      showToast('Lecture unpublished from student player', 'info')
-      if (selectedReviewLecture && selectedReviewLecture.id === unpublishModal.lectureId) {
+      await api.admin.unpublishLesson(targetLectureId, unpublishModal.reason.trim() || 'Unpublished by Admin')
+      showToast('Lecture unpublished from student player and reverted to Approved', 'info')
+      if (selectedReviewLecture && selectedReviewLecture.id === targetLectureId) {
         setSelectedReviewLecture((prev) => ({ ...prev, status: 'APPROVED' }))
       }
+      setVerificationQueue((prev) =>
+        prev.map((v) => (v.id === targetLectureId ? { ...v, status: 'APPROVED' } : v))
+      )
+      setCourses((prevCourses) =>
+        prevCourses.map((c) => ({
+          ...c,
+          playlists: c.playlists?.map((p) => ({
+            ...p,
+            lessons: p.lessons?.map((l) => (l.id === targetLectureId ? { ...l, status: 'APPROVED' } : l))
+          }))
+        }))
+      )
+      setSelectedCurriculumCourse((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          playlists: prev.playlists?.map((p) => ({
+            ...p,
+            lessons: p.lessons?.map((l) => (l.id === targetLectureId ? { ...l, status: 'APPROVED' } : l))
+          }))
+        }
+      })
       setUnpublishModal({ open: false, lectureId: null, reason: '', error: '', isSubmitting: false })
       loadAdminData()
     } catch (err) {
@@ -1766,6 +1937,7 @@ export default function AdminDashboardPage() {
           videoUrl: finalVideoUrl,
           s3Key: finalS3Key,
           isPreview: Boolean(adminLectureModal.isPreview),
+          creatorId: adminLectureModal.creatorId || null,
           status: finalVideoUrl ? 'APPROVED' : 'DRAFT'
         })
         showToast('Lecture created successfully', 'success')
@@ -1777,7 +1949,8 @@ export default function AdminDashboardPage() {
           durationSeconds,
           videoUrl: finalVideoUrl,
           s3Key: finalS3Key,
-          isPreview: Boolean(adminLectureModal.isPreview)
+          isPreview: Boolean(adminLectureModal.isPreview),
+          creatorId: adminLectureModal.creatorId || null
         })
         showToast('Lecture updated successfully', 'success')
       }
@@ -1797,6 +1970,7 @@ export default function AdminDashboardPage() {
         uploadProgress: 0,
         isUploading: false,
         isPreview: false,
+        creatorId: '',
         isSaving: false,
         error: ''
       })
@@ -2131,7 +2305,7 @@ export default function AdminDashboardPage() {
               icon={Clock}
               iconBg="#FEF2F2"
               iconColor="#DC2626"
-              subtext={`${verificationQueue.length} Videos • ${requestsList.filter((r) => r.status === 'PENDING').length} Requests`}
+              subtext={`${verificationQueue.filter((v) => v.status === 'SUBMITTED_FOR_REVIEW').length} Videos • ${requestsList.filter((r) => r.status === 'PENDING').length} Requests`}
               onClick={() => navigate('/admin/playlists')}
             />
 
@@ -2160,7 +2334,7 @@ export default function AdminDashboardPage() {
             <div
               style={{
                 background: '#FFFFFF',
-                borderRadius: 8,
+                borderRadius: 12,
                 border: '1px solid #E2E8F0',
                 boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
                 overflow: 'hidden',
@@ -2185,8 +2359,8 @@ export default function AdminDashboardPage() {
                       width: 32,
                       height: 32,
                       borderRadius: 8,
-                      background: '#EFEFEF',
-                      color: '#4B4D52',
+                      background: '#F1F5F9',
+                      color: '#0F172A',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center'
@@ -2194,23 +2368,52 @@ export default function AdminDashboardPage() {
                   >
                     <Video size={16} />
                   </div>
-                  <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#15171A' }}>
+                  <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#0F172A' }}>
                     Content Review Queue
                   </span>
-                  {verificationQueue.length > 0 && (
-                    <span
-                      style={{
-                        background: '#EFEFEF',
-                        color: '#15171A',
-                        fontSize: '0.6875rem',
-                        fontWeight: 700,
-                        padding: '2px 7px',
-                        borderRadius: 9999
-                      }}
-                    >
-                      {verificationQueue.length} pending
-                    </span>
-                  )}
+                  {(() => {
+                    const pendingCount = verificationQueue.filter((v) => v.status === 'SUBMITTED_FOR_REVIEW').length
+                    if (pendingCount > 0) {
+                      return (
+                        <span
+                          style={{
+                            background: '#FEF3C7',
+                            color: '#92400E',
+                            border: '1px solid #FDE68A',
+                            fontSize: '0.6875rem',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: 9999,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#F59E0B' }} />
+                          {pendingCount} pending
+                        </span>
+                      )
+                    }
+                    return (
+                      <span
+                        style={{
+                          background: '#ECFDF5',
+                          color: '#065F46',
+                          border: '1px solid #A7F3D0',
+                          fontSize: '0.6875rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: 9999,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4
+                        }}
+                      >
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10B981' }} />
+                        All reviewed
+                      </span>
+                    )
+                  })()}
                 </div>
 
                 <button
@@ -2219,7 +2422,7 @@ export default function AdminDashboardPage() {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#15171A',
+                    color: '#0F172A',
                     fontSize: '0.8125rem',
                     fontWeight: 700,
                     cursor: 'pointer',
@@ -2236,54 +2439,205 @@ export default function AdminDashboardPage() {
               <div style={{ padding: 16, flex: 1, display: 'flex', flexDirection: 'column' }}>
                 {verificationQueue.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {verificationQueue.slice(0, 4).map((v) => (
-                      <div
-                        key={v.id}
-                        style={{
-                          padding: '12px 14px',
-                          background: '#F8F8F8',
-                          borderRadius: 12,
-                          border: '1px solid #E2E8F0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: 12
-                        }}
-                      >
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div
-                            style={{
-                              fontSize: '0.875rem',
-                              fontWeight: 700,
-                              color: '#15171A',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis'
-                            }}
-                          >
-                            {v.title}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#6B6D73', marginTop: 2 }}>
-                            Instructor: <strong style={{ color: '#4B4D52' }}>{v.creator?.name || 'Creator'}</strong> • {v.playlist?.course?.title || 'Program'}
-                          </div>
-                        </div>
+                    {verificationQueue.slice(0, 4).map((v) => {
+                      const isPub = v.status === 'PUBLISHED'
+                      const isApp = v.status === 'APPROVED'
+                      const isPending = v.status === 'SUBMITTED_FOR_REVIEW'
+                      const isReturned = v.status === 'RETURNED_FOR_EDIT' || v.status === 'REJECTED'
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                          {renderReviewStatusChip(v.status)}
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm"
-                            onClick={() => {
-                              setSelectedReviewLecture(v)
-                              navigate('/admin/playlists')
-                            }}
-                            style={{ height: 30, fontSize: '0.75rem', padding: '0 10px', fontWeight: 600 }}
-                          >
-                            Review
-                          </button>
+                      const accentColor = isPub
+                        ? '#10B981'
+                        : isPending
+                        ? '#F59E0B'
+                        : isApp
+                        ? '#3B82F6'
+                        : isReturned
+                        ? '#EF4444'
+                        : '#94A3B8'
+
+                      const iconBg = isPub
+                        ? '#ECFDF5'
+                        : isPending
+                        ? '#FFFBEB'
+                        : isApp
+                        ? '#EFF6FF'
+                        : isReturned
+                        ? '#FEF2F2'
+                        : '#F8FAFC'
+
+                      const iconColor = isPub
+                        ? '#059669'
+                        : isPending
+                        ? '#D97706'
+                        : isApp
+                        ? '#2563EB'
+                        : isReturned
+                        ? '#DC2626'
+                        : '#64748B'
+
+                      return (
+                        <div
+                          key={v.id}
+                          style={{
+                            padding: '12px 14px',
+                            background: '#FFFFFF',
+                            borderRadius: 12,
+                            border: '1px solid #E2E8F0',
+                            borderLeft: `3.5px solid ${accentColor}`,
+                            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 12,
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                            <div
+                              style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: 8,
+                                background: iconBg,
+                                color: iconColor,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0
+                              }}
+                            >
+                              {isPub ? (
+                                <Play size={15} style={{ fill: iconColor }} />
+                              ) : isPending ? (
+                                <Clock size={15} />
+                              ) : isApp ? (
+                                <CheckCircle2 size={15} />
+                              ) : isReturned ? (
+                                <RotateCcw size={15} />
+                              ) : (
+                                <Video size={15} />
+                              )}
+                            </div>
+
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div
+                                style={{
+                                  fontSize: '0.875rem',
+                                  fontWeight: 700,
+                                  color: '#0F172A',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis'
+                                }}
+                                title={v.title}
+                              >
+                                {v.title}
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                <span>Instructor: <strong style={{ color: '#334155' }}>{v.creator?.name || 'Creator'}</strong></span>
+                                <span style={{ color: '#CBD5E1' }}>•</span>
+                                <span style={{ color: '#475569', fontWeight: 500 }}>{v.playlist?.course?.title || 'Program'}</span>
+                                {v.duration && (
+                                  <>
+                                    <span style={{ color: '#CBD5E1' }}>•</span>
+                                    <span style={{ color: '#64748B' }}>{v.duration}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                            {renderReviewStatusChip(v.status)}
+
+                            {isPub && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setUnpublishModal({
+                                    open: true,
+                                    lectureId: v.id,
+                                    reason: '',
+                                    error: '',
+                                    isSubmitting: false
+                                  })
+                                }
+                                style={{
+                                  height: 30,
+                                  fontSize: '0.75rem',
+                                  padding: '0 10px',
+                                  fontWeight: 600,
+                                  borderRadius: 8,
+                                  border: '1px solid #FECACA',
+                                  background: '#FEF2F2',
+                                  color: '#DC2626',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  transition: 'all 0.15s ease'
+                                }}
+                                title="Unpublish lecture from enrolled students"
+                              >
+                                <EyeOff size={13} />
+                                <span>Unpublish</span>
+                              </button>
+                            )}
+
+                            {isApp && (
+                              <button
+                                type="button"
+                                onClick={() => handlePublishLesson(v.id)}
+                                style={{
+                                  height: 30,
+                                  fontSize: '0.75rem',
+                                  padding: '0 10px',
+                                  fontWeight: 600,
+                                  borderRadius: 8,
+                                  border: '1px solid #0F172A',
+                                  background: '#0F172A',
+                                  color: '#FFFFFF',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  transition: 'all 0.15s ease'
+                                }}
+                                title="Publish approved lesson to students"
+                              >
+                                <UploadCloud size={13} />
+                                <span>Publish</span>
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedReviewLecture(v)}
+                              style={{
+                                height: 30,
+                                fontSize: '0.75rem',
+                                padding: '0 11px',
+                                fontWeight: isPending ? 700 : 600,
+                                borderRadius: 8,
+                                border: isPending ? '1px solid #0F172A' : '1px solid #CBD5E1',
+                                background: isPending ? '#0F172A' : '#FFFFFF',
+                                color: isPending ? '#FFFFFF' : '#0F172A',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                boxShadow: isPending ? '0 1px 3px rgba(15, 23, 42, 0.2)' : 'none',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title="Review lecture details & video"
+                            >
+                              <Eye size={13} />
+                              <span>Review</span>
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : (
                   <div style={{ textAlign: 'center', padding: '36px 16px', color: '#6B6D73', margin: 'auto 0' }}>
@@ -2384,38 +2738,58 @@ export default function AdminDashboardPage() {
                         key={r.id}
                         style={{
                           padding: '12px 14px',
-                          background: '#F8F8F8',
+                          background: '#FFFFFF',
                           borderRadius: 12,
-                          border: '1px solid #E2E8F0'
+                          border: '1px solid #E2E8F0',
+                          borderLeft: '3.5px solid #F59E0B',
+                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)'
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                          <strong style={{ fontSize: '0.875rem', color: '#15171A' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <strong style={{ fontSize: '0.875rem', color: '#0F172A' }}>
                             {r.creatorProfile?.user?.name || 'Creator'}
                           </strong>
                           <span
                             style={{
-                              background: '#EFEFEF',
-                              color: '#4B4D52',
+                              background: '#FEF3C7',
+                              color: '#92400E',
+                              border: '1px solid #FDE68A',
                               fontSize: '0.6875rem',
                               fontWeight: 700,
-                              padding: '2px 6px',
-                              borderRadius: 4
+                              padding: '2px 8px',
+                              borderRadius: 9999,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4
                             }}
                           >
-                            PENDING
+                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#F59E0B' }} />
+                            Pending
                           </span>
                         </div>
-                        <p style={{ fontSize: '0.8125rem', color: '#5A5C62', margin: '0 0 10px 0', lineHeight: 1.4 }}>
+                        <p style={{ fontSize: '0.8125rem', color: '#475569', margin: '0 0 10px 0', lineHeight: 1.4 }}>
                           {r.requestedHeadline || r.requestedBio || 'Requested bio change'}
                         </p>
                         <button
                           type="button"
-                          className="btn btn-outline btn-sm"
                           onClick={() => navigate('/admin/requests')}
-                          style={{ height: 28, fontSize: '0.75rem', padding: '0 10px', fontWeight: 600 }}
+                          style={{
+                            height: 28,
+                            fontSize: '0.75rem',
+                            padding: '0 12px',
+                            fontWeight: 600,
+                            borderRadius: 8,
+                            border: '1px solid #CBD5E1',
+                            background: '#FFFFFF',
+                            color: '#0F172A',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
                         >
-                          Review & Decide
+                          <Eye size={13} />
+                          <span>Review & Decide</span>
                         </button>
                       </div>
                     ))}
@@ -3205,6 +3579,7 @@ export default function AdminDashboardPage() {
                                         uploadProgress: 0,
                                         isUploading: false,
                                         isPreview: false,
+                                        creatorId: (activeCurriculumCourse.creators?.length === 1 ? (activeCurriculumCourse.creators[0].creatorId || activeCurriculumCourse.creators[0].creator?.id) : '') || '',
                                         isSaving: false,
                                         error: ''
                                       })
@@ -3304,6 +3679,14 @@ export default function AdminDashboardPage() {
                                                     <AlertTriangle size={12} /> Video Missing
                                                   </span>
                                                 )}
+                                                {lec.creator && (
+                                                  <>
+                                                    <span style={{ fontSize: '0.75rem', color: '#D5D5D8' }}>•</span>
+                                                    <span style={{ fontSize: '0.75rem', color: '#2563EB', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                      <UserIcon size={12} /> {lec.creator.name}
+                                                    </span>
+                                                  </>
+                                                )}
                                               </div>
 
                                               {/* Admin Feedback Display if present */}
@@ -3356,6 +3739,7 @@ export default function AdminDashboardPage() {
                                                   uploadProgress: 0,
                                                   isUploading: false,
                                                   isPreview: Boolean(lec.isPreview),
+                                                  creatorId: lec.creatorId || lec.creator?.id || '',
                                                   isSaving: false,
                                                   error: ''
                                                 })
@@ -3366,44 +3750,81 @@ export default function AdminDashboardPage() {
                                             </button>
 
                                             {/* Quick Admin Actions */}
-                                            {lec.status === 'SUBMITTED_FOR_REVIEW' && (
-                                              <button
-                                                type="button"
-                                                className="btn btn-primary btn-xs"
-                                                onClick={() => {
-                                                  const fullLecture = {
-                                                    ...lec,
-                                                    creator: activeCurriculumCourse.creators?.[0]?.creator || null,
-                                                    playlist: { title: sec.title, course: activeCurriculumCourse }
-                                                  }
-                                                  setSelectedReviewLecture(fullLecture)
-                                                  navigate('/admin/playlists')
-                                                }}
-                                                style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700 }}
-                                              >
-                                                Review
-                                              </button>
-                                            )}
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const fullLecture = {
+                                                  ...lec,
+                                                  creator: lec.creator || activeCurriculumCourse.creators?.[0]?.creator || null,
+                                                  playlist: { title: sec.title, course: activeCurriculumCourse }
+                                                }
+                                                setSelectedReviewLecture(fullLecture)
+                                              }}
+                                              style={{
+                                                padding: '3px 9px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: lec.status === 'SUBMITTED_FOR_REVIEW' ? 700 : 600,
+                                                background: lec.status === 'SUBMITTED_FOR_REVIEW' ? '#0F172A' : '#FFFFFF',
+                                                color: lec.status === 'SUBMITTED_FOR_REVIEW' ? '#FFFFFF' : '#0F172A',
+                                                border: lec.status === 'SUBMITTED_FOR_REVIEW' ? '1px solid #0F172A' : '1px solid #CBD5E1',
+                                                borderRadius: 6,
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 4,
+                                                cursor: 'pointer'
+                                              }}
+                                              title="Review lecture details & video"
+                                            >
+                                              <Eye size={12} />
+                                              <span>Review</span>
+                                            </button>
 
-                                            {lec.status === 'APPROVED' && (
+                                            {(lec.status === 'APPROVED' || lec.status === 'ARCHIVED') && (
                                               <button
                                                 type="button"
-                                                className="btn btn-outline btn-xs"
                                                 onClick={() => handlePublishLesson(lec.id)}
-                                                style={{ padding: '4px 10px', fontSize: '0.75rem', color: '#2D2F33', borderColor: '#D5D5D8', fontWeight: 600 }}
+                                                style={{
+                                                  padding: '3px 9px',
+                                                  fontSize: '0.75rem',
+                                                  color: '#FFFFFF',
+                                                  background: '#0F172A',
+                                                  border: '1px solid #0F172A',
+                                                  borderRadius: 6,
+                                                  fontWeight: 600,
+                                                  display: 'inline-flex',
+                                                  alignItems: 'center',
+                                                  gap: 4,
+                                                  cursor: 'pointer'
+                                                }}
+                                                title="Publish approved lecture to enrolled students"
                                               >
-                                                Publish
+                                                <UploadCloud size={12} />
+                                                <span>Publish</span>
                                               </button>
                                             )}
 
                                             {lec.status === 'PUBLISHED' && (
                                               <button
                                                 type="button"
-                                                className="btn btn-outline btn-xs"
                                                 onClick={() => setUnpublishModal({ open: true, lectureId: lec.id, reason: '', error: '', isSubmitting: false })}
-                                                style={{ padding: '4px 10px', fontSize: '0.75rem', color: '#15171A', borderColor: '#E4E4E7' }}
+                                                style={{
+                                                  padding: '3px 9px',
+                                                  fontSize: '0.75rem',
+                                                  color: '#DC2626',
+                                                  borderColor: '#FECACA',
+                                                  background: '#FEF2F2',
+                                                  border: '1px solid #FECACA',
+                                                  borderRadius: 6,
+                                                  fontWeight: 600,
+                                                  display: 'inline-flex',
+                                                  alignItems: 'center',
+                                                  gap: 4,
+                                                  cursor: 'pointer'
+                                                }}
+                                                title="Unpublish lecture from enrolled students"
                                               >
-                                                Unpublish
+                                                <EyeOff size={12} />
+                                                <span>Unpublish</span>
                                               </button>
                                             )}
 
@@ -3412,7 +3833,7 @@ export default function AdminDashboardPage() {
                                                 type="button"
                                                 className="btn btn-outline btn-xs"
                                                 onClick={() => handleQuickApproveCurriculumLecture(lec.id)}
-                                                style={{ padding: '4px 10px', fontSize: '0.75rem', color: '#2D2F33', borderColor: '#D5D5D8', fontWeight: 600 }}
+                                                style={{ padding: '3px 9px', fontSize: '0.75rem', color: '#334155', borderColor: '#CBD5E1', fontWeight: 600, borderRadius: 6 }}
                                                 title="Directly approve content on creator's behalf"
                                               >
                                                 Quick Approve
@@ -3462,6 +3883,7 @@ export default function AdminDashboardPage() {
                                           uploadProgress: 0,
                                           isUploading: false,
                                           isPreview: false,
+                                          creatorId: (activeCurriculumCourse.creators?.length === 1 ? (activeCurriculumCourse.creators[0].creatorId || activeCurriculumCourse.creators[0].creator?.id) : '') || '',
                                           isSaving: false,
                                           error: ''
                                         })
@@ -4240,6 +4662,39 @@ export default function AdminDashboardPage() {
                                   <UserCheck size={15} />
                                 </button>
                               )}
+
+                              {/* 5. Delete Account: Semantic Rose/Red Trash */}
+                              <button
+                                type="button"
+                                onClick={() => handlePromptDeleteCreator(cr)}
+                                title="Delete Account"
+                                aria-label="Delete Account"
+                                style={{
+                                  width: 34,
+                                  height: 34,
+                                  borderRadius: 8,
+                                  border: '1px solid #FECDD3',
+                                  background: '#FFF1F2',
+                                  color: '#E11D48',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#FFE4E6'
+                                  e.currentTarget.style.borderColor = '#FDA4AF'
+                                  e.currentTarget.style.color = '#BE123C'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = '#FFF1F2'
+                                  e.currentTarget.style.borderColor = '#FECDD3'
+                                  e.currentTarget.style.color = '#E11D48'
+                                }}
+                              >
+                                <Trash2 size={15} />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -4636,7 +5091,39 @@ export default function AdminDashboardPage() {
                         {/* Action: Review + Publish if Approved */}
                         <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
-                            {v.status === 'APPROVED' && (
+                            {v.status === 'PUBLISHED' && (
+                              <button
+                                type="button"
+                                className="btn btn-outline btn-sm"
+                                onClick={() =>
+                                  setUnpublishModal({
+                                    open: true,
+                                    lectureId: v.id,
+                                    reason: '',
+                                    error: '',
+                                    isSubmitting: false
+                                  })
+                                }
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  padding: '5px 12px',
+                                  borderRadius: 8,
+                                  fontSize: '0.8125rem',
+                                  fontWeight: 700,
+                                  color: '#DC2626',
+                                  borderColor: '#FECACA',
+                                  background: '#FEF2F2',
+                                  cursor: 'pointer'
+                                }}
+                                title="Unpublish lesson from enrolled students"
+                              >
+                                <EyeOff size={14} />
+                                <span>Unpublish</span>
+                              </button>
+                            )}
+                            {(v.status === 'APPROVED' || v.status === 'ARCHIVED') && (
                               <button
                                 type="button"
                                 className="btn btn-primary btn-sm"
@@ -4649,7 +5136,7 @@ export default function AdminDashboardPage() {
                                   borderRadius: 8,
                                   fontSize: '0.8125rem',
                                   fontWeight: 700,
-                                  background: '#15171A',
+                                  background: '#0F172A',
                                   color: '#FFFFFF',
                                   cursor: 'pointer'
                                 }}
@@ -4670,14 +5157,14 @@ export default function AdminDashboardPage() {
                                 padding: '5px 14px',
                                 borderRadius: 8,
                                 fontSize: '0.8125rem',
-                                fontWeight: 700,
-                                color: '#15171A',
-                                borderColor: '#D5D5D8',
-                                background: '#FFFFFF',
+                                fontWeight: v.status === 'SUBMITTED_FOR_REVIEW' ? 700 : 600,
+                                color: v.status === 'SUBMITTED_FOR_REVIEW' ? '#FFFFFF' : '#0F172A',
+                                borderColor: v.status === 'SUBMITTED_FOR_REVIEW' ? '#0F172A' : '#CBD5E1',
+                                background: v.status === 'SUBMITTED_FOR_REVIEW' ? '#0F172A' : '#FFFFFF',
                                 cursor: 'pointer'
                               }}
                             >
-                              <Eye size={14} style={{ color: '#15171A' }} />
+                              <Eye size={14} style={{ color: v.status === 'SUBMITTED_FOR_REVIEW' ? '#FFFFFF' : '#0F172A' }} />
                               <span>Review</span>
                             </button>
                           </div>
@@ -4716,514 +5203,6 @@ export default function AdminDashboardPage() {
               </div>
             )}
           </div>
-
-          {/* ========================================================================= */}
-          {/* ADMIN VIDEO REVIEW - LARGE CENTERED MODAL */}
-          {/* ========================================================================= */}
-          {selectedReviewLecture && (() => {
-            const hasVideo = Boolean(selectedReviewLecture.videoUrl && selectedReviewLecture.videoUrl.trim())
-            const playableUrl = getPlayableVideoUrl(selectedReviewLecture.videoUrl)
-
-            return (
-              <div
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: 'rgba(15, 23, 42, 0.65)',
-                  backdropFilter: 'blur(4px)',
-                  WebkitBackdropFilter: 'blur(4px)',
-                  zIndex: 2000,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '16px',
-                  boxSizing: 'border-box',
-                  animation: 'fadeIn 0.2s ease-out'
-                }}
-                onClick={() => setSelectedReviewLecture(null)}
-              >
-                <div
-                  style={{
-                    width: 'min(88vw, 1320px)',
-                    height: '88vh',
-                    maxHeight: '88vh',
-                    background: '#FFFFFF',
-                    borderRadius: 8,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.08)',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    animation: 'fadeInSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* Modal Header - Sticky Top */}
-                  <div
-                    style={{
-                      padding: '18px 28px',
-                      borderBottom: '1px solid #E2E8F0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      background: '#FFFFFF',
-                      flexShrink: 0
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#15171A', margin: 0, letterSpacing: '-0.02em' }}>
-                          Review Lecture
-                        </h3>
-                        <span style={{ fontSize: '0.85rem', color: '#D5D5D8' }}>•</span>
-                        <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#15171A' }}>
-                          {selectedReviewLecture.title}
-                        </span>
-                        {renderReviewStatusChip(selectedReviewLecture.status)}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8125rem', color: '#6B6D73', marginTop: 4, flexWrap: 'wrap' }}>
-                        <span>Course: <strong style={{ color: '#4B4D52' }}>{selectedReviewLecture.playlist?.course?.title || 'Academic Program'}</strong></span>
-                        <span style={{ color: '#D5D5D8' }}>•</span>
-                        <span>Section: <strong style={{ color: '#4B4D52' }}>{selectedReviewLecture.playlist?.title || 'Section'}</strong></span>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedReviewLecture(null)}
-                      style={{
-                        background: '#F2F2F2',
-                        border: 'none',
-                        width: 36,
-                        height: 36,
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#6B6D73',
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                        transition: 'background 0.15s ease'
-                      }}
-                      title="Close Review (Esc)"
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-
-                  {/* Modal Body - Scrollable Internally */}
-                  <div
-                    style={{
-                      padding: '24px 32px',
-                      flex: 1,
-                      overflowY: 'auto',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 24
-                    }}
-                  >
-                    {/* Video Review Area - Large 16:9 Player at TOP Center */}
-                    <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto' }}>
-                      {hasVideo ? (
-                        <div
-                          style={{
-                            position: 'relative',
-                            width: '100%',
-                            aspectRatio: '16/9',
-                            background: '#000000',
-                            borderRadius: 8,
-                            overflow: 'hidden',
-                            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.22)'
-                          }}
-                        >
-                          <video
-                            key={selectedReviewLecture.id + (selectedReviewLecture.videoUrl || '')}
-                            controls
-                            playsInline
-                            preload="metadata"
-                            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-                            src={playableUrl}
-                          >
-                            Your browser does not support HTML5 video streaming.
-                          </video>
-                        </div>
-                      ) : (
-                        <div
-                          style={{
-                            padding: '52px 24px',
-                            background: '#EFEFEF',
-                            border: '1px solid #E4E4E7',
-                            borderRadius: 8,
-                            textAlign: 'center'
-                          }}
-                        >
-                          <AlertTriangle size={44} style={{ color: '#15171A', margin: '0 auto 12px auto' }} />
-                          <h4 style={{ margin: '0 0 6px 0', fontSize: '1.15rem', fontWeight: 700, color: '#15171A' }}>
-                            Video unavailable
-                          </h4>
-                          <p style={{ margin: 0, fontSize: '0.875rem', color: '#15171A', maxWidth: 460, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
-                            This submitted lecture does not have an active video asset. Approval is disabled until the Creator uploads a valid video.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Lecture Information - Clean 2-Column Layout */}
-                    <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto' }}>
-                      <div
-                        style={{
-                          background: '#F8F8F8',
-                          borderRadius: 8,
-                          border: '1px solid #E2E8F0',
-                          padding: '20px 24px'
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                            gap: 20
-                          }}
-                        >
-                          {/* Left Column: Course, Section, Creator */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                            <div>
-                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#6B6D73' }}>
-                                Course
-                              </div>
-                              <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#15171A', marginTop: 3 }}>
-                                {selectedReviewLecture.playlist?.course?.title || 'Academic Program'}
-                              </div>
-                            </div>
-
-                            <div style={{ height: 1, background: '#E4E4E7' }} />
-
-                            <div>
-                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#6B6D73' }}>
-                                Section
-                              </div>
-                              <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#2D2F33', marginTop: 3 }}>
-                                {selectedReviewLecture.playlist?.title || 'Section'}
-                              </div>
-                            </div>
-
-                            <div style={{ height: 1, background: '#E4E4E7' }} />
-
-                            <div>
-                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#6B6D73' }}>
-                                Creator
-                              </div>
-                              <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#15171A', marginTop: 3 }}>
-                                {selectedReviewLecture.creator?.name || 'Instructor'}
-                              </div>
-                              {selectedReviewLecture.creator?.email && (
-                                <div style={{ fontSize: '0.75rem', color: '#6B6D73', marginTop: 1 }}>
-                                  {selectedReviewLecture.creator.email}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Right Column: Duration, Submitted Date, Last Updated, Video Source / Asset Status */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                            <div>
-                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#6B6D73' }}>
-                                Lecture Duration
-                              </div>
-                              <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#15171A', marginTop: 3 }}>
-                                {selectedReviewLecture.duration || '15:00'}
-                              </div>
-                            </div>
-
-                            <div style={{ height: 1, background: '#E4E4E7' }} />
-
-                            <div>
-                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#6B6D73' }}>
-                                Submitted Date
-                              </div>
-                              <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#4B4D52', marginTop: 3 }}>
-                                {formatSubmittedDate(selectedReviewLecture.createdAt)}
-                              </div>
-                            </div>
-
-                            <div style={{ height: 1, background: '#E4E4E7' }} />
-
-                            <div>
-                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#6B6D73' }}>
-                                Last Updated
-                              </div>
-                              <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#4B4D52', marginTop: 3 }}>
-                                {formatSubmittedDate(selectedReviewLecture.updatedAt)}
-                              </div>
-                            </div>
-
-                            <div style={{ height: 1, background: '#E4E4E7' }} />
-
-                            <div>
-                              <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#6B6D73' }}>
-                                Video Source / Asset Status
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                                {hasVideo ? (
-                                  <>
-                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2D2F33', flexShrink: 0 }} />
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#2D2F33' }}>
-                                      {selectedReviewLecture.videoUrl?.startsWith('http') ? 'Cloud Asset (Verified)' : 'Local Stream (Verified)'}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#15171A', flexShrink: 0 }} />
-                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#15171A' }}>
-                                      No Video Asset Attached
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Optional Description */}
-                    {selectedReviewLecture.description && (
-                      <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto' }}>
-                        <div
-                          style={{
-                            background: '#FFFFFF',
-                            borderRadius: 8,
-                            border: '1px solid #E2E8F0',
-                            padding: '16px 20px'
-                          }}
-                        >
-                          <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#6B6D73', marginBottom: 6 }}>
-                            Lecture Description
-                          </div>
-                          <div style={{ fontSize: '0.875rem', color: '#4B4D52', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
-                            {selectedReviewLecture.description}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Review History */}
-                    <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto' }}>
-                      <div
-                        style={{
-                          background: '#FFFFFF',
-                          borderRadius: 8,
-                          border: '1px solid #E2E8F0',
-                          padding: '18px 20px'
-                        }}
-                      >
-                        <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#6B6D73', marginBottom: 12 }}>
-                          Review History
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                          {/* Initial Submission */}
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#15171A', marginTop: 5, flexShrink: 0 }} />
-                            <div>
-                              <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#15171A' }}>
-                                Submitted for Review
-                              </div>
-                              <div style={{ fontSize: '0.75rem', color: '#6B6D73' }}>
-                                {formatSubmittedDate(selectedReviewLecture.createdAt)} • Uploaded by {selectedReviewLecture.creator?.name || 'Creator'}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Previous Changes Requested & Feedback */}
-                          {selectedReviewLecture.adminFeedback && (
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#15171A', marginTop: 5, flexShrink: 0 }} />
-                              <div>
-                                <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#15171A' }}>
-                                  Changes Requested
-                                </div>
-                                <div style={{ fontSize: '0.75rem', color: '#6B6D73', marginBottom: 4 }}>
-                                  {formatSubmittedDate(selectedReviewLecture.updatedAt)} • Editorial Feedback
-                                </div>
-                                <div style={{ background: '#EFEFEF', border: '1px solid #E4E4E7', borderRadius: 8, padding: '8px 12px', fontSize: '0.8125rem', color: '#15171A', lineHeight: 1.4 }}>
-                                  "{selectedReviewLecture.adminFeedback}"
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Verification logs if any */}
-                          {selectedReviewLecture.verificationLogs && selectedReviewLecture.verificationLogs.map((log) => (
-                            <div key={log.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: log.action === 'APPROVED' ? '#2D2F33' : '#4B4D52', marginTop: 5, flexShrink: 0 }} />
-                              <div>
-                                <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: log.action === 'APPROVED' ? '#2D2F33' : '#4B4D52' }}>
-                                  {log.action === 'APPROVED' ? 'Approved' : 'Changes Requested'}
-                                </div>
-                                <div style={{ fontSize: '0.75rem', color: '#6B6D73' }}>
-                                  {formatSubmittedDate(log.createdAt)} • {log.feedbackNote || 'Review decision'}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Modal Footer - Sticky Bottom */}
-                  <div
-                    style={{
-                      padding: '16px 28px',
-                      borderTop: '1px solid #E2E8F0',
-                      background: '#FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      flexShrink: 0
-                    }}
-                  >
-                    <button
-                      type="button"
-                      className="btn btn-outline"
-                      onClick={() =>
-                        setRequestChangesModal({
-                          open: true,
-                          lecture: selectedReviewLecture,
-                          feedback: '',
-                          quickReason: '',
-                          error: '',
-                          isSubmitting: false
-                        })
-                      }
-                      style={{
-                        color: '#4B4D52',
-                        borderColor: '#E4E4E7',
-                        background: '#F4F4F5',
-                        fontWeight: 700,
-                        height: 42,
-                        padding: '0 20px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        borderRadius: 8,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <RotateCcw size={16} />
-                      <span>Request Changes</span>
-                    </button>
-
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-                      {selectedReviewLecture.status === 'PUBLISHED' ? (
-                        <>
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 6,
-                              color: '#2D2F33',
-                              fontWeight: 700,
-                              fontSize: '0.85rem'
-                            }}
-                          >
-                            <CheckCircle2 size={16} />
-                            <span>Live for Students</span>
-                          </span>
-                          <button
-                            type="button"
-                            className="btn btn-outline"
-                            onClick={() =>
-                              setUnpublishModal({
-                                open: true,
-                                lectureId: selectedReviewLecture.id,
-                                reason: '',
-                                error: '',
-                                isSubmitting: false
-                              })
-                            }
-                            style={{
-                              color: '#15171A',
-                              borderColor: '#E4E4E7',
-                              background: '#EFEFEF',
-                              fontWeight: 700,
-                              height: 42,
-                              padding: '0 20px',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              borderRadius: 8,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            <EyeOff size={16} />
-                            <span>Unpublish Lesson</span>
-                          </button>
-                        </>
-                      ) : selectedReviewLecture.status === 'APPROVED' ? (
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          onClick={() => handlePublishLesson(selectedReviewLecture.id)}
-                          style={{
-                            background: '#15171A',
-                            borderColor: '#15171A',
-                            color: '#FFFFFF',
-                            fontWeight: 700,
-                            height: 42,
-                            padding: '0 26px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            borderRadius: 8,
-                            cursor: 'pointer'
-                          }}
-                          title="Publish approved lecture to enrolled students"
-                        >
-                          <UploadCloud size={16} />
-                          <span>Publish Lesson to Students</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          disabled={!hasVideo}
-                          onClick={() =>
-                            setApproveModal({
-                              open: true,
-                              lecture: selectedReviewLecture,
-                              isSubmitting: false
-                            })
-                          }
-                          style={{
-                            background: hasVideo ? '#2D2F33' : '#9B9DA3',
-                            borderColor: hasVideo ? '#2D2F33' : '#9B9DA3',
-                            color: '#FFFFFF',
-                            fontWeight: 700,
-                            height: 42,
-                            padding: '0 26px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            borderRadius: 8,
-                            cursor: hasVideo ? 'pointer' : 'not-allowed'
-                          }}
-                          title={!hasVideo ? 'Video unavailable - approval blocked' : 'Approve Lecture'}
-                        >
-                          <CheckCircle2 size={16} />
-                          <span>Approve</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })()}
         </div>
       )}
 
@@ -5569,7 +5548,7 @@ export default function AdminDashboardPage() {
                                     {r.student?.name || 'Scholar'}
                                   </div>
                                   <div style={{ fontSize: '0.75rem', color: '#6B6D73', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                                    {r.student?.email || 'scholar@apexlearn.edu'}
+                                    {r.student?.email || 'scholar@aivortex.com'}
                                   </div>
                                 </div>
                               </div>
@@ -6716,7 +6695,7 @@ export default function AdminDashboardPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ padding: 16, background: '#F8F8F8', borderRadius: 12, border: '1px solid #E2E8F0' }}>
                   <strong style={{ display: 'block', marginBottom: 4, color: '#15171A' }}>PostgreSQL Production Database</strong>
-                  <span style={{ fontSize: '0.8rem', color: '#2D2F33', display: 'block', marginBottom: 12 }}>● Connected & Healthy (apexlearn_db on port 5432)</span>
+                  <span style={{ fontSize: '0.8rem', color: '#2D2F33', display: 'block', marginBottom: 12 }}>● Connected & Healthy (aivortex_db on port 5432)</span>
                   <button
                     className="btn btn-outline btn-sm"
                     onClick={() => showToast('On-demand database snapshot verified.', 'success')}
@@ -7031,7 +7010,7 @@ export default function AdminDashboardPage() {
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
                         <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#15171A' }}>
-                          {currentDisplayUser.email || 'director@apexlearn.edu'}
+                          {currentDisplayUser.email || 'director@aivortex.com'}
                         </span>
                         <span
                           style={{
@@ -7187,7 +7166,7 @@ export default function AdminDashboardPage() {
                   }}
                 >
                   {currentDisplayUser.bio ||
-                    'Dr. Vikram Sen serves as Academic Director and Chief Learning Architect at ApexLearn Institute of Tech & AI. He oversees curriculum standards, pedagogical innovation, faculty review, and institutional AI course standards across all academic tracks.'}
+                    'Dr. Vikram Sen serves as Academic Director and Chief Learning Architect at Aivortex Institute of Tech & AI. He oversees curriculum standards, pedagogical innovation, faculty review, and institutional AI course standards across all academic tracks.'}
                 </div>
               </div>
             </div>
@@ -7347,7 +7326,7 @@ export default function AdminDashboardPage() {
                     <input
                       type="email"
                       className="form-input"
-                      value={currentDisplayUser.email || 'director@apexlearn.edu'}
+                      value={currentDisplayUser.email || 'director@aivortex.com'}
                       disabled
                       style={{ background: '#F8F8F8', cursor: 'not-allowed', color: '#6B6D73' }}
                     />
@@ -7482,7 +7461,7 @@ export default function AdminDashboardPage() {
                   type="text"
                   className="form-input"
                   style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}
-                  placeholder="e.g. APEXAI35"
+                  placeholder="e.g. AIVORTEX35"
                   value={offerCode}
                   onChange={(e) => setOfferCode(e.target.value.toUpperCase())}
                   required
@@ -8920,7 +8899,7 @@ export default function AdminDashboardPage() {
                   className="form-input"
                   value={editCreatorForm.headline}
                   onChange={(e) => setEditCreatorForm({ ...editCreatorForm, headline: e.target.value })}
-                  placeholder="e.g. Apex AI Research Labs • Stanford Visiting Fellow"
+                  placeholder="e.g. Aivortex AI Research Labs • Stanford Visiting Fellow"
                   style={{ height: 40, fontSize: '0.875rem' }}
                 />
               </div>
@@ -9860,6 +9839,516 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ========================================================================= */}
+      {/* ADMIN VIDEO REVIEW - GLOBAL FLOATING MODAL */}
+      {/* ========================================================================= */}
+      {selectedReviewLecture && (() => {
+        const hasVideo = Boolean(selectedReviewLecture.videoUrl && selectedReviewLecture.videoUrl.trim())
+        const playableUrl = getPlayableVideoUrl(selectedReviewLecture.videoUrl)
+
+        return (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.7)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+              zIndex: 2000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+              boxSizing: 'border-box',
+              animation: 'fadeIn 0.2s ease-out'
+            }}
+            onClick={() => setSelectedReviewLecture(null)}
+          >
+            <div
+              style={{
+                width: 'min(90vw, 1320px)',
+                height: '88vh',
+                maxHeight: '88vh',
+                background: '#FFFFFF',
+                borderRadius: 12,
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(15, 23, 42, 0.08)',
+                overflow: 'hidden',
+                position: 'relative',
+                animation: 'fadeInSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header - Sticky Top */}
+              <div
+                style={{
+                  padding: '18px 28px',
+                  borderBottom: '1px solid #E2E8F0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: '#FFFFFF',
+                  flexShrink: 0
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-0.02em' }}>
+                      Review Lecture
+                    </h3>
+                    <span style={{ fontSize: '0.85rem', color: '#CBD5E1' }}>•</span>
+                    <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#1E293B' }}>
+                      {selectedReviewLecture.title}
+                    </span>
+                    {renderReviewStatusChip(selectedReviewLecture.status)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8125rem', color: '#64748B', marginTop: 4, flexWrap: 'wrap' }}>
+                    <span>Course: <strong style={{ color: '#334155' }}>{selectedReviewLecture.playlist?.course?.title || 'Academic Program'}</strong></span>
+                    <span style={{ color: '#CBD5E1' }}>•</span>
+                    <span>Section: <strong style={{ color: '#334155' }}>{selectedReviewLecture.playlist?.title || 'Section'}</strong></span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedReviewLecture(null)}
+                  style={{
+                    background: '#F1F5F9',
+                    border: 'none',
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#64748B',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    transition: 'all 0.15s ease'
+                  }}
+                  title="Close Review (Esc)"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Modal Body - Scrollable Internally */}
+              <div
+                style={{
+                  padding: '24px 32px',
+                  flex: 1,
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 24
+                }}
+              >
+                {/* Video Review Area - Large 16:9 Player at TOP Center */}
+                <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto' }}>
+                  {hasVideo ? (
+                    <div
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        aspectRatio: '16/9',
+                        background: '#000000',
+                        borderRadius: 10,
+                        overflow: 'hidden',
+                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.22)'
+                      }}
+                    >
+                      <video
+                        key={selectedReviewLecture.id + (selectedReviewLecture.videoUrl || '')}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                        src={playableUrl}
+                      >
+                        Your browser does not support HTML5 video streaming.
+                      </video>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        padding: '52px 24px',
+                        background: '#F8FAFC',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: 10,
+                        textAlign: 'center'
+                      }}
+                    >
+                      <AlertTriangle size={44} style={{ color: '#F59E0B', margin: '0 auto 12px auto' }} />
+                      <h4 style={{ margin: '0 0 6px 0', fontSize: '1.15rem', fontWeight: 700, color: '#0F172A' }}>
+                        Video unavailable
+                      </h4>
+                      <p style={{ margin: 0, fontSize: '0.875rem', color: '#64748B', maxWidth: 460, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
+                        This submitted lecture does not have an active video asset. Approval is disabled until the Creator uploads a valid video.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Lecture Information - Clean 2-Column Layout */}
+                <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto' }}>
+                  <div
+                    style={{
+                      background: '#F8FAFC',
+                      borderRadius: 10,
+                      border: '1px solid #E2E8F0',
+                      padding: '20px 24px'
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                        gap: 20
+                      }}
+                    >
+                      {/* Left Column: Course, Section, Creator */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <div>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                            Course
+                          </div>
+                          <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginTop: 3 }}>
+                            {selectedReviewLecture.playlist?.course?.title || 'Academic Program'}
+                          </div>
+                        </div>
+
+                        <div style={{ height: 1, background: '#E2E8F0' }} />
+
+                        <div>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                            Section
+                          </div>
+                          <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1E293B', marginTop: 3 }}>
+                            {selectedReviewLecture.playlist?.title || 'Section'}
+                          </div>
+                        </div>
+
+                        <div style={{ height: 1, background: '#E2E8F0' }} />
+
+                        <div>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                            Creator
+                          </div>
+                          <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginTop: 3 }}>
+                            {selectedReviewLecture.creator?.name || 'Instructor'}
+                          </div>
+                          {selectedReviewLecture.creator?.email && (
+                            <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 1 }}>
+                              {selectedReviewLecture.creator.email}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right Column: Duration, Submitted Date, Last Updated, Video Source / Asset Status */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <div>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                            Lecture Duration
+                          </div>
+                          <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#0F172A', marginTop: 3 }}>
+                            {selectedReviewLecture.duration || '15:00'}
+                          </div>
+                        </div>
+
+                        <div style={{ height: 1, background: '#E2E8F0' }} />
+
+                        <div>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                            Submitted Date
+                          </div>
+                          <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#334155', marginTop: 3 }}>
+                            {formatSubmittedDate(selectedReviewLecture.createdAt)}
+                          </div>
+                        </div>
+
+                        <div style={{ height: 1, background: '#E2E8F0' }} />
+
+                        <div>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                            Last Updated
+                          </div>
+                          <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#334155', marginTop: 3 }}>
+                            {formatSubmittedDate(selectedReviewLecture.updatedAt)}
+                          </div>
+                        </div>
+
+                        <div style={{ height: 1, background: '#E2E8F0' }} />
+
+                        <div>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B' }}>
+                            Video Source / Asset Status
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                            {hasVideo ? (
+                              <>
+                                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px rgba(16, 185, 129, 0.5)', flexShrink: 0 }} />
+                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#065F46' }}>
+                                  {selectedReviewLecture.videoUrl?.startsWith('http') ? 'Cloud Asset (Verified)' : 'Local Stream (Verified)'}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
+                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#DC2626' }}>
+                                  No Video Asset Attached
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Optional Description */}
+                {selectedReviewLecture.description && (
+                  <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto' }}>
+                    <div
+                      style={{
+                        background: '#FFFFFF',
+                        borderRadius: 10,
+                        border: '1px solid #E2E8F0',
+                        padding: '16px 20px'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B', marginBottom: 6 }}>
+                        Lecture Description
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                        {selectedReviewLecture.description}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Review History */}
+                <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto' }}>
+                  <div
+                    style={{
+                      background: '#FFFFFF',
+                      borderRadius: 10,
+                      border: '1px solid #E2E8F0',
+                      padding: '18px 20px'
+                    }}
+                  >
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748B', marginBottom: 12 }}>
+                      Review History & Timeline
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {/* Initial Submission */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3B82F6', marginTop: 5, flexShrink: 0 }} />
+                        <div>
+                          <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0F172A' }}>
+                            Submitted for Review
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                            {formatSubmittedDate(selectedReviewLecture.createdAt)} • Uploaded by {selectedReviewLecture.creator?.name || 'Creator'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Previous Changes Requested & Feedback */}
+                      {selectedReviewLecture.adminFeedback && (
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444', marginTop: 5, flexShrink: 0 }} />
+                          <div>
+                            <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#991B1B' }}>
+                              Changes Requested
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748B', marginBottom: 4 }}>
+                              {formatSubmittedDate(selectedReviewLecture.updatedAt)} • Editorial Feedback
+                            </div>
+                            <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '8px 12px', fontSize: '0.8125rem', color: '#991B1B', lineHeight: 1.4 }}>
+                              "{selectedReviewLecture.adminFeedback}"
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Verification logs if any */}
+                      {selectedReviewLecture.verificationLogs && selectedReviewLecture.verificationLogs.map((log) => (
+                        <div key={log.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: log.action === 'APPROVED' ? '#10B981' : '#EF4444', marginTop: 5, flexShrink: 0 }} />
+                          <div>
+                            <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: log.action === 'APPROVED' ? '#065F46' : '#991B1B' }}>
+                              {log.action === 'APPROVED' ? 'Approved' : 'Changes Requested'}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                              {formatSubmittedDate(log.createdAt)} • {log.feedbackNote || 'Review decision'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer - Sticky Bottom */}
+              <div
+                style={{
+                  padding: '16px 28px',
+                  borderTop: '1px solid #E2E8F0',
+                  background: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  flexShrink: 0
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() =>
+                    setRequestChangesModal({
+                      open: true,
+                      lecture: selectedReviewLecture,
+                      feedback: '',
+                      quickReason: '',
+                      error: '',
+                      isSubmitting: false
+                    })
+                  }
+                  style={{
+                    color: '#64748B',
+                    borderColor: '#CBD5E1',
+                    background: '#F8FAFC',
+                    fontWeight: 700,
+                    height: 42,
+                    padding: '0 20px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    borderRadius: 8,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <RotateCcw size={16} />
+                  <span>Request Changes</span>
+                </button>
+
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+                  {selectedReviewLecture.status === 'PUBLISHED' ? (
+                    <>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          color: '#065F46',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          background: '#ECFDF5',
+                          padding: '6px 14px',
+                          borderRadius: 9999,
+                          border: '1px solid #A7F3D0'
+                        }}
+                      >
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px rgba(16, 185, 129, 0.5)' }} />
+                        <span>Live for Students</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setUnpublishModal({
+                            open: true,
+                            lectureId: selectedReviewLecture.id,
+                            reason: '',
+                            error: '',
+                            isSubmitting: false
+                          })
+                        }
+                        style={{
+                          color: '#DC2626',
+                          borderColor: '#FECACA',
+                          background: '#FEF2F2',
+                          fontWeight: 700,
+                          height: 42,
+                          padding: '0 20px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          borderRadius: 8,
+                          border: '1px solid #FECACA',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <EyeOff size={16} />
+                        <span>Unpublish Lesson</span>
+                      </button>
+                    </>
+                  ) : (selectedReviewLecture.status === 'APPROVED' || selectedReviewLecture.status === 'ARCHIVED') ? (
+                    <button
+                      type="button"
+                      onClick={() => handlePublishLesson(selectedReviewLecture.id)}
+                      style={{
+                        background: '#0F172A',
+                        border: '1px solid #0F172A',
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        height: 42,
+                        padding: '0 26px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        borderRadius: 8,
+                        cursor: 'pointer'
+                      }}
+                      title="Publish approved lecture to enrolled students"
+                    >
+                      <UploadCloud size={16} />
+                      <span>Publish Lesson to Students</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={!hasVideo}
+                      onClick={() =>
+                        setApproveModal({
+                          open: true,
+                          lecture: selectedReviewLecture,
+                          isSubmitting: false
+                        })
+                      }
+                      style={{
+                        background: hasVideo ? '#0F172A' : '#94A3B8',
+                        border: hasVideo ? '1px solid #0F172A' : '1px solid #94A3B8',
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        height: 42,
+                        padding: '0 26px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        borderRadius: 8,
+                        cursor: hasVideo ? 'pointer' : 'not-allowed'
+                      }}
+                      title={!hasVideo ? 'Video unavailable - approval blocked' : 'Approve Lecture'}
+                    >
+                      <CheckCircle2 size={16} />
+                      <span>Approve</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ========================================================================= */}
       {/* MODAL: APPROVE LECTURE CONFIRMATION */}
       {/* ========================================================================= */}
       {approveModal.open && (
@@ -10113,29 +10602,39 @@ export default function AdminDashboardPage() {
       {/* MODAL: UNPUBLISH LECTURE MODAL */}
       {/* ========================================================================= */}
       {unpublishModal.open && (
-        <div className="razorpay-modal-overlay" onClick={() => !unpublishModal.isSubmitting && setUnpublishModal({ open: false, lectureId: null, reason: '', error: '', isSubmitting: false })}>
+        <div className="razorpay-modal-overlay" style={{ zIndex: 2500 }} onClick={() => !unpublishModal.isSubmitting && setUnpublishModal({ open: false, lectureId: null, reason: '', error: '', isSubmitting: false })}>
           <div
             className="razorpay-modal"
-            style={{ maxWidth: 480, background: '#FFFFFF', borderRadius: 8, overflow: 'hidden' }}
+            style={{ maxWidth: 480, background: '#FFFFFF', borderRadius: 12, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="razorpay-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #F1F5F9' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#15171A' }}>
-                Unpublish Lecture
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: '#FEF2F2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <EyeOff size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                    Unpublish Lecture
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 2 }}>
+                    Revert lecture to Approved and hide from enrolled students
+                  </div>
+                </div>
+              </div>
               <button
                 type="button"
                 className="btn-ghost"
                 onClick={() => !unpublishModal.isSubmitting && setUnpublishModal({ open: false, lectureId: null, reason: '', error: '', isSubmitting: false })}
-                style={{ padding: 6, borderRadius: '50%', color: '#6B6D73' }}
+                style={{ padding: 6, borderRadius: '50%', color: '#64748B' }}
               >
                 <X size={20} />
               </button>
             </div>
 
             <div style={{ padding: '24px' }}>
-              <p style={{ fontSize: '0.875rem', color: '#5A5C62', margin: '0 0 16px 0', lineHeight: 1.5 }}>
-                Unpublishing will hide this lecture from enrolled students. Provide an administrative reason:
+              <p style={{ fontSize: '0.875rem', color: '#475569', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+                Unpublishing will instantly hide this lecture from the student video player while preserving its assets and approvals. You can provide an administrative note:
               </p>
 
               <div style={{ marginBottom: 20 }}>
@@ -10143,13 +10642,13 @@ export default function AdminDashboardPage() {
                   rows={3}
                   value={unpublishModal.reason}
                   onChange={(e) => setUnpublishModal((prev) => ({ ...prev, reason: e.target.value }))}
-                  placeholder="Reason for unpublishing this lecture..."
+                  placeholder="Reason for unpublishing (e.g., Content revision needed)..."
                   style={{
                     width: '100%',
-                    padding: '10px 12px',
+                    padding: '10px 14px',
                     borderRadius: 8,
-                    border: '1px solid #E4E4E7',
-                    fontSize: '0.85rem',
+                    border: '1px solid #CBD5E1',
+                    fontSize: '0.875rem',
                     outline: 'none',
                     boxSizing: 'border-box'
                   }}
@@ -10162,17 +10661,29 @@ export default function AdminDashboardPage() {
                   className="btn btn-outline"
                   onClick={() => setUnpublishModal({ open: false, lectureId: null, reason: '', error: '', isSubmitting: false })}
                   disabled={unpublishModal.isSubmitting}
+                  style={{ height: 40, padding: '0 18px', fontWeight: 600, borderRadius: 8, borderColor: '#CBD5E1' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
-                  className="btn btn-primary"
                   onClick={handleConfirmUnpublish}
                   disabled={unpublishModal.isSubmitting}
-                  style={{ background: '#15171A', borderColor: '#15171A', color: '#FFFFFF', fontWeight: 700 }}
+                  style={{
+                    background: '#DC2626',
+                    border: '1px solid #DC2626',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    height: 40,
+                    padding: '0 20px',
+                    borderRadius: 8,
+                    cursor: unpublishModal.isSubmitting ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8
+                  }}
                 >
-                  {unpublishModal.isSubmitting ? <RefreshCw size={14} className="spin" /> : null}
+                  {unpublishModal.isSubmitting ? <RefreshCw size={14} className="spin" /> : <EyeOff size={15} />}
                   <span>Unpublish Lecture</span>
                 </button>
               </div>
@@ -10488,6 +10999,30 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#4B4D52', marginBottom: 6 }}>
+                    Assigned Creator / Instructor <span style={{ fontSize: '0.75rem', color: '#6B6D73', fontWeight: 500 }}>(Optional)</span>
+                  </label>
+                  <select
+                    value={adminLectureModal.creatorId || ''}
+                    onChange={(e) => setAdminLectureModal((prev) => ({ ...prev, creatorId: e.target.value }))}
+                    style={{ width: '100%', height: 38, padding: '0 12px', borderRadius: 8, border: '1px solid #E4E4E7', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box', background: '#FFFFFF' }}
+                  >
+                    <option value="">-- No Specific Creator Assigned (Unassigned) --</option>
+                    {creators.map((c) => {
+                      const isCourseCreator = activeCurriculumCourse?.creators?.some(cc => (cc.creatorId === c.id || cc.creator?.id === c.id))
+                      return (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.email}) {isCourseCreator ? '★ Course Faculty' : ''}
+                        </option>
+                      )
+                    })}
+                  </select>
+                  <span style={{ fontSize: '0.72rem', color: '#6B6D73', marginTop: 4, display: 'block' }}>
+                    Assign a specific instructor to deliver this lecture, or leave unassigned.
+                  </span>
                 </div>
 
                 <div style={{ marginBottom: 20 }}>

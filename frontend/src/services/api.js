@@ -394,6 +394,10 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ status })
       }),
+    deleteCreator: (id) =>
+      request(`/admin/creators/${id}`, {
+        method: 'DELETE'
+      }),
     getStudents: () => request('/admin/students'),
     updateStudentStatus: (id, status) =>
       request(`/admin/students/${id}/status`, {

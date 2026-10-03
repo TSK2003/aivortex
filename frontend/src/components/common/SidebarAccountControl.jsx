@@ -46,7 +46,7 @@ export default function SidebarAccountControl({
 
   // Derive user identity values
   const displayName = user?.name || (role === 'admin' ? 'Administrator' : role === 'creator' ? 'Creator' : 'Student')
-  const displayEmail = user?.email || (role === 'admin' ? 'admin@apexlearn.com' : role === 'creator' ? 'creator@apexlearn.com' : 'student@apexlearn.com')
+  const displayEmail = user?.email || (role === 'admin' ? 'admin@aivortex.com' : role === 'creator' ? 'creator@aivortex.com' : 'student@aivortex.com')
   const roleLabel =
     role === 'admin'
       ? (user?.role === 'SUPERADMIN' ? 'Super Administrator' : 'Administrator')

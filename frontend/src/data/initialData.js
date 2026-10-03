@@ -506,7 +506,7 @@ export const initialLiveSessions = [
     instructorRole: 'Lead AI Scientist & Ex-FAANG Architect',
     instructorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
     description: 'Join Dr. Vikram live as we build a real-time data ingestion pipeline, clean messy production logs, and debug participant code live. Interactive Q&A throughout the session.',
-    meetUrl: 'https://meet.google.com/demo-sat-apexlearn',
+    meetUrl: 'https://meet.google.com/demo-sat-aivortex',
     isLiveNow: true,
     status: 'Live Now'
   },
@@ -521,7 +521,7 @@ export const initialLiveSessions = [
     instructorRole: 'Principal ML Engineer & Kaggle Grandmaster',
     instructorAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80',
     description: 'Live implementation of modern attention mechanisms, custom loss functions, and hands-on debugging of convergence issues with tensor visualizations.',
-    meetUrl: 'https://meet.google.com/demo-sun-apexlearn',
+    meetUrl: 'https://meet.google.com/demo-sun-aivortex',
     isLiveNow: false,
     status: 'Scheduled Tomorrow'
   }
@@ -700,7 +700,7 @@ export const initialCertificates = [
     instructor: 'Dr. Vikram Sen',
     issueDate: 'March 10, 2026',
     verified: true,
-    credentialUrl: 'https://apexlearn.edu/verify/CERT-PYDS-2026-9042'
+    credentialUrl: 'https://aivortex.com/verify/CERT-PYDS-2026-9042'
   }
 ];
 

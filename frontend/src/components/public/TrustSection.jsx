@@ -50,10 +50,10 @@ export default function TrustSection() {
         <div className="section-header text-center">
           <div className="section-badge teal">
             <Shield size={14} />
-            <span>WHY APEXLEARN</span>
+            <span>WHY AIVORTEX</span>
           </div>
           <h2 className="section-title">
-            THE <span className="highlight-blue">APEXLEARN</span> ADVANTAGE
+            THE <span className="highlight-blue">AIVORTEX</span> ADVANTAGE
           </h2>
           <p className="section-subtitle">
             We&apos;re not just another course marketplace. We&apos;re an institute

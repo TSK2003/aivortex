@@ -10,6 +10,7 @@ import {
   resendCreatorCredentials,
   inviteCreator,
   updateCreatorStatus,
+  deleteCreator,
   getStudents,
   updateStudentStatus,
   updateStudentEnrollmentStatus,
@@ -108,6 +109,7 @@ router.patch('/creators/:id/status', updateCreatorStatus)
 router.post('/creators/:id/reset-password', resetCreatorPassword)
 router.post('/creators/:id/resend-credentials', resendCreatorCredentials)
 router.post('/creators/invite', inviteCreator)
+router.delete('/creators/:id', deleteCreator)
 
 // Students Management
 router.get('/students', getStudents)

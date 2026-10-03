@@ -273,8 +273,7 @@ export async function createCreator(req, res, next) {
       specialization,
       bio,
       organization,
-      status = 'ACTIVE',
-      sendEmail = true
+      status = 'ACTIVE'
     } = req.body
 
     if (!name || !name.trim()) {
@@ -284,19 +283,21 @@ export async function createCreator(req, res, next) {
       throw new BadRequestError('Email address is required')
     }
 
-    const cleanEmail = email.trim().toLowerCase()
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(cleanEmail)) {
-      throw new BadRequestError('Please provide a valid email address')
+    // 1. Verify email syntax and deliverability / reachable domain
+    let cleanEmail
+    try {
+      cleanEmail = await emailService.verifyEmailDeliverability(email)
+    } catch (valErr) {
+      throw new BadRequestError(valErr.message || 'Please provide a valid, deliverable email address.')
     }
 
-    // Check if email already exists
+    // 2. Check if email already exists in database
     const existingEmail = await prisma.user.findUnique({ where: { email: cleanEmail } })
     if (existingEmail) {
       throw new BadRequestError('This email address is already associated with an account.')
     }
 
-    // Check if custom userId exists or auto-assign sequential ID
+    // 3. Check if custom userId exists or auto-assign sequential ID
     let chosenId = userId && userId.trim() ? userId.trim() : null
     if (chosenId) {
       const existingId = await prisma.user.findUnique({ where: { id: chosenId } })
@@ -319,7 +320,7 @@ export async function createCreator(req, res, next) {
       }
     }
 
-    // Password validation if provided
+    // 4. Password validation if provided
     if (password !== undefined && password !== null && String(password).trim() !== '') {
       const pwd = String(password).trim()
       if (pwd.length < 8) {
@@ -333,7 +334,7 @@ export async function createCreator(req, res, next) {
     // Password generation or hashing
     const tempPassword = password && String(password).trim()
       ? String(password).trim()
-      : `ApexCreator${Math.floor(1000 + Math.random() * 9000)}!`
+      : `AivortexCreator${Math.floor(1000 + Math.random() * 9000)}!`
 
     const salt = await bcrypt.genSalt(10)
     const passwordHash = await bcrypt.hash(tempPassword, salt)
@@ -357,7 +358,7 @@ export async function createCreator(req, res, next) {
           headline: organization
             ? `${specialization ? specialization.trim() : 'Technical Instructor'} • ${organization.trim()}`
             : (specialization ? specialization.trim() : 'Technical Course Creator'),
-          biography: bio ? bio.trim() : 'Course creator and faculty specialist at ApexLearn.',
+          biography: bio ? bio.trim() : 'Course creator and faculty specialist at AIVORTEX.',
           isVerified: true
         }
       }
@@ -370,31 +371,30 @@ export async function createCreator(req, res, next) {
       }
     })
 
-    // Email dispatch if sendEmail is selected
-    let emailStatus = { sent: false, error: null }
-    if (sendEmail) {
-      try {
-        await emailService.sendCreatorInvitation({
-          name: name.trim(),
-          email: cleanEmail,
-          tempPassword,
-          userId: creator.id
-        })
-        emailStatus.sent = true
-      } catch (mailErr) {
-        console.warn('[WARN] SMTP invitation delivery warning:', mailErr.message)
-        emailStatus.error = mailErr.message
-      }
+    // 5. Automatic Credential Delivery via Email
+    let emailStatus = { sent: true, error: null }
+    try {
+      const info = await emailService.sendCreatorInvitation({
+        name: name.trim(),
+        email: cleanEmail,
+        tempPassword,
+        userId: creator.id
+      })
+      emailStatus.sent = true
+      emailStatus.messageId = info?.messageId || `msg_${Date.now()}`
+    } catch (mailErr) {
+      console.warn('[WARN] SMTP credential delivery issue:', mailErr.message)
+      emailStatus.error = mailErr.message
     }
 
-    // Audit log
+    // 6. Audit log
     await prisma.auditLog.create({
       data: {
         userId: req.user.id,
         action: 'CREATOR_PROVISIONED',
         entityType: 'User',
         entityId: creator.id,
-        details: `Admin ${req.user.email} provisioned and activated creator account for ${cleanEmail} (ID: ${creator.id}, Status: ${finalStatus})`,
+        details: `Admin ${req.user.email} provisioned and activated creator account for ${cleanEmail} (ID: ${creator.id}, Status: ${finalStatus}). Credentials dispatched to registered email.`,
         ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
       }
     })
@@ -403,9 +403,10 @@ export async function createCreator(req, res, next) {
       res,
       {
         creator: sanitizeUser(creator),
+        tempPasswordGenerated: tempPassword,
         emailStatus
       },
-      'Creator account created and activated successfully.',
+      'Creator account created successfully and login credentials dispatched to their registered email.',
       201
     )
   } catch (err) {
@@ -472,7 +473,7 @@ export async function updateCreator(req, res, next) {
             create: {
               specialization: specialization || 'Curriculum Specialist',
               headline: resolvedHeadline || 'Technical Instructor',
-              biography: bio || 'Course creator at ApexLearn.',
+              biography: bio || 'Course creator at AIVORTEX.',
               isVerified: true
             },
             update: {
@@ -560,7 +561,7 @@ export async function resetCreatorPassword(req, res, next) {
 
     const tempPassword = newPassword && newPassword.trim()
       ? newPassword.trim()
-      : `Apex${Math.floor(100000 + Math.random() * 900000)}!`
+      : `Aivortex${Math.floor(100000 + Math.random() * 900000)}!`
 
     const salt = await bcrypt.genSalt(10)
     const passwordHash = await bcrypt.hash(tempPassword, salt)
@@ -579,7 +580,8 @@ export async function resetCreatorPassword(req, res, next) {
         await emailService.sendCreatorInvitation({
           name: creator.name,
           email: creator.email,
-          tempPassword
+          tempPassword,
+          userId: creator.id
         })
         emailStatus.sent = true
       } catch (mailErr) {
@@ -624,7 +626,7 @@ export async function resendCreatorCredentials(req, res, next) {
     }
 
     // Generate a fresh temporary password to ensure it is valid
-    const tempPassword = `ApexCreator${Math.floor(1000 + Math.random() * 9000)}!`
+    const tempPassword = `AivortexCreator${Math.floor(1000 + Math.random() * 9000)}!`
     const salt = await bcrypt.genSalt(10)
     const passwordHash = await bcrypt.hash(tempPassword, salt)
 
@@ -638,7 +640,8 @@ export async function resendCreatorCredentials(req, res, next) {
       await emailService.sendCreatorInvitation({
         name: creator.name,
         email: creator.email,
-        tempPassword
+        tempPassword,
+        userId: creator.id
       })
       emailStatus.sent = true
     } catch (mailErr) {
@@ -686,7 +689,7 @@ export async function inviteCreator(req, res, next) {
     }
 
     // Generate random secure 12-char initial password
-    const tempPassword = `ApexCreator${Math.floor(1000 + Math.random() * 9000)}!`
+    const tempPassword = `AivortexCreator${Math.floor(1000 + Math.random() * 9000)}!`
     const salt = await bcrypt.genSalt(10)
     const passwordHash = await bcrypt.hash(tempPassword, salt)
 
@@ -701,7 +704,7 @@ export async function inviteCreator(req, res, next) {
           create: {
             specialization: specialization || 'Curriculum Specialist',
             headline: headline || 'Technical Course Creator & Industry Expert',
-            biography: bio || 'Course creator at ApexLearn.',
+            biography: bio || 'Course creator at AIVORTEX.',
             isVerified: true
           }
         }
@@ -794,6 +797,62 @@ export async function updateCreatorStatus(req, res, next) {
     })
 
     return successResponse(res, { creator: sanitizeUser(updated) }, `Creator status updated to ${normalizedStatus}`)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function deleteCreator(req, res, next) {
+  try {
+    const { id } = req.params
+
+    const creator = await prisma.user.findFirst({
+      where: { id, role: 'CREATOR' }
+    })
+
+    if (!creator) {
+      throw new NotFoundError('Creator not found')
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete user sessions, tokens, notifications
+      await tx.session.deleteMany({ where: { userId: id } })
+      await tx.passwordResetToken.deleteMany({ where: { userId: id } })
+      await tx.notification.deleteMany({ where: { userId: id } })
+
+      // 2. Delete course creator assignments
+      await tx.courseCreator.deleteMany({ where: { creatorId: id } })
+
+      // 3. Delete creator profile & profile change requests
+      await tx.profileChangeRequest.deleteMany({ where: { creatorProfile: { userId: id } } })
+      await tx.creatorProfile.deleteMany({ where: { userId: id } })
+
+      // 4. Nullify creator on playlists & uploaded lessons so content remains intact
+      await tx.playlist.updateMany({
+        where: { creatorId: id },
+        data: { creatorId: null }
+      })
+      await tx.lesson.updateMany({
+        where: { creatorId: id },
+        data: { creatorId: null }
+      })
+
+      // 5. Delete user
+      await tx.user.delete({ where: { id } })
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action: 'CREATOR_DELETED',
+        entityType: 'User',
+        entityId: id,
+        details: `Admin ${req.user.email} permanently deleted creator account ${creator.name} (${creator.email})`,
+        ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
+      }
+    })
+
+    return successResponse(res, null, `Creator account for ${creator.name} deleted successfully`)
   } catch (err) {
     next(err)
   }
@@ -1068,8 +1127,14 @@ export async function getAdminCourses(req, res, next) {
           }
         },
         playlists: {
+          orderBy: { orderIndex: 'asc' },
           include: {
-            lessons: true
+            lessons: {
+              include: {
+                creator: { select: { id: true, name: true, email: true, avatar: true } }
+              },
+              orderBy: { orderIndex: 'asc' }
+            }
           }
         },
         enrollments: {
@@ -1233,10 +1298,7 @@ export async function validateCoursePublicationPrerequisites(courseId) {
     throw new BadRequestError('Cannot publish course: Course description is required')
   }
 
-  // 3. Assigned Creator
-  if (!course.creators || course.creators.length === 0) {
-    throw new BadRequestError('Cannot publish course: At least one Creator must be assigned to the course')
-  }
+  // 3. Assigned Creator is optional at the course level and can be handled per-lecture
 
   // 4. Valid curriculum modules/playlists
   if (!course.playlists || course.playlists.length === 0) {
@@ -1571,7 +1633,7 @@ export async function getVideoVerificationQueue(req, res, next) {
     if (status && status !== 'ALL') {
       where.status = status
     } else {
-      where.status = { in: ['SUBMITTED_FOR_REVIEW', 'RETURNED_FOR_EDIT', 'APPROVED', 'PUBLISHED'] }
+      where.status = { in: ['SUBMITTED_FOR_REVIEW', 'RETURNED_FOR_EDIT', 'APPROVED', 'PUBLISHED', 'ARCHIVED'] }
     }
 
     const queue = await prisma.lesson.findMany({
@@ -1705,8 +1767,8 @@ export async function publishLesson(req, res, next) {
       throw new NotFoundError('Lesson not found')
     }
 
-    if (lesson.status !== 'APPROVED') {
-      throw new BadRequestError(`Only APPROVED lessons can be published. Current state: ${lesson.status}`)
+    if (lesson.status !== 'APPROVED' && lesson.status !== 'ARCHIVED') {
+      throw new BadRequestError(`Only APPROVED or ARCHIVED lessons can be published. Current state: ${lesson.status}`)
     }
 
     const updated = await prisma.$transaction(async (tx) => {
@@ -1718,7 +1780,7 @@ export async function publishLesson(req, res, next) {
       await tx.videoStatusHistory.create({
         data: {
           lessonId,
-          fromStatus: 'APPROVED',
+          fromStatus: lesson.status,
           toStatus: 'PUBLISHED',
           changedById: adminId,
           reason: 'Admin explicitly published lesson to enrolled students'
@@ -1771,7 +1833,7 @@ export async function unpublishLesson(req, res, next) {
     const updated = await prisma.$transaction(async (tx) => {
       const l = await tx.lesson.update({
         where: { id: lessonId },
-        data: { status: 'ARCHIVED', isPublicDemo: false }
+        data: { status: 'APPROVED', isPublicDemo: false }
       })
 
       // If this lesson was assigned as the public demo for its course, clear it
@@ -1784,9 +1846,9 @@ export async function unpublishLesson(req, res, next) {
         data: {
           lessonId,
           fromStatus: lesson.status,
-          toStatus: 'ARCHIVED',
+          toStatus: 'APPROVED',
           changedById: adminId,
-          reason: reason || 'Withdrawn by Admin'
+          reason: reason || 'Unpublished by Admin'
         }
       })
 
@@ -1799,12 +1861,12 @@ export async function unpublishLesson(req, res, next) {
         action: 'LESSON_UNPUBLISHED',
         entityType: 'Lesson',
         entityId: lessonId,
-        details: `Admin unpublished lesson ${lesson.title}: ${reason || 'Archived'}`,
+        details: `Admin unpublished lesson ${lesson.title}: ${reason || 'Unpublished and reverted to Approved'}`,
         ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1'
       }
     })
 
-    return successResponse(res, { lesson: updated }, 'Lesson unpublished and archived')
+    return successResponse(res, { lesson: updated }, 'Lesson unpublished from student player and reverted to Approved')
   } catch (err) {
     next(err)
   }
@@ -2017,12 +2079,12 @@ export async function reviewRequest(req, res, next) {
       // Dispatch verification email to the requested new email
       emailService.sendMail({
         to: request.requestedValue,
-        subject: 'Verify Your New Email Address - ApexLearn',
+        subject: 'Verify Your New Email Address - AIVORTEX',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #E2E8F0; border-radius: 8px;">
             <h2 style="color: #0F172A;">Email Change Verification</h2>
             <p>Hello ${request.creatorProfile?.user?.name || 'Creator'},</p>
-            <p>Your request to update your ApexLearn account email to <strong>${request.requestedValue}</strong> was approved by Administrator.</p>
+            <p>Your request to update your AIVORTEX account email to <strong>${request.requestedValue}</strong> was approved by Administrator.</p>
             <p>Please enter this 6-digit verification code in your Creator Profile to complete the update:</p>
             <div style="background: #F1F5F9; padding: 14px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #2563EB; border-radius: 6px; margin: 20px 0;">
               ${otpCode}

@@ -694,7 +694,7 @@ export default function StudentDashboardPage() {
                 {transactions.map((tx) => (
                   <tr key={tx.id}>
                     <td><strong>{tx.orderNumber || tx.id.slice(0, 10)}</strong></td>
-                    <td>{tx.course?.title || tx.courseTitle || 'Apex Course'}</td>
+                    <td>{tx.course?.title || tx.courseTitle || 'Aivortex Course'}</td>
                     <td>₹{tx.amount?.toLocaleString('en-IN')}</td>
                     <td>
                       <span

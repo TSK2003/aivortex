@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
   Users,
@@ -129,8 +129,8 @@ export default function AdminCreateCreatorPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  // Section 4: Delivery State
-  const [sendEmail, setSendEmail] = useState(true)
+  // Credential Delivery (Always automatic)
+  const sendEmail = true
 
   // UI & Submission State
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -176,7 +176,7 @@ export default function AdminCreateCreatorPage() {
     }
     const specialChars = '!@#$%^&*'
     const spec = specialChars.charAt(Math.floor(Math.random() * specialChars.length))
-    const generated = `Apex${rand}${spec}${Math.floor(10 + Math.random() * 90)}`
+    const generated = `Aivortex${rand}${spec}${Math.floor(10 + Math.random() * 90)}`
     setPassword(generated)
     setConfirmPassword(generated)
     setShowPassword(true)
@@ -204,12 +204,20 @@ export default function AdminCreateCreatorPage() {
   const validateForm = () => {
     const errs = {}
     if (!name.trim()) errs.name = 'Full name is required'
-    if (!email.trim()) {
+    const emailVal = email.trim()
+    if (!emailVal) {
       errs.email = 'Email address is required'
     } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(email.trim())) {
-        errs.email = 'Please enter a valid email address'
+      const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
+      const parts = emailVal.split('@')
+      const domain = parts[1] || ''
+      const domainParts = domain.split('.')
+      const tld = domainParts[domainParts.length - 1] || ''
+
+      if (!emailRegex.test(emailVal) || parts.length !== 2 || domainParts.length < 2 || tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) {
+        errs.email = 'Please enter a valid email address with a proper domain (e.g. name@company.com)'
+      } else if (['example.com', 'example.org', 'test.com', 'invalid.com'].includes(domain.toLowerCase())) {
+        errs.email = 'Please enter an active, non-test email address that can receive mail'
       }
     }
     if (!specialization.trim()) {
@@ -296,18 +304,18 @@ export default function AdminCreateCreatorPage() {
       if (res.data) {
         setCreatedResult({
           creator: res.data.creator,
-          password: password.trim() || res.data.tempPasswordGenerated || 'ApexCreator2026!',
+          password: password.trim() || res.data.tempPasswordGenerated || 'AivortexCreator2026!',
           emailStatus: res.data.emailStatus
         })
-        showToast('Creator account created successfully.', 'success')
-        if (sendEmail) {
-          showToast("Login credentials have been sent to the creator's registered email.", 'info')
-        }
+        showToast(
+          'Creator account created successfully. Login credentials sent to registered email.',
+          'success'
+        )
       }
     } catch (err) {
       const msg = err.message || 'Unable to create creator account. Please try again.'
       showToast(msg, 'error')
-      if (msg.toLowerCase().includes('email')) {
+      if (msg.toLowerCase().includes('email') || msg.toLowerCase().includes('domain') || msg.toLowerCase().includes('mail') || msg.toLowerCase().includes('credential')) {
         setErrors((prev) => ({ ...prev, email: msg }))
       } else if (msg.toLowerCase().includes('id')) {
         setErrors((prev) => ({ ...prev, userId: msg }))
@@ -356,27 +364,25 @@ export default function AdminCreateCreatorPage() {
           </p>
 
           {/* Credential Email Delivery Notice Banner */}
-          {sendEmail && (
-            <div
-              style={{
-                maxWidth: 640,
-                margin: '0 auto 24px auto',
-                padding: '14px 18px',
-                borderRadius: 8,
-                background: '#F4F4F5',
-                border: '1px solid #E4E4E7',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                textAlign: 'left'
-              }}
-            >
-              <Mail size={20} style={{ color: '#15171A', flexShrink: 0 }} />
-              <div style={{ fontSize: '0.875rem', color: '#15171A', fontWeight: 600 }}>
-                Login credentials have been sent to the creator's registered email (<strong>{creator.email}</strong>).
-              </div>
+          <div
+            style={{
+              maxWidth: 640,
+              margin: '0 auto 24px auto',
+              padding: '14px 18px',
+              borderRadius: 8,
+              background: '#ECFDF5',
+              border: '1px solid #A7F3D0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              textAlign: 'left'
+            }}
+          >
+            <Mail size={20} style={{ color: '#059669', flexShrink: 0 }} />
+            <div style={{ fontSize: '0.875rem', color: '#065F46', fontWeight: 600 }}>
+              Login credentials (User ID and initial password) have been automatically dispatched to <strong>{creator.email}</strong>.
             </div>
-          )}
+          </div>
 
           {/* Credentials Display Card */}
           <div
@@ -466,24 +472,16 @@ export default function AdminCreateCreatorPage() {
                 marginTop: 20,
                 padding: '12px 16px',
                 borderRadius: 10,
-                background: emailStatus?.sent ? '#F4F4F5' : '#F4F4F5',
-                border: `1px solid ${emailStatus?.sent ? '#E4E4E7' : '#E4E4E7'}`,
+                background: '#ECFDF5',
+                border: '1px solid #A7F3D0',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12
               }}
             >
-              <Mail size={18} style={{ color: emailStatus?.sent ? '#15171A' : '#4B4D52' }} />
-              <div style={{ fontSize: '0.8125rem', color: '#2D2F33', flex: 1 }}>
-                {emailStatus?.sent ? (
-                  <span>
-                    <strong>Invitation Dispatched:</strong> An onboarding email containing portal access details and credentials was sent to <strong>{creator.email}</strong>.
-                  </span>
-                ) : (
-                  <span>
-                    <strong>Email Delivery Notice:</strong> Account created successfully. Credentials were logged locally; please share the credentials with the instructor directly.
-                  </span>
-                )}
+              <Mail size={18} style={{ color: '#059669' }} />
+              <div style={{ fontSize: '0.8125rem', color: '#065F46', flex: 1 }}>
+                <strong>Invitation Dispatched:</strong> An onboarding email containing portal access details and credentials was sent to <strong>{creator.email}</strong>.
               </div>
             </div>
           </div>
@@ -678,7 +676,7 @@ export default function AdminCreateCreatorPage() {
                 </label>
                 <input
                   type="email"
-                  placeholder="e.g. creator@apexlearn.edu"
+                  placeholder="e.g. creator@aivortex.com"
                   className="form-input"
                   value={email}
                   autoComplete="off"
@@ -695,10 +693,14 @@ export default function AdminCreateCreatorPage() {
                   required
                 />
                 {touched.email && errors.email && (
-                  <p style={{ color: '#2D2F33', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <p style={{ color: '#DC2626', fontSize: '0.75rem', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                     <AlertCircle size={12} /> {errors.email}
                   </p>
                 )}
+                <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: 5, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Mail size={13} style={{ color: '#2563EB', flexShrink: 0 }} />
+                  <span>Login credentials (User ID and initial password) will be automatically sent to this email upon account creation.</span>
+                </div>
               </div>
 
               {/* Phone Number */}
@@ -893,7 +895,7 @@ export default function AdminCreateCreatorPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Apex AI Research Labs"
+                  placeholder="e.g. Aivortex AI Research Labs"
                   className="form-input"
                   value={organization}
                   onChange={(e) => setOrganization(e.target.value)}
@@ -1311,98 +1313,6 @@ export default function AdminCreateCreatorPage() {
               </div>
             </div>
           </section>
-
-          {/* SECTION 4 — CREDENTIAL DELIVERY / EMAIL */}
-          <section
-            style={{
-              background: '#FFFFFF',
-              borderRadius: 8,
-              border: '1px solid #E2E8F0',
-              padding: 28,
-              boxShadow: 'var(--shadow-sm)'
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                marginBottom: 20,
-                paddingBottom: 16,
-                borderBottom: '1px solid #F1F5F9'
-              }}
-            >
-              <div
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 10,
-                  background: '#EFEFEF',
-                  color: '#2D2F33',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <Mail size={20} />
-              </div>
-              <div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#15171A', margin: 0 }}>
-                  Section 3 — Credential Delivery / Email
-                </h2>
-                <p style={{ fontSize: '0.8125rem', color: '#6B6D73', margin: '2px 0 0 0' }}>
-                  Send the creator's login details to their registered email after the account is successfully created.
-                </p>
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: '#F8F8F8',
-                border: '1px solid #E2E8F0',
-                borderRadius: 12,
-                padding: 18
-              }}
-            >
-              <label
-                htmlFor="checkbox-send-email"
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 12,
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  color: '#2D2F33',
-                  fontSize: '0.9rem'
-                }}
-              >
-                <input
-                  type="checkbox"
-                  id="checkbox-send-email"
-                  checked={sendEmail}
-                  onChange={(e) => setSendEmail(e.target.checked)}
-                  style={{
-                    width: 18,
-                    height: 18,
-                    marginTop: 2,
-                    accentColor: '#15171A',
-                    cursor: 'pointer'
-                  }}
-                />
-                <div>
-                  <span style={{ fontWeight: 700, color: '#15171A', fontSize: '0.925rem' }}>
-                    Send login credentials to creator's registered email
-                  </span>
-                  <p style={{ fontSize: '0.8125rem', color: '#6B6D73', margin: '4px 0 0 0', fontWeight: 400 }}>
-                    Recipient: <strong>{email.trim() || 'Creator’s registered email address'}</strong>
-                  </p>
-                  <p style={{ fontSize: '0.75rem', color: '#9B9DA3', margin: '4px 0 0 0', fontWeight: 400 }}>
-                    Sends the creator's login details (User ID and password) to their registered email once the account is created.
-                  </p>
-                </div>
-              </label>
-            </div>
-          </section>
         </form>
 
         {/* ========================================================================= */}
@@ -1482,7 +1392,7 @@ export default function AdminCreateCreatorPage() {
             <div style={{ paddingTop: 16, fontSize: '0.8125rem', color: '#5A5C62', display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div>
                 <span style={{ color: '#9B9DA3', fontSize: '0.75rem', display: 'block' }}>Email:</span>
-                <span style={{ fontWeight: 600, color: '#15171A' }}>{email.trim() || 'instructor@apexlearn.edu'}</span>
+                <span style={{ fontWeight: 600, color: '#15171A' }}>{email.trim() || 'instructor@aivortex.com'}</span>
               </div>
               {organization && (
                 <div>
@@ -1557,9 +1467,9 @@ export default function AdminCreateCreatorPage() {
 
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CheckCircle2 size={16} style={{ color: sendEmail ? '#15171A' : '#9B9DA3' }} />
+                <CheckCircle2 size={16} style={{ color: '#10B981' }} />
                 <span style={{ color: '#15171A', fontWeight: 600 }}>
-                  {sendEmail ? 'Email credentials dispatch enabled' : 'Manual credential handover'}
+                  Automatic credential delivery to registered email
                 </span>
               </div>
             </div>
