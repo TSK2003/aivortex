@@ -1,3 +1,5 @@
+import fs from 'fs'
+import path from 'path'
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { env } from '../config/env.js'
@@ -55,10 +57,13 @@ export const s3Service = {
    */
   getPresignedDownloadUrl: async (key, expiresIn = 7200) => {
     if (!isConfigured || !s3Client) {
-      if (key && (key.startsWith('uploads/') || key.startsWith('/uploads/'))) {
-        const cleanKey = key.replace(/^[/\\]+uploads[/\\]+/, '')
+      if (key && typeof key === 'string') {
+        const cleanKey = key.replace(/^[/\\]+/, '').replace(/^uploads[/\\]+/, '')
         const baseUrl = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`
-        return `${baseUrl}/api/media/stream/${cleanKey}`
+        const localPath = path.resolve(process.cwd(), 'uploads', cleanKey)
+        if (fs.existsSync(localPath) || cleanKey.includes('.')) {
+          return `${baseUrl}/api/media/stream/${cleanKey.replace(/\\/g, '/')}`
+        }
       }
       // Return safe sample video streaming URL for development and testing
       return `https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4?mockSigned=true&exp=${Date.now() + expiresIn * 1000}`
@@ -73,11 +78,24 @@ export const s3Service = {
   },
 
   /**
-   * Deletes an object from S3.
+   * Deletes an object from S3 or local storage.
    */
   deleteObject: async (key) => {
     if (!isConfigured || !s3Client) {
-      console.log(`[MockS3] Delete object request for key: ${key}`)
+      console.log(`[Storage] Delete object request for key: ${key}`)
+      if (key && typeof key === 'string') {
+        try {
+          const uploadsRoot = path.resolve(process.cwd(), 'uploads')
+          const cleanKey = key.replace(/^[/\\]+/, '').replace(/^uploads[/\\]+/, '').replace(/\.\./g, '')
+          const targetPath = path.resolve(uploadsRoot, cleanKey)
+          if (targetPath.startsWith(uploadsRoot + path.sep) && fs.existsSync(targetPath)) {
+            await fs.promises.unlink(targetPath)
+            console.log(`[Storage] Deleted local media file from disk: ${targetPath}`)
+          }
+        } catch (err) {
+          console.warn('[Storage] Error deleting local file from disk:', err.message)
+        }
+      }
       return true
     }
 
@@ -92,3 +110,4 @@ export const s3Service = {
 }
 
 export default s3Service
+

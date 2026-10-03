@@ -2807,9 +2807,17 @@
   transition: transform 0.25s ease;
 }
 
+.tool-icon-wrapper img,
 .tool-icon-wrapper svg {
-  width: 28px !important;
-  height: 28px !important;
+  width: 26px !important;
+  height: 26px !important;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
+[data-theme='dark'] .tool-card-item img[src*="github.svg"] {
+  filter: brightness(0) invert(1);
 }
 
 .tool-card-item:hover .tool-icon-wrapper {

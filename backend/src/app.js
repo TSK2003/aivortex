@@ -55,12 +55,12 @@ app.use(cookieParser(env.COOKIE_SECRET))
 
 // Body Parsing (with rawBody capture for webhook verification)
 app.use(express.json({
-  limit: '100mb',
+  limit: '500mb',
   verify: (req, res, buf) => {
     req.rawBody = buf
   }
 }))
-app.use(express.urlencoded({ extended: true, limit: '100mb' }))
+app.use(express.urlencoded({ extended: true, limit: '500mb' }))
 
 // Request Logging
 if (env.NODE_ENV !== 'test') {
@@ -83,6 +83,17 @@ app.use('/api', notificationRoutes)
 
 // Authenticated Media Delivery (replaces insecure express.static('/uploads'))
 app.use('/api/media', mediaRoutes)
+
+// Seamless backward-compatible gateway for direct /uploads/... requests
+app.use('/uploads', (req, res, next) => {
+  const ext = path.extname(req.path).toLowerCase()
+  if (['.jpg', '.jpeg', '.png', '.webp', '.svg', '.gif'].includes(ext)) {
+    req.url = `/public/thumbnails${req.path}`
+  } else {
+    req.url = `/stream${req.path}`
+  }
+  return mediaRoutes(req, res, next)
+})
 
 // 404 Handler for Unmatched API Routes
 app.use('/api', (req, res, next) => {

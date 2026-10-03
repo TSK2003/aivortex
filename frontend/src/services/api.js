@@ -593,10 +593,15 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ items })
       }),
-    // Media Upload
+    // Media Upload & Delete
     uploadMedia: (data) =>
       request('/admin/media/upload', {
         method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    deleteMedia: (data) =>
+      request('/admin/media', {
+        method: 'DELETE',
         body: JSON.stringify(data)
       }),
     // Support Tickets & Contact Governance

@@ -1,12 +1,14 @@
 import fs from 'fs'
 import path from 'path'
-import { ForbiddenError, NotFoundError } from '../utils/appError.js'
+import { ForbiddenError, NotFoundError, UnauthorizedError } from '../utils/appError.js'
+import prisma from '../config/prisma.js'
 
 // Allowed MIME types for streamed media
 const MIME_TYPES = {
   '.mp4': 'video/mp4',
   '.webm': 'video/webm',
   '.ogv': 'video/ogg',
+  '.mov': 'video/quicktime',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.png': 'image/png',
@@ -22,6 +24,7 @@ const MAX_FILENAME_LENGTH = 255
 /**
  * Validates a filename segment against path traversal and directory escape attacks.
  * Rejects null bytes, directory traversal sequences, and non-whitelisted characters.
+ * Allows alphanumeric, hyphens, underscores, dots, spaces, and parentheses.
  */
 function validateSegment(segment) {
   if (!segment || typeof segment !== 'string') return false
@@ -30,8 +33,8 @@ function validateSegment(segment) {
   if (segment === '.' || segment === '..') return false
   if (segment.includes('..')) return false
   if (segment.includes('/') || segment.includes('\\')) return false
-  // Allow alphanumeric, hyphens, underscores, dots (for extensions)
-  return /^[a-zA-Z0-9._-]+$/.test(segment)
+  // Allow alphanumeric, hyphens, underscores, dots, spaces, parentheses
+  return /^[a-zA-Z0-9._\- ()]+$/.test(segment)
 }
 
 /**
@@ -55,45 +58,135 @@ function resolveSecurePath(...segments) {
 }
 
 /**
- * Stream protected media files (videos, lesson resources).
- * Requires authenticated user. Supports HTTP Range requests for video seeking.
+ * Helper to extract path segments from wildcard or params
+ */
+function extractSegments(req) {
+  if (req.params[0]) {
+    return req.params[0]
+      .split('/')
+      .filter(Boolean)
+      .map((s) => {
+        try {
+          return decodeURIComponent(s)
+        } catch {
+          return s
+        }
+      })
+  }
+
+  const { folder, subFolder, fileName } = req.params
+  return [folder, subFolder, fileName].filter(Boolean)
+}
+
+/**
+ * Stream or download protected media files (videos, lesson resources).
+ * Supports HTTP Range requests for video seeking and download flag for saving files.
  *
- * GET /api/media/stream/:folder/:subFolder/:fileName
- * GET /api/media/stream/:folder/:fileName
+ * GET /api/media/stream/*
+ * GET /api/media/download/*
  */
 export async function streamProtectedMedia(req, res, next) {
   try {
-    const { folder, subFolder, fileName } = req.params
-
-    // Build path segments based on route pattern
-    const segments = subFolder
-      ? [folder, subFolder, fileName]
-      : [folder, fileName]
+    const segments = extractSegments(req)
+    if (!segments.length) {
+      throw new ForbiddenError('No media file specified.')
+    }
 
     const filePath = resolveSecurePath(...segments)
     if (!filePath) {
       throw new ForbiddenError('Invalid media path requested.')
     }
 
-    // Verify file exists
+    // Verify file exists on local storage
     try {
       await fs.promises.access(filePath, fs.constants.R_OK)
     } catch {
-      throw new NotFoundError('Requested media asset not found.')
+      throw new NotFoundError('Requested media asset not found on server.')
     }
 
+    const fileName = path.basename(filePath)
     const ext = path.extname(fileName).toLowerCase()
     const contentType = MIME_TYPES[ext]
     if (!contentType) {
       throw new ForbiddenError('Unsupported media format.')
     }
 
+    // Authorization & Defense-in-depth security check:
+    // If the media is a course lesson video, ensure the student has access
+    const isVideo = contentType.startsWith('video/')
+    if (isVideo) {
+      // Check if user is authenticated
+      if (!req.user) {
+        // Check if file is a public course demo or preview lesson
+        const demoCourse = await prisma.course.findFirst({
+          where: {
+            OR: [
+              { demoVideoUrl: { contains: fileName } },
+              { thumbnail: { contains: fileName } }
+            ]
+          },
+          select: { id: true }
+        })
+
+        const previewLesson = await prisma.lesson.findFirst({
+          where: {
+            OR: [
+              { s3Key: { contains: fileName } },
+              { videoUrl: { contains: fileName } }
+            ],
+            OR: [
+              { isPreview: true },
+              { isPublicDemo: true }
+            ]
+          },
+          select: { id: true }
+        })
+
+        if (!demoCourse && !previewLesson) {
+          throw new UnauthorizedError('Authentication required to access this course video.')
+        }
+      } else if (req.user.role === 'STUDENT') {
+        // Enrolled student check: verify that non-preview lesson videos belong to an enrolled course
+        const lesson = await prisma.lesson.findFirst({
+          where: {
+            OR: [
+              { s3Key: { contains: fileName } },
+              { videoUrl: { contains: fileName } }
+            ]
+          },
+          include: {
+            playlist: true
+          }
+        })
+
+        if (lesson && !lesson.isPreview && !lesson.isPublicDemo) {
+          const enrollment = await prisma.enrollment.findUnique({
+            where: {
+              studentId_courseId: {
+                studentId: req.user.id,
+                courseId: lesson.playlist.courseId
+              }
+            }
+          })
+
+          if (!enrollment || enrollment.status !== 'ACTIVE') {
+            throw new ForbiddenError('Active course enrollment required to access this lecture video.')
+          }
+        }
+      }
+    }
+
     const stat = await fs.promises.stat(filePath)
     const fileSize = stat.size
 
-    // Support HTTP Range requests for video streaming (seek support)
+    const isDownload = req.query.download === 'true' || req.query.download === '1' || req.path.includes('/download')
+    const disposition = isDownload
+      ? `attachment; filename="${encodeURIComponent(fileName)}"`
+      : 'inline'
+
+    // Support HTTP Range requests for video streaming (seeking support)
     const range = req.headers.range
-    if (range && contentType.startsWith('video/')) {
+    if (range && isVideo && !isDownload) {
       const parts = range.replace(/bytes=/, '').split('-')
       const start = parseInt(parts[0], 10)
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1
@@ -111,6 +204,7 @@ export async function streamProtectedMedia(req, res, next) {
         'Accept-Ranges': 'bytes',
         'Content-Length': chunkSize,
         'Content-Type': contentType,
+        'Content-Disposition': disposition,
         'Cache-Control': 'private, no-store',
         'X-Content-Type-Options': 'nosniff'
       })
@@ -119,12 +213,13 @@ export async function streamProtectedMedia(req, res, next) {
       return
     }
 
-    // Full file delivery for non-range requests
+    // Full file delivery (either complete playback or attachment download)
     res.writeHead(200, {
       'Content-Length': fileSize,
       'Content-Type': contentType,
+      'Content-Disposition': disposition,
       'Accept-Ranges': 'bytes',
-      'Cache-Control': contentType.startsWith('video/') ? 'private, no-store' : 'private, max-age=3600',
+      'Cache-Control': isVideo ? 'private, no-store' : 'private, max-age=3600',
       'X-Content-Type-Options': 'nosniff'
     })
 
@@ -139,16 +234,14 @@ export async function streamProtectedMedia(req, res, next) {
  * Stream public thumbnail images (course thumbnails, preview images).
  * No authentication required -- these are displayed on the public catalog.
  *
- * GET /api/media/public/thumbnails/:folder/:fileName
- * GET /api/media/public/thumbnails/:fileName
+ * GET /api/media/public/thumbnails/*
  */
 export async function streamPublicThumbnail(req, res, next) {
   try {
-    const { folder, fileName } = req.params
-
-    const segments = folder && fileName
-      ? [folder, fileName]
-      : [folder || fileName]
+    const segments = extractSegments(req)
+    if (!segments.length) {
+      throw new ForbiddenError('No thumbnail specified.')
+    }
 
     const filePath = resolveSecurePath(...segments)
     if (!filePath) {
@@ -180,6 +273,41 @@ export async function streamPublicThumbnail(req, res, next) {
     })
 
     fs.createReadStream(filePath).pipe(res)
+  } catch (err) {
+    next(err)
+  }
+}
+
+/**
+ * Admin/Creator: Delete media asset
+ * DELETE /api/media/stream/*
+ * DELETE /api/media/delete/*
+ */
+export async function deleteMediaAsset(req, res, next) {
+  try {
+    const segments = extractSegments(req)
+    if (!segments.length) {
+      return res.status(400).json({ success: false, error: 'No media file specified for deletion.' })
+    }
+
+    const filePath = resolveSecurePath(...segments)
+    if (!filePath) {
+      return res.status(403).json({ success: false, error: 'Invalid media path requested.' })
+    }
+
+    if (fs.existsSync(filePath)) {
+      await fs.promises.unlink(filePath)
+      return res.status(200).json({
+        success: true,
+        message: 'Media asset deleted successfully from storage.',
+        deletedFile: path.basename(filePath)
+      })
+    } else {
+      return res.status(404).json({
+        success: false,
+        error: 'Media file not found or already deleted.'
+      })
+    }
   } catch (err) {
     next(err)
   }

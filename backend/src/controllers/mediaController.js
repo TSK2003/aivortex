@@ -61,12 +61,12 @@ export async function uploadAdminMedia(req, res) {
 
     const buffer = Buffer.from(base64Data, 'base64')
 
-    // File size validation (max 60MB for videos, 10MB for images)
-    const maxSizeBytes = isVideo ? 60 * 1024 * 1024 : 10 * 1024 * 1024
+    // File size validation (max 500MB for videos, 20MB for images)
+    const maxSizeBytes = isVideo ? 500 * 1024 * 1024 : 20 * 1024 * 1024
     if (buffer.length > maxSizeBytes) {
       return res.status(400).json({
         success: false,
-        error: `File size exceeds the limit of ${isVideo ? '60MB' : '10MB'}.`
+        error: `File size exceeds the limit of ${isVideo ? '500MB' : '20MB'}.`
       })
     }
 
@@ -89,3 +89,51 @@ export async function uploadAdminMedia(req, res) {
     return res.status(500).json({ success: false, error: 'Failed to upload media: ' + error.message })
   }
 }
+
+/**
+ * Admin/Creator: Delete media asset
+ * DELETE /api/admin/media
+ */
+export async function deleteAdminMedia(req, res) {
+  try {
+    const { fileUrl, key } = req.body || {}
+    const rawTarget = key || fileUrl
+    if (!rawTarget || typeof rawTarget !== 'string') {
+      return res.status(400).json({ success: false, error: 'File URL or key is required for deletion.' })
+    }
+
+    const uploadsRoot = path.resolve(process.cwd(), 'uploads')
+    let cleanKey = rawTarget
+      .replace(/^https?:\/\/[^/]+/i, '')
+      .replace(/^\/api\/media\/stream\//i, '')
+      .replace(/^\/api\/media\/public\/thumbnails\//i, '')
+      .replace(/^\/uploads\//i, '')
+      .replace(/^[/\\]+/, '')
+      .replace(/\.\./g, '')
+
+    const targetPath = path.resolve(uploadsRoot, cleanKey)
+
+    // Security jail check against directory traversal
+    if (!targetPath.startsWith(uploadsRoot + path.sep)) {
+      return res.status(403).json({ success: false, error: 'Path traversal forbidden.' })
+    }
+
+    if (fs.existsSync(targetPath)) {
+      await fs.promises.unlink(targetPath)
+      return res.status(200).json({
+        success: true,
+        message: 'Media asset deleted successfully from storage.',
+        deletedKey: cleanKey
+      })
+    } else {
+      return res.status(404).json({
+        success: false,
+        error: 'Media file not found or already deleted.'
+      })
+    }
+  } catch (error) {
+    console.error('deleteAdminMedia error:', error)
+    return res.status(500).json({ success: false, error: 'Failed to delete media: ' + error.message })
+  }
+}
+

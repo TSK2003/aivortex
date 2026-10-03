@@ -297,8 +297,8 @@ export default function AdminCreateCoursePage() {
       return
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      showToast('Video size exceeds 50MB limit. Please upload a short preview video (15–60s).', 'error')
+    if (file.size > 500 * 1024 * 1024) {
+      showToast('Video size exceeds 500MB limit. Please upload a video under 500MB.', 'error')
       return
     }
 
@@ -342,14 +342,28 @@ export default function AdminCreateCoursePage() {
     reader.readAsDataURL(file)
   }
 
-  const handleRemoveThumbnail = () => {
+  const handleRemoveThumbnail = async () => {
+    if (thumbnail && (thumbnail.startsWith('/api/media/') || thumbnail.startsWith('/uploads/'))) {
+      try {
+        await api.admin.deleteMedia({ fileUrl: thumbnail })
+      } catch (err) {
+        console.warn('Failed to delete thumbnail from storage:', err)
+      }
+    }
     setThumbnail('')
     setThumbnailStatus('idle')
     setThumbnailError(null)
     showToast('Course thumbnail removed.', 'info')
   }
 
-  const handleRemoveVideo = () => {
+  const handleRemoveVideo = async () => {
+    if (previewVideoUrl && (previewVideoUrl.startsWith('/api/media/') || previewVideoUrl.startsWith('/uploads/'))) {
+      try {
+        await api.admin.deleteMedia({ fileUrl: previewVideoUrl })
+      } catch (err) {
+        console.warn('Failed to delete video from storage:', err)
+      }
+    }
     setPreviewVideoUrl('')
     setVideoDuration(null)
     setVideoError(null)

@@ -438,11 +438,12 @@ export async function deleteLesson(req, res, next) {
       where: { id: lessonId }
     })
 
-    if (lesson.s3Key) {
+    const targetKey = lesson.s3Key || (lesson.videoUrl && (lesson.videoUrl.includes('/api/media/stream/') || lesson.videoUrl.includes('/uploads/')) ? lesson.videoUrl : null)
+    if (targetKey) {
       try {
-        await s3Service.deleteObject(lesson.s3Key)
+        await s3Service.deleteObject(targetKey)
       } catch (s3Err) {
-        console.warn('S3 object deletion warning for lesson:', s3Err.message)
+        console.warn('Media object deletion warning for lesson:', s3Err.message)
       }
     }
 
@@ -1079,8 +1080,9 @@ export async function getUploadPresignedUrl(req, res, next) {
       throw new BadRequestError(`File type ${fileType} is not permitted. Allowed types: MP4, MOV, WebM, PDF, JPEG, PNG`)
     }
 
+    const safeCourseId = (courseId || 'general').replace(/[^a-zA-Z0-9_-]/g, '') || 'general'
     const safeFileName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`
-    const objectKey = `uploads/courses/${courseId || 'general'}/${safeFileName}`
+    const objectKey = `uploads/courses/${safeCourseId}/${safeFileName}`
 
     const presignedResult = await s3Service.getPresignedUploadUrl(objectKey, fileType, 3600)
     const uploadUrl = typeof presignedResult === 'object' && presignedResult.uploadUrl
@@ -1088,7 +1090,7 @@ export async function getUploadPresignedUrl(req, res, next) {
       : presignedResult
     const baseUrl = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`
     const fileUrl = typeof uploadUrl === 'string' && uploadUrl.includes('/upload-local')
-      ? `${baseUrl}/${objectKey}`
+      ? `${baseUrl}/api/media/stream/courses/${safeCourseId}/${safeFileName}`
       : typeof uploadUrl === 'string'
       ? uploadUrl.split('?')[0]
       : `https://${process.env.AWS_S3_BUCKET || 'aivortex'}.s3.amazonaws.com/${objectKey}`
@@ -1107,22 +1109,61 @@ export async function getUploadPresignedUrl(req, res, next) {
 export async function uploadLocalVideo(req, res, next) {
   try {
     const rawKey = req.query.key || `uploads/courses/${req.query.courseId || 'general'}/${Date.now()}-video.mp4`
-    const safeKey = rawKey.replace(/\.\./g, '').replace(/^[/\\]+/, '')
-    const filePath = path.join(process.cwd(), safeKey)
 
-    await fs.promises.mkdir(path.dirname(filePath), { recursive: true })
-    const writeStream = fs.createWriteStream(filePath)
+    // Security Hardening: Strip directory traversal attempts and jail within uploads/
+    const uploadsRoot = path.resolve(process.cwd(), 'uploads')
+    const cleanKey = String(rawKey)
+      .replace(/^[/\\]+/, '')
+      .replace(/^uploads[/\\]+/i, '')
+      .replace(/\.\./g, '')
+      .replace(/[^a-zA-Z0-9._\-/]/g, '_')
+
+    // Whitelist file extension
+    const ext = path.extname(cleanKey).toLowerCase()
+    const allowedExtensions = ['.mp4', '.webm', '.ogv', '.mov', '.pdf', '.jpg', '.jpeg', '.png', '.webp']
+    if (!allowedExtensions.includes(ext)) {
+      throw new BadRequestError(`File extension "${ext}" is not permitted. Allowed extensions: MP4, WebM, MOV, PDF, PNG, JPG`)
+    }
+
+    const targetPath = path.resolve(uploadsRoot, cleanKey)
+
+    // Verify target path does not escape the uploads directory jail
+    if (!targetPath.startsWith(uploadsRoot + path.sep)) {
+      throw new ForbiddenError('Path traversal attempt rejected.')
+    }
+
+    await fs.promises.mkdir(path.dirname(targetPath), { recursive: true })
+    const writeStream = fs.createWriteStream(targetPath)
+
+    let bytesReceived = 0
+    const maxAllowedBytes = 1024 * 1024 * 1024 // 1GB streaming ceiling for DoS mitigation
+
+    req.on('data', (chunk) => {
+      bytesReceived += chunk.length
+      if (bytesReceived > maxAllowedBytes) {
+        req.destroy()
+        writeStream.destroy()
+        fs.promises.unlink(targetPath).catch(() => {})
+        return res.status(413).json({
+          success: false,
+          message: 'Upload file size exceeds 1GB limit.'
+        })
+      }
+    })
 
     req.pipe(writeStream)
 
     writeStream.on('finish', () => {
       const baseUrl = process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`
-      const fileUrl = `${baseUrl}/${safeKey.replace(/\\/g, '/')}`
+      const cleanRelKey = path.relative(uploadsRoot, targetPath).replace(/\\/g, '/')
+      const fileUrl = `${baseUrl}/api/media/stream/${cleanRelKey}`
       return res.status(200).json({
         success: true,
         message: 'Video file uploaded successfully',
-        key: safeKey,
-        fileUrl
+        key: `uploads/${cleanRelKey}`,
+        fileUrl,
+        relativeUrl: `/api/media/stream/${cleanRelKey}`,
+        sizeBytes: bytesReceived
       })
     })
 
@@ -1137,6 +1178,7 @@ export async function uploadLocalVideo(req, res, next) {
     req.on('error', (err) => {
       console.error('Request stream error during file upload:', err)
       writeStream.destroy()
+      fs.promises.unlink(targetPath).catch(() => {})
       return res.status(500).json({
         success: false,
         message: 'Connection interrupted while uploading video'

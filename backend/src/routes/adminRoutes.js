@@ -77,7 +77,7 @@ import {
   duplicateAdminLiveSession,
   reorderAdminLiveSessions
 } from '../controllers/liveSessionController.js'
-import { uploadAdminMedia } from '../controllers/mediaController.js'
+import { uploadAdminMedia, deleteAdminMedia } from '../controllers/mediaController.js'
 import { requireAuth, requireRole } from '../middleware/authMiddleware.js'
 
 const router = Router()
@@ -199,7 +199,8 @@ router.patch('/support-tickets/:id/status', updateAdminSupportTicketStatus)
 router.get('/contact-enquiries', getAdminContactEnquiries)
 router.patch('/contact-enquiries/:id/status', updateAdminContactEnquiryStatus)
 
-// Media Upload (Projects thumbnails, Speaker photos)
+// Media Upload & Removal (Projects thumbnails, Speaker photos, Preview videos)
 router.post('/media/upload', uploadAdminMedia)
+router.delete('/media', deleteAdminMedia)
 
 export default router
