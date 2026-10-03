@@ -1,0 +1,26 @@
+# Backend .gitignore
+node_modules/
+.env
+.env.*
+*.env
+!.env.example
+!.env.production.example
+
+# Logs & Monitoring
+logs/
+*.log
+npm-debug.log*
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+
+# SSL / Keys
+*.pem
+*.key
+*.cert
+
+# Uploaded Media & Files
+uploads/*
+!uploads/**/.gitkeep
+
